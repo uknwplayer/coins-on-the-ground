@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://coins-on-the-ground.local/schemas/evidence-ledger-entry-v1.schema.json",
+  "title": "Coins on the Ground Evidence Ledger Entry V1",
+  "type": "object",
+  "required": ["format", "entry_id", "record"],
+  "properties": {
+    "format": {
+      "const": "cog-evidence-ledger-entry-v1"
+    },
+    "entry_id": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "record": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}
