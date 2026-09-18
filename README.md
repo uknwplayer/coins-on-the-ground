@@ -127,6 +127,17 @@ cog replenishment-analyze \
   --source-id bidpostloop
 ```
 
+Alocação de atenção entre fontes:
+
+```bash
+cog source-allocation all \
+  --snapshot-ledger ./data/opportunity-snapshots.jsonl \
+  --capability http \
+  --capability text_analysis \
+  --hourly-cost-usd 0.60 \
+  --limit 100
+```
+
 Portfolio econômico de microtarefas:
 
 ```bash
@@ -216,7 +227,7 @@ Veja `docs/scouts.md`, `docs/opportunity-model.md`, `docs/feasibility.md`,
 `docs/capability-acquisition.md`, `docs/capability-evidence.md`,
 `docs/evidence-collectors.md`, `docs/evidence-materialization.md` e
 `docs/evidence-ledger.md`, `docs/historical-confidence.md`,
-`docs/global-discovery.md` e `docs/replenishment.md`.
+`docs/global-discovery.md`, `docs/replenishment.md` e `docs/source-allocation.md`.
 
 ## Módulos iniciais
 
@@ -263,6 +274,8 @@ Já estão implementados:
 - Microtask Portfolio Planner com prioridade por net conservador/minuto e rota de menor número de ações até payout;
 - Opportunity Snapshot Ledger append-only para medir replenishment observado;
 - métricas de funding positivo/negativo, entrada/saída de oportunidades e taxa normalizada por dia;
+- Source Allocation Planner para distribuir atenção de scouting por qualidade atual, economia, replenishment, settlement e confiança histórica;
+- `attention_share_pct` relativo, com unknown signals reduzindo cobertura em vez de virarem zero silenciosamente;
 - Opportunity Model e deduplicação;
 - `review_score`;
 - Cost & Feasibility Estimator;
@@ -289,7 +302,7 @@ Já estão implementados:
 - claims `CAPABILITY / PRICING / AVAILABILITY / AUTHORIZATION`;
 - testes automatizados e CI.
 
-A próxima evolução principal volta a ser **aumentar a superfície de descoberta**: novos Scouts
-globais para recompensas on-chain permissionless, competições, compute/storage/bandwidth rewards,
-mercados públicos de tarefas e fontes onion legítimas previamente revisadas. O pipeline econômico
-e de evidência continuará filtrando essas descobertas depois da coleta.
+A próxima evolução combina **superfície de descoberta + alocação adaptativa**: novos Scouts globais
+continuam entrando, mas o sistema agora pode usar histórico observado para decidir onde vale gastar
+mais atenção de scouting. Isso prepara uma política futura de cadência por fonte sem transformar
+prioridade de monitoramento em autorização de execução.
