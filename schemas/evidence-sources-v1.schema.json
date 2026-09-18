@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://coins-on-the-ground.local/schemas/evidence-sources-v1.schema.json",
+  "title": "Coins on the Ground Evidence Sources V1",
+  "type": "object",
+  "required": ["format", "sources"],
+  "properties": {
+    "format": {
+      "const": "cog-evidence-sources-v1"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "location"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]{1,120}$"
+          },
+          "kind": {
+            "enum": ["HTTPS_JSON", "LOCAL_JSON"]
+          },
+          "location": {
+            "type": "string",
+            "minLength": 1
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true
+          },
+          "max_bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000000,
+            "default": 1000000
+          },
+          "timeout_seconds": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 60,
+            "default": 15
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
