@@ -66,7 +66,9 @@ Ele:
 12. valida freshness, claims e requisitos de autorização;
 13. registra observações em um Evidence Ledger local append-only;
 14. detecta drift de preço, capability, disponibilidade, claims e autorização;
-15. mantém execução fora do pipeline.
+15. aplica uma Historical Confidence Policy explícita;
+16. rebaixa ou bloqueia opções de aquisição com histórico insuficiente ou incompatível;
+17. mantém execução fora do pipeline.
 
 ## Uso atual
 
@@ -122,6 +124,14 @@ cog evidence-ledger-analyze \
   --ledger ./data/evidence-ledger.jsonl
 ```
 
+Confiança histórica:
+
+```bash
+cog historical-confidence \
+  --ledger ./data/evidence-ledger.jsonl \
+  --policy ./examples/historical-confidence-policy.example.json
+```
+
 Materialização explícita:
 
 ```bash
@@ -143,6 +153,8 @@ Planejamento:
 ```bash
 cog acquisition-plan frantic \
   --catalog ./data/acquisition-catalog-v2.json \
+  --ledger ./data/evidence-ledger.jsonl \
+  --historical-policy ./examples/historical-confidence-policy.example.json \
   --capability file_io
 ```
 
@@ -150,7 +162,7 @@ Veja `docs/scouts.md`, `docs/opportunity-model.md`, `docs/feasibility.md`,
 `docs/bridge-integration.md`, `docs/capability-gaps.md`,
 `docs/capability-acquisition.md`, `docs/capability-evidence.md`,
 `docs/evidence-collectors.md`, `docs/evidence-materialization.md` e
-`docs/evidence-ledger.md`.
+`docs/evidence-ledger.md` e `docs/historical-confidence.md`.
 
 ## Módulos iniciais
 
@@ -203,11 +215,14 @@ Já estão implementados:
 - `entry_id` determinístico e deduplicação de observações;
 - drift `PRICING / CAPABILITIES / AVAILABILITY / CLAIMS / AUTHORIZATION / CONTENT`;
 - métricas observáveis de estabilidade e faixa de preço;
+- Historical Confidence Policy `PASS / REVIEW / FAIL`;
+- integração opcional ledger + policy no Capability Acquisition Planner;
+- prioridade `PASS > REVIEW > sem avaliação > FAIL`;
 - `FRESH / STALE / EXPIRED / INVALID / UNVERIFIED`;
 - claims `CAPABILITY / PRICING / AVAILABILITY / AUTHORIZATION`;
 - testes automatizados e CI.
 
-A próxima evolução é conectar o histórico do Evidence Ledger ao planejamento econômico por uma
-policy explícita de **historical confidence**. Essa camada poderá considerar volatilidade,
-disponibilidade histórica e frequência de mudanças sem transformar métricas observáveis em
-confiança implícita ou não auditável.
+A próxima evolução é usar essa confiança histórica para **ajustar a faixa econômica projetada**
+sem esconder a incerteza: por exemplo, ampliar o custo conservador quando uma fonte tem preço
+volátil ou exigir margem mínima maior quando o histórico é curto. Isso continuará sendo policy
+explícita do Coins on the Ground, não comportamento implícito do provider.
