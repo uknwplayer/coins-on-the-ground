@@ -1,10 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from decimal import ROUND_CEILING, Decimal, InvalidOperation
 from enum import StrEnum
-from typing import Iterable
-
 from coins_on_the_ground.opportunity import Opportunity
 
 
