@@ -56,3 +56,37 @@ def test_bidpostloop_portfolio_is_registered() -> None:
     assert str(args.hourly_cost_usd) == "0.60"
     assert str(args.current_balance_usd) == "1.25"
     assert args.handler.__name__ == "_portfolio"
+
+
+def test_replenishment_snapshot_cli_is_registered() -> None:
+    args = build_parser().parse_args(
+        [
+            "replenishment-snapshot",
+            "bidpostloop",
+            "--limit",
+            "100",
+            "--ledger",
+            "data/opportunity-snapshots.jsonl",
+        ]
+    )
+
+    assert args.source == "bidpostloop"
+    assert args.limit == 100
+    assert args.ledger == "data/opportunity-snapshots.jsonl"
+    assert args.handler.__name__ == "_replenishment_snapshot"
+
+
+def test_replenishment_analyze_cli_is_registered() -> None:
+    args = build_parser().parse_args(
+        [
+            "replenishment-analyze",
+            "--ledger",
+            "data/opportunity-snapshots.jsonl",
+            "--source-id",
+            "bidpostloop",
+        ]
+    )
+
+    assert args.ledger == "data/opportunity-snapshots.jsonl"
+    assert args.source_id == "bidpostloop"
+    assert args.handler.__name__ == "_replenishment_analyze"
