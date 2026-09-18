@@ -21,6 +21,7 @@ from coins_on_the_ground.estimation import (
     ProfitabilityClass,
 )
 from coins_on_the_ground.opportunity import Opportunity, review_and_deduplicate
+from coins_on_the_ground.planning import plan_capability_gap
 from coins_on_the_ground.scouts import FranticBountyScout, GitHubBountyScout, Scout
 
 
@@ -310,6 +311,45 @@ async def _estimate(args: argparse.Namespace) -> int:
     return 0
 
 
+async def _gaps(args: argparse.Namespace) -> int:
+    observations = await _load_observations(args)
+    opportunities = await _discover(args.source, args.limit)
+    reviews = review_and_deduplicate(opportunities)
+
+    rows: list[dict[str, Any]] = []
+    for review in reviews:
+        plan = plan_capability_gap(review.opportunity, observations)
+        rows.append(
+            {
+                "fingerprint": review.fingerprint,
+                "review_score": review.review_score,
+                "review_allowed": review.review_allowed,
+                "review_reason": review.review_reason,
+                "gap_plan": _json_value(asdict(plan)),
+                "opportunity": serialize(review.opportunity),
+            }
+        )
+
+    if args.output:
+        await asyncio.to_thread(_write_jsonl, Path(args.output), rows)
+    else:
+        for row in rows:
+            print(json.dumps(row, ensure_ascii=False))
+
+    print(
+        json.dumps(
+            {
+                "engine": "capability-gap-planner",
+                "profiles": len(observations),
+                "raw_candidates": len(opportunities),
+                "deduplicated_candidates": len(rows),
+                "execution_performed": False,
+            }
+        )
+    )
+    return 0
+
+
 def _add_common_scan_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--limit", type=int, default=25)
     parser.add_argument("--output", help="optional JSONL output path")
@@ -395,6 +435,15 @@ def build_parser() -> argparse.ArgumentParser:
     _add_common_scan_args(estimate)
     _add_capability_profile_args(estimate)
     estimate.set_defaults(handler=_estimate)
+
+    gaps = subparsers.add_parser(
+        "gaps",
+        help="explain missing or fragmented capabilities for discovered opportunities",
+    )
+    _add_source_argument(gaps)
+    _add_common_scan_args(gaps)
+    _add_capability_profile_args(gaps)
+    gaps.set_defaults(handler=_gaps)
 
     return parser
 
