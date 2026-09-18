@@ -45,6 +45,7 @@ from coins_on_the_ground.scouts import (
     AlgoraScout,
     FranticBountyScout,
     GitHubBountyScout,
+    ImmunefiScout,
     IssueHuntScout,
     Scout,
     parse_scout_source_registry,
@@ -127,11 +128,14 @@ def _scouts_for_source(source: str, limit: int) -> list[Scout]:
         return [IssueHuntScout(limit=limit)]
     if source == "algora":
         return [AlgoraScout(limit=limit)]
+    if source == "immunefi":
+        return [ImmunefiScout(limit=limit)]
     return [
         FranticBountyScout(limit=limit),
         GitHubBountyScout(limit=limit),
         IssueHuntScout(limit=limit),
         AlgoraScout(limit=limit),
+        ImmunefiScout(limit=limit),
     ]
 
 
@@ -203,6 +207,10 @@ async def _scan_issuehunt(args: argparse.Namespace) -> int:
 async def _scan_algora(args: argparse.Namespace) -> int:
     orgs = tuple(args.org) if args.org else None
     return await _emit_scan(AlgoraScout(limit=args.limit, orgs=orgs), args)
+
+
+async def _scan_immunefi(args: argparse.Namespace) -> int:
+    return await _emit_scan(ImmunefiScout(limit=args.limit), args)
 
 
 async def _sources_check(args: argparse.Namespace) -> int:
@@ -795,7 +803,7 @@ def _add_common_scan_args(parser: argparse.ArgumentParser) -> None:
 def _add_source_argument(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "source",
-        choices=("all", "frantic", "github-bounties", "issuehunt", "algora"),
+        choices=("all", "frantic", "github-bounties", "issuehunt", "algora", "immunefi"),
         default="all",
         nargs="?",
     )
@@ -868,6 +876,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_common_scan_args(algora)
     algora.set_defaults(handler=_scan_algora)
+
+    immunefi = scan_sub.add_parser(
+        "immunefi",
+        help="scan public Immunefi security bounty programs without probing targets",
+    )
+    _add_common_scan_args(immunefi)
+    immunefi.set_defaults(handler=_scan_immunefi)
 
     sources_check = subparsers.add_parser(
         "sources-check",
