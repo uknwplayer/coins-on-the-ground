@@ -82,7 +82,7 @@ def _assessment(
         status=status,
         observations=10,
         semantic_change_ratio=Decimal("0.10"),
-        price_range_pct=Decimal("10"),
+        price_range_pct=Decimal(10),
         latest_available=True,
         latest_per_task_cost_usd=Decimal("0.05"),
         reasons=(
