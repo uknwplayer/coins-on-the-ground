@@ -8,12 +8,17 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
+from coins_on_the_ground.adapters import (
+    CapabilityObservation,
+    adapt_bridge_mesh_advertisement,
+    adapt_machine_bridge_registration,
+    estimate_against_inventory,
+)
 from coins_on_the_ground.estimation import (
     Capability,
     CapabilityProfile,
     FeasibilityClass,
     ProfitabilityClass,
-    estimate_feasibility,
 )
 from coins_on_the_ground.opportunity import Opportunity, review_and_deduplicate
 from coins_on_the_ground.scouts import FranticBountyScout, GitHubBountyScout, Scout
@@ -43,6 +48,10 @@ def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
     with path.open("w", encoding="utf-8") as handle:
         for row in rows:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+
+def _load_json(path: Path) -> object:
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 async def _collect(scout: Scout) -> list[Opportunity]:
@@ -139,14 +148,92 @@ async def _review(args: argparse.Namespace) -> int:
     return 0
 
 
-def _capability_profile(args: argparse.Namespace) -> CapabilityProfile:
+def _manual_observation(args: argparse.Namespace) -> CapabilityObservation:
     declared = frozenset(Capability(value) for value in args.capability)
-    return CapabilityProfile(
-        name=args.profile_name,
-        capabilities=declared,
-        hourly_cost_usd=args.hourly_cost_usd,
-        configured=bool(declared),
+    return CapabilityObservation(
+        source_type="manual",
+        source_id=args.profile_name,
+        profile=CapabilityProfile(
+            name=args.profile_name,
+            capabilities=declared,
+            hourly_cost_usd=args.hourly_cost_usd,
+            configured=bool(declared),
+        ),
+        raw_capabilities=tuple(sorted(capability.value for capability in declared)),
+        unmapped_capabilities=(),
     )
+
+
+async def _load_observations(args: argparse.Namespace) -> list[CapabilityObservation]:
+    observations: list[CapabilityObservation] = []
+
+    for path_value in args.machine_bridge_registration:
+        value = await asyncio.to_thread(_load_json, Path(path_value))
+        observations.append(
+            adapt_machine_bridge_registration(
+                value,
+                hourly_cost_usd=args.hourly_cost_usd,
+            )
+        )
+
+    for path_value in args.mesh_advertisement:
+        value = await asyncio.to_thread(_load_json, Path(path_value))
+        observations.append(
+            adapt_bridge_mesh_advertisement(
+                value,
+                hourly_cost_usd=args.hourly_cost_usd,
+            )
+        )
+
+    if args.capability or not observations:
+        observations.append(_manual_observation(args))
+
+    return observations
+
+
+def _observation_row(observation: CapabilityObservation) -> dict[str, Any]:
+    return {
+        "source_type": observation.source_type,
+        "source_id": observation.source_id,
+        "profile": {
+            "name": observation.profile.name,
+            "configured": observation.profile.configured,
+            "capabilities": sorted(
+                capability.value for capability in observation.profile.capabilities
+            ),
+            "hourly_cost_usd": _json_value(observation.profile.hourly_cost_usd),
+        },
+        "raw_capabilities": list(observation.raw_capabilities),
+        "unmapped_capabilities": list(observation.unmapped_capabilities),
+        "reachable_capabilities": list(observation.reachable_capabilities),
+        "heartbeat_at": observation.heartbeat_at,
+    }
+
+
+async def _inspect_capabilities(args: argparse.Namespace) -> int:
+    observations = await _load_observations(args)
+    rows = [_observation_row(observation) for observation in observations]
+
+    for row in rows:
+        print(json.dumps(row, ensure_ascii=False))
+
+    print(
+        json.dumps(
+            {
+                "engine": "capability-adapter",
+                "profiles": len(rows),
+                "execution_performed": False,
+            }
+        )
+    )
+    return 0
+
+
+def _profile_estimate_row(item: Any) -> dict[str, Any]:
+    return {
+        "observation": _observation_row(item.observation),
+        "estimate": _json_value(asdict(item.estimate)),
+    }
 
 
 def _estimate_sort_key(row: dict[str, Any]) -> tuple[int, int, int, int]:
@@ -162,30 +249,41 @@ def _estimate_sort_key(row: dict[str, Any]) -> tuple[int, int, int, int]:
         FeasibilityClass.UNKNOWN.value: 1,
         FeasibilityClass.NOT_FEASIBLE.value: 0,
     }
-    estimate = row["estimate"]
+    best = row["best_profile"]
+    if best is None:
+        return int(row["review_allowed"]), 0, 0, int(row["review_score"])
+
+    estimate = best["estimate"]
     return (
         int(row["review_allowed"]),
-        profitability_rank[str(estimate["profitability"])],
         feasibility_rank[str(estimate["feasibility"])],
+        profitability_rank[str(estimate["profitability"])],
         int(row["review_score"]),
     )
 
 
 async def _estimate(args: argparse.Namespace) -> int:
-    profile = _capability_profile(args)
+    observations = await _load_observations(args)
     opportunities = await _discover(args.source, args.limit)
     reviews = review_and_deduplicate(opportunities)
 
     rows: list[dict[str, Any]] = []
     for review in reviews:
-        estimate = estimate_feasibility(review.opportunity, profile)
+        profile_estimates = estimate_against_inventory(
+            review.opportunity,
+            observations,
+        )
+        serialized_estimates = [
+            _profile_estimate_row(item) for item in profile_estimates
+        ]
         rows.append(
             {
                 "fingerprint": review.fingerprint,
                 "review_score": review.review_score,
                 "review_allowed": review.review_allowed,
                 "review_reason": review.review_reason,
-                "estimate": _json_value(asdict(estimate)),
+                "best_profile": serialized_estimates[0] if serialized_estimates else None,
+                "profile_estimates": serialized_estimates,
                 "opportunity": serialize(review.opportunity),
             }
         )
@@ -202,14 +300,7 @@ async def _estimate(args: argparse.Namespace) -> int:
         json.dumps(
             {
                 "engine": "cost-feasibility-estimator",
-                "profile": {
-                    "name": profile.name,
-                    "configured": profile.configured,
-                    "capabilities": sorted(
-                        capability.value for capability in profile.capabilities
-                    ),
-                    "hourly_cost_usd": _json_value(profile.hourly_cost_usd),
-                },
+                "profiles": len(observations),
                 "raw_candidates": len(opportunities),
                 "deduplicated_candidates": len(rows),
                 "execution_performed": False,
@@ -230,6 +321,34 @@ def _add_source_argument(parser: argparse.ArgumentParser) -> None:
         choices=("all", "frantic", "github-bounties"),
         default="all",
         nargs="?",
+    )
+
+
+def _add_capability_profile_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--profile-name", default="cli-profile")
+    parser.add_argument(
+        "--capability",
+        action="append",
+        choices=tuple(capability.value for capability in Capability),
+        default=[],
+        help="declared local capability; repeat for multiple capabilities",
+    )
+    parser.add_argument(
+        "--machine-bridge-registration",
+        action="append",
+        default=[],
+        help="path to ARCA Machine Bridge worker registration JSON; repeat as needed",
+    )
+    parser.add_argument(
+        "--mesh-advertisement",
+        action="append",
+        default=[],
+        help="path to Bridge Mesh node advertisement JSON; repeat as needed",
+    )
+    parser.add_argument(
+        "--hourly-cost-usd",
+        type=Decimal,
+        help="operating-cost assumption applied to imported profiles",
     )
 
 
@@ -261,25 +380,20 @@ def build_parser() -> argparse.ArgumentParser:
     _add_common_scan_args(review)
     review.set_defaults(handler=_review)
 
+    capabilities = subparsers.add_parser(
+        "capabilities",
+        help="inspect Machine Bridge / Bridge Mesh capability records",
+    )
+    _add_capability_profile_args(capabilities)
+    capabilities.set_defaults(handler=_inspect_capabilities)
+
     estimate = subparsers.add_parser(
         "estimate",
-        help="estimate cost and machine feasibility using a declared capability profile",
+        help="estimate cost and feasibility against declared/imported capability profiles",
     )
     _add_source_argument(estimate)
     _add_common_scan_args(estimate)
-    estimate.add_argument("--profile-name", default="cli-profile")
-    estimate.add_argument(
-        "--capability",
-        action="append",
-        choices=tuple(capability.value for capability in Capability),
-        default=[],
-        help="declared capability; repeat for multiple capabilities",
-    )
-    estimate.add_argument(
-        "--hourly-cost-usd",
-        type=Decimal,
-        help="declared operating cost in USD/hour",
-    )
+    _add_capability_profile_args(estimate)
     estimate.set_defaults(handler=_estimate)
 
     return parser
