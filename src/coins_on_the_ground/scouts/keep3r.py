@@ -3,8 +3,6 @@ from __future__ import annotations
 import os
 from collections.abc import AsyncIterator
 from decimal import Decimal
-from typing import Any
-
 import httpx
 
 from coins_on_the_ground.opportunity import Opportunity, OpportunityClass, RiskClass
@@ -118,7 +116,7 @@ async def _rpc_credits(
     response.raise_for_status()
     payload = response.json()
     if not isinstance(payload, list):
-        raise ValueError("Keep3r credit batch RPC response must be a list")
+        raise TypeError("Keep3r credit batch RPC response must be a list")
 
     by_id = {
         item.get("id"): item
