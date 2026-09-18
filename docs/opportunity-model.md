@@ -36,6 +36,14 @@ Uma oportunidade deve preservar evidência suficiente para responder:
 7. Qual é o valor líquido esperado?
 8. Quais incertezas permanecem?
 
+## Custo desconhecido não é custo zero
+
+`estimated_cost=None` significa **custo ainda não estimado**.
+
+`estimated_cost=Decimal(0)` significa que o custo foi efetivamente estimado como zero.
+
+Essa distinção impede que o sistema trate uma tarefa de esforço desconhecido como lucro garantido.
+
 ## Classes de risco
 
 O classificador inicial usa quatro categorias descritivas:
@@ -49,9 +57,41 @@ O classificador inicial usa quatro categorias descritivas:
 
 Esses rótulos são metadados de triagem, não conclusões jurídicas.
 
+## Opportunity Engine
+
+O primeiro engine produz um `review_score` de 0 a 100 para **priorização de revisão humana**.
+Esse número não é uma conclusão jurídica e não autoriza execução.
+
+O score combina:
+
+- força da evidência da fonte;
+- existência de base de autorização;
+- frescor da oportunidade;
+- evidência de disponibilidade;
+- completude econômica.
+
+A classe de risco funciona como multiplicador conservador. `PENAL_REVIEW` e `REJECT` recebem
+prioridade zero.
+
+O engine também deduplica oportunidades que compartilham evidências, como uma mesma issue
+encontrada tanto por um Scout genérico quanto por um Scout específico. Quando há duplicidade,
+o registro com evidência mais forte é preservado.
+
+### Uso
+
+```bash
+cog review all --limit 100
+```
+
+Para persistir o relatório:
+
+```bash
+cog review all --limit 100 --output data/opportunity-review.jsonl
+```
+
 ## Modelo econômico
 
-No mínimo:
+Quando os custos forem conhecidos:
 
 ```text
 expected_net_value =
