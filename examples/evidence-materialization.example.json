@@ -1,0 +1,15 @@
+{
+  "format": "cog-evidence-materialization-v1",
+  "rules": [
+    {
+      "source_id": "local-example-provider",
+      "option_id": "example-connect-transcription",
+      "mode": "CONNECT_PROVIDER",
+      "target_profile": null,
+      "reusable": true,
+      "enabled": true,
+      "setup_minutes_low": 2,
+      "setup_minutes_high": 10
+    }
+  ]
+}
