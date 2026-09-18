@@ -48,7 +48,9 @@ from coins_on_the_ground.planning import (
     plan_capability_acquisition,
     plan_capability_gap,
     plan_microtask_portfolio,
+    plan_scout_cadence,
     plan_source_allocation,
+    ScoutCadencePolicy,
     summarize_settlement_pool,
 )
 from coins_on_the_ground.scouts import (
@@ -418,6 +420,50 @@ async def _source_allocation(args: argparse.Namespace) -> int:
         "plan": _json_value(asdict(plan)),
         "source_failures": discovery_failures,
         "execution_performed": False,
+    }
+
+    if args.output:
+        await asyncio.to_thread(_write_json, Path(args.output), row)
+    else:
+        print(json.dumps(row, ensure_ascii=False))
+    return 0
+
+
+async def _scout_cadence(args: argparse.Namespace) -> int:
+    observations = await _load_observations(args)
+    opportunities, discovery_failures = await _discover(args.source, args.limit)
+    snapshots = await asyncio.to_thread(
+        load_opportunity_snapshots,
+        Path(args.snapshot_ledger),
+    )
+    _, summaries = analyze_replenishment(snapshots)
+    allocation = plan_source_allocation(
+        opportunities,
+        observations,
+        summaries,
+    )
+    cadence = plan_scout_cadence(
+        allocation.candidates,
+        policy=ScoutCadencePolicy(
+            scan_budget_per_day=args.scan_budget_per_day,
+            min_scans_per_source_per_day=(
+                args.min_scans_per_source_per_day
+            ),
+            max_scans_per_source_per_day=(
+                args.max_scans_per_source_per_day
+            ),
+        ),
+    )
+    row = {
+        "engine": "adaptive-scout-cadence-planner",
+        "source": args.source,
+        "profiles": len(observations),
+        "snapshot_ledger_entries": len(snapshots),
+        "allocation": _json_value(asdict(allocation)),
+        "cadence": _json_value(asdict(cadence)),
+        "source_failures": discovery_failures,
+        "execution_performed": False,
+        "schedule_applied": False,
     }
 
     if args.output:
@@ -1219,6 +1265,42 @@ def build_parser() -> argparse.ArgumentParser:
         help="opportunity snapshot JSONL ledger used for replenishment history",
     )
     source_allocation.set_defaults(handler=_source_allocation)
+
+    scout_cadence = subparsers.add_parser(
+        "scout-cadence",
+        help="derive bounded read-only Scout cadence from source allocation",
+    )
+    _add_source_argument(scout_cadence)
+    scout_cadence.add_argument("--limit", type=int, default=100)
+    scout_cadence.add_argument(
+        "--output",
+        help="optional JSON output path",
+    )
+    _add_capability_profile_args(scout_cadence)
+    scout_cadence.add_argument(
+        "--snapshot-ledger",
+        required=True,
+        help="opportunity snapshot JSONL ledger used for replenishment history",
+    )
+    scout_cadence.add_argument(
+        "--scan-budget-per-day",
+        type=int,
+        default=24,
+        help="total read-only source scans available per day",
+    )
+    scout_cadence.add_argument(
+        "--min-scans-per-source-per-day",
+        type=int,
+        default=1,
+        help="minimum daily observation floor for every source",
+    )
+    scout_cadence.add_argument(
+        "--max-scans-per-source-per-day",
+        type=int,
+        default=6,
+        help="maximum daily scans any single source may receive",
+    )
+    scout_cadence.set_defaults(handler=_scout_cadence)
 
     sources_check = subparsers.add_parser(
         "sources-check",
