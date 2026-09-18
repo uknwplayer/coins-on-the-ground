@@ -515,6 +515,12 @@ auto_approved
 expires_at
 minimum_payout_credits
 minimum_payout_usd
+capacity_basis
+source_available_funded_credits
+source_available_funded_usd
+source_total_paid_actions_available
+source_max_open_proposals_per_agent
+source_max_daily_pool_credits
 ```
 
 O payout mínimo é uma restrição operacional separada do lucro por ação: várias tarefas pequenas
@@ -542,8 +548,11 @@ UNKNOWN
 NOT_APPLICABLE
 ```
 
-`REACHABLE` significa somente que, partindo de saldo zero, a soma bruta dos slots públicos
-atualmente observados é suficiente para cruzar o payout mínimo.
+`REACHABLE` significa somente que, partindo de saldo zero, a capacidade bruta pública atualmente
+observada é suficiente para cruzar o payout mínimo.
+
+Quando a fonte publica um budget financiado compartilhado, esse budget é o teto. `remaining_slots`
+de templates diferentes não é tratado como se cada template tivesse funding independente.
 
 Não significa:
 
@@ -565,3 +574,96 @@ minimum_actions_from_zero
 
 Rewards com semântica não exata, como `maximum`, `gross_escrow`, `pool_credits` e
 `maximum_rate`, não entram nessa capacidade como se fossem dinheiro garantido.
+
+
+## Portfolio de microtarefas
+
+O `Microtask Portfolio Planner` transforma oportunidades pequenas em uma fila econômica sem
+executar trabalho.
+
+Uso:
+
+```bash
+cog portfolio bidpostloop \
+  --capability http \
+  --capability text_analysis \
+  --hourly-cost-usd 0.60 \
+  --current-balance-usd 0 \
+  --limit 100
+```
+
+Uma oportunidade só entra no portfolio quando:
+
+```text
+reward_semantics in {exact, fixed}
+currency = USD
+remaining_slots > 0
+profile feasibility = FEASIBLE
+profitability = POSITIVE
+cost known
+net known
+risk != PENAL_REVIEW / REJECT
+```
+
+`CIVIL_REVIEW` pode aparecer no plano para análise, mas continua carregando
+`authorization_review_still_required`. O planner não transforma isso em autorização de execução.
+
+### Prioridade
+
+Os candidatos são ordenados primeiro por:
+
+```text
+conservative_net_per_minute_usd
+```
+
+O cálculo conservador usa:
+
+```text
+expected_net_value_usd_low / estimated_minutes_high
+```
+
+Assim, uma moeda de maior reward bruto não supera automaticamente uma moeda menor que custa muito
+menos tempo para coletar.
+
+### Rota até payout
+
+A rota de settlement é uma visão separada da prioridade econômica.
+
+Ela tenta minimizar o número de ações usando primeiro rewards fixos maiores, respeitando:
+
+```text
+public remaining slots
+source total paid actions
+shared funded budget
+known current balance
+```
+
+O limite `source_max_open_proposals_per_agent` é preservado como restrição de concorrência. Ele não é
+tratado como limite vitalício de ações.
+
+Estados:
+
+```text
+READY
+THRESHOLD_MET
+SETTLEMENT_UNREACHABLE
+THRESHOLD_UNKNOWN
+NO_PROFITABLE_CANDIDATES
+NO_INVENTORY
+```
+
+Mesmo em `READY`, a rota representa capacidade pública observável, não capacidade pessoal
+garantida. Aceite, concorrência, disponibilidade futura, autenticação e settlement continuam
+separados.
+
+### Budget compartilhado
+
+Uma fonte pode publicar muitos templates com `remaining_slots`, mas financiar todos a partir do
+mesmo pool.
+
+```text
+template slots != independent funded pools
+```
+
+O planner usa `source_available_funded_usd` como teto agregado quando esse campo existe. Isso evita
+contar a mesma moeda várias vezes.
