@@ -1,101 +1,114 @@
 # Coins on the Ground
 
-Coins on the Ground is an experimental system for discovering small, legitimate economic
-opportunities that are easy for humans to overlook because they are fragmented, low-value,
-technical, or expensive to find manually.
+Coins on the Ground é um sistema experimental para descobrir pequenas oportunidades econômicas
+legítimas que humanos tendem a ignorar por serem fragmentadas, de baixo valor, técnicas ou caras
+de localizar manualmente.
 
-The project is designed as an application layer that can use **Machine Bridge** and
-**Bridge Mesh** without modifying either core architecture.
+O projeto foi desenhado como uma camada de aplicação capaz de usar **Machine Bridge** e
+**Bridge Mesh** sem modificar o núcleo de nenhuma das duas arquiteturas.
 
-## Core idea
+## Regra de linguagem
 
-Search for economic value that can be legitimately:
+Documentação destinada a humanos deve ser escrita em **português (pt-BR)**.
 
-- **FOUND** — explicitly claimable or publicly available under a protocol, contract, promotion,
-  bounty, or comparable rule.
-- **EARNED** — obtained by performing useful work such as computation, code, analysis, storage,
-  validation, problem-solving, or other rewarded tasks.
-- **RECOVERED** — returned to the rightful beneficiary when value already belongs to the user or
-  an authorized principal.
+Código, identificadores, schemas, campos JSON, nomes de classes/funções, comandos, nomes de
+protocolos e demais elementos técnicos podem permanecer em **inglês** quando isso for mais
+conveniente ou idiomático.
 
-The system must distinguish "technically accessible" from "legitimately acquirable".
+Essa regra vale para todo o projeto Coins on the Ground e não altera os padrões dos projetos
+Machine Bridge ou Bridge Mesh.
 
-## Architectural rule
+## Ideia central
+
+Buscar valor econômico que possa ser legitimamente:
+
+- **FOUND** — explicitamente reivindicável ou publicamente disponível segundo protocolo, contrato,
+  promoção, bounty ou regra equivalente.
+- **EARNED** — obtido após realizar trabalho útil, como computação, código, análise, armazenamento,
+  validação, resolução de problemas ou outras tarefas remuneradas.
+- **RECOVERED** — devolvido ao beneficiário legítimo quando o valor já pertence ao usuário ou a
+  outro principal representado com autorização.
+
+O sistema deve distinguir **"tecnicamente acessível"** de **"legitimamente adquirível"**.
+
+## Regra arquitetural
 
 > Core knows capabilities. Project knows intentions.
 
-Machine Bridge and Bridge Mesh remain generic. Coins on the Ground contains all project-specific
-discovery rules, economic models, legal-risk classification, opportunity scoring, and execution
-policy.
+Machine Bridge e Bridge Mesh permanecem genéricas. Coins on the Ground contém todas as regras
+específicas de descoberta, modelos econômicos, classificação de risco jurídico, scoring de
+oportunidades e políticas de execução deste projeto.
 
 ```text
 Machine Bridge Core <-> Adapter <-> Coins on the Ground <-> Adapter <-> Bridge Mesh Core
 ```
 
-Project-specific behavior must not be implemented in either core repository.
+Comportamentos específicos de Coins on the Ground não devem ser implementados nos repositórios
+core das Bridges.
 
-## MVP: read-only first
+## MVP: somente leitura primeiro
 
-The first milestone does **not** move money or assets.
+O primeiro marco **não** movimenta dinheiro nem ativos.
 
-It:
+Ele:
 
-1. discovers public opportunities;
-2. normalizes them into a common model;
-3. records the source and authorization basis;
-4. estimates reward, cost, and expected net value;
-5. classifies legal/policy risk;
-6. ranks candidates for human review;
-7. preserves an audit trail.
+1. descobre oportunidades públicas;
+2. normaliza cada descoberta em um modelo comum;
+3. registra a fonte e a base de autorização;
+4. estima recompensa, custo e valor líquido esperado;
+5. classifica risco jurídico/político do projeto;
+6. prioriza candidatos para revisão humana;
+7. preserva trilha de auditoria.
 
-Execution will be a separate capability introduced only after the discovery and validation
-pipeline is reliable.
+A execução será uma capacidade separada, introduzida apenas quando o pipeline de descoberta e
+validação estiver confiável.
 
-## First live Value Scout
+## Primeiro Value Scout real
 
-The first source adapter scans public GitHub issues for explicit monetary bounties.
+O primeiro adaptador de fonte pesquisa issues públicas do GitHub em busca de bounties com
+recompensa monetária explícita.
 
 ```bash
 python -m pip install -e ".[dev]"
 cog scan github-bounties --limit 25
 ```
 
-It is intentionally conservative:
+Ele é intencionalmente conservador:
 
-- no submissions;
-- no claiming;
-- no asset movement;
-- no use of credentials except an optional GitHub token for API rate limits;
-- candidates start as `CIVIL_REVIEW`, not automatic execution approvals;
-- only explicit fiat-denominated rewards are parsed in the first version.
+- não envia submissões;
+- não faz claim;
+- não movimenta ativos;
+- não usa credenciais além de um token opcional do GitHub para ampliar limites da API;
+- candidatos começam como `CIVIL_REVIEW`, não como aprovação automática de execução;
+- na primeira versão, apenas recompensas explícitas denominadas em moeda fiduciária são extraídas.
 
-See `docs/scouts.md`.
+Veja `docs/scouts.md`.
 
-## Initial modules
+## Módulos iniciais
 
 ```text
 src/coins_on_the_ground/
-  scouts/          # discover opportunities
-  classifiers/     # FOUND / EARN / RECOVER and risk classification
-  opportunity/     # canonical opportunity model and scoring
-  policies/        # project-specific rules
-  audit/           # evidence and decision trail
-  adapters/        # Machine Bridge / Bridge Mesh integration
-  execution/       # future; intentionally inactive in MVP
+  scouts/          # descoberta de oportunidades
+  classifiers/     # FOUND / EARN / RECOVER e classificação de risco
+  opportunity/     # modelo canônico e scoring de oportunidades
+  policies/        # regras específicas deste projeto
+  audit/           # evidências e trilha de decisão
+  adapters/        # integração com Machine Bridge / Bridge Mesh
+  execution/       # futuro; intencionalmente inativo no MVP
 ```
 
-## Non-goals
+## Fora de escopo
 
-The project is not intended to:
+O projeto não foi criado para:
 
-- treat inactive or poorly protected assets as ownerless;
-- use leaked credentials or private keys;
-- bypass authorization or authentication;
-- induce systems or people into error;
-- exploit third-party assets merely because they are technically reachable.
+- tratar ativos inativos ou mal protegidos como se não tivessem dono;
+- usar credenciais vazadas ou chaves privadas de terceiros;
+- contornar autenticação ou autorização;
+- induzir sistemas ou pessoas a erro;
+- explorar ativos de terceiros apenas porque estão tecnicamente acessíveis.
 
-## Status
+## Estado atual
 
-The foundation and first live read-only Scout are implemented. Current target: improve signal
-quality, add source-specific validation, and introduce additional independent opportunity sources
-before any execution capability is considered.
+A fundação e os primeiros Scouts somente leitura estão implementados. O objetivo atual é melhorar
+a qualidade do sinal, adicionar validação específica por fonte e incorporar novas superfícies
+independentes de oportunidade antes de considerar qualquer capacidade de execução.
