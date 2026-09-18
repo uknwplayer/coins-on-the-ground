@@ -140,8 +140,11 @@ def _effective_acquisition_cost(
     if option.setup_cost_usd is None or option.per_task_cost_usd is None:
         return None
 
-    amortized_setup = option.setup_cost_usd / Decimal(amortization_uses)
-    return _money(amortized_setup + option.per_task_cost_usd)
+    setup_cost = option.setup_cost_usd
+    if option.reusable:
+        setup_cost /= Decimal(amortization_uses)
+
+    return _money(setup_cost + option.per_task_cost_usd)
 
 
 def _profitability(
@@ -180,13 +183,18 @@ def _candidate(
 ) -> AcquisitionCandidate:
     _validate_option(option)
     base = _select_base_profile(option, nearest_profile, profiles)
+    explicit_target_missing = (
+        option.target_profile is not None
+        and option.mode is not AcquisitionMode.ADD_PROFILE
+        and base is None
+    )
 
     base_capabilities = base.capabilities if base is not None else frozenset()
     resulting = frozenset(base_capabilities | frozenset(option.provides))
     remaining = tuple(
         capability for capability in required if capability not in resulting
     )
-    covers = not remaining
+    covers = not remaining and not explicit_target_missing
 
     hourly_cost = (
         option.hourly_cost_usd
@@ -226,6 +234,9 @@ def _candidate(
         rationale.append(f"base_profile={base.name}")
     else:
         rationale.append("no_base_profile")
+
+    if explicit_target_missing:
+        rationale.append(f"target_profile_unavailable={option.target_profile}")
 
     if covers:
         rationale.append("option_covers_all_recognized_requirements")
