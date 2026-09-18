@@ -114,3 +114,35 @@ def test_source_allocation_cli_is_registered() -> None:
     assert args.snapshot_ledger == "data/opportunity-snapshots.jsonl"
     assert args.limit == 100
     assert args.handler.__name__ == "_source_allocation"
+
+
+def test_scout_cadence_cli_is_registered() -> None:
+    args = build_parser().parse_args(
+        [
+            "scout-cadence",
+            "all",
+            "--snapshot-ledger",
+            "data/opportunity-snapshots.jsonl",
+            "--capability",
+            "http",
+            "--capability",
+            "text_analysis",
+            "--hourly-cost-usd",
+            "0.60",
+            "--scan-budget-per-day",
+            "24",
+            "--min-scans-per-source-per-day",
+            "1",
+            "--max-scans-per-source-per-day",
+            "6",
+            "--limit",
+            "100",
+        ]
+    )
+
+    assert args.source == "all"
+    assert args.snapshot_ledger == "data/opportunity-snapshots.jsonl"
+    assert args.scan_budget_per_day == 24
+    assert args.min_scans_per_source_per_day == 1
+    assert args.max_scans_per_source_per_day == 6
+    assert args.handler.__name__ == "_scout_cadence"
