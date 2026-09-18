@@ -8,7 +8,10 @@
       "network_surface": "clearnet",
       "country": null,
       "jurisdiction": null,
-      "categories": ["dev_bounty", "open_source"],
+      "categories": [
+        "dev_bounty",
+        "open_source"
+      ],
       "enabled": true,
       "notes": "Public funded open-source tasks; eligibility and payout terms require review."
     },
@@ -19,9 +22,26 @@
       "network_surface": "clearnet",
       "country": null,
       "jurisdiction": null,
-      "categories": ["dev_bounty", "open_source"],
+      "categories": [
+        "dev_bounty",
+        "open_source"
+      ],
       "enabled": true,
       "notes": "Public organization bounty pages; org set is configured by the Scout."
+    },
+    {
+      "id": "immunefi",
+      "display_name": "Immunefi",
+      "base_url": "https://immunefi.com",
+      "network_surface": "clearnet",
+      "country": null,
+      "jurisdiction": null,
+      "categories": [
+        "security_bounty",
+        "web3"
+      ],
+      "enabled": true,
+      "notes": "Public bug-bounty programs; maximum bounty is not a guaranteed payout. Scope, prohibited activities, KYC and payout rules require review."
     }
   ]
 }
