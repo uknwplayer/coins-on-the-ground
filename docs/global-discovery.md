@@ -170,6 +170,9 @@ GitHubBountyScout
 FranticBountyScout
 IssueHuntScout
 AlgoraScout
+ImmunefiScout
+Keep3rScout
+SherlockScout
 ```
 
 O limite é aplicado por Scout antes da deduplicação.
@@ -306,3 +309,34 @@ Quando disponível, o Scout consulta a API pública oficial de registry apenas p
 repositório do job. Falha nessa API não invalida o estado on-chain.
 
 O contrato on-chain continua sendo a fonte primária de descoberta.
+
+
+### Sherlock
+
+`SherlockScout` lê a listagem pública de bug bounties ativos.
+
+```bash
+cog scan sherlock --limit 25
+```
+
+O Scout coleta somente metadata publicada pelo programa:
+
+```text
+program
+maximum payout
+reward asset
+last updated
+program URL
+```
+
+O payout entra como:
+
+```text
+reward_semantics = maximum
+```
+
+e portanto não é tratado como lucro esperado.
+
+O Scout não interage com alvos e não executa pesquisa de segurança. Antes de qualquer atividade,
+o escopo, exclusões, severidades elegíveis, termos de submissão, KYC e regras específicas do
+programa precisam ser revisados.
