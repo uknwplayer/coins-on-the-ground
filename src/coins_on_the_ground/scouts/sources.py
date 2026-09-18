@@ -54,3 +54,15 @@ IMMUNEFI = ScoutSource(
     eligibility_review_required=True,
     authorization_review_required=True,
 )
+
+
+KEEP3R = ScoutSource(
+    source_id="keep3r",
+    display_name="Keep3r Network",
+    base_url="https://keep3r.network",
+    network_surface=NetworkSurface.CLEARNET,
+    country=None,
+    jurisdiction=None,
+    eligibility_review_required=True,
+    authorization_review_required=True,
+)
