@@ -124,7 +124,7 @@ class GitHubBountyScout:
                 currency=currency,
                 authorization_basis=authorization,
                 required_action="Review issue terms, complete the requested work, and submit as specified.",
-                estimated_cost=Decimal("0"),
+                estimated_cost=Decimal(0),
                 risk_class=RiskClass.CIVIL_REVIEW,
                 evidence_urls=tuple(url for url in (html_url, repo_url) if url),
                 metadata={
