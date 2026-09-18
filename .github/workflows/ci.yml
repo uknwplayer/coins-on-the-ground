@@ -30,5 +30,16 @@ jobs:
           path: ruff-output.txt
           retention-days: 1
       - name: Test
+        id: tests
         if: success()
-        run: pytest -q
+        shell: bash
+        run: |
+          set -o pipefail
+          pytest -q 2>&1 | tee pytest-output.txt
+      - name: Upload test diagnostics
+        if: failure() && steps.tests.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-diagnostics
+          path: pytest-output.txt
+          retention-days: 1
