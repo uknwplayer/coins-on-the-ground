@@ -36,7 +36,9 @@ Economic Recalculation
 Isso mantém a separação entre projetos e evita que um repositório externo seja tratado como
 inventário, marketplace ou dependência implícita.
 
-O formato do catálogo é:
+## Versões do catálogo
+
+### v1 — declarado
 
 ```text
 cog-capability-acquisition-catalog-v1
@@ -47,6 +49,25 @@ Schema:
 ```text
 schemas/capability-acquisition-catalog-v1.schema.json
 ```
+
+O v1 continua suportado por compatibilidade. Seus valores são tratados como declarações locais.
+
+### v2 — evidence-backed
+
+```text
+cog-capability-acquisition-catalog-v2
+```
+
+Schema:
+
+```text
+schemas/capability-acquisition-catalog-v2.schema.json
+```
+
+No v2, cada opção precisa anexar evidência estruturada. Capability e preço só são tratados como
+utilizáveis quando a evidência correspondente está válida e fresca.
+
+Veja `docs/capability-evidence.md`.
 
 ## Modos
 
@@ -93,6 +114,9 @@ Valores financeiros desconhecidos permanecem `null`.
 
 O sistema não interpreta `null` como zero.
 
+No catálogo v2, valores preenchidos também não são suficientes por si só: a evidência precisa
+conter a claim `PRICING` e estar `FRESH`.
+
 ## Amortização
 
 Uma capability reutilizável pode ter custo de setup.
@@ -119,6 +143,8 @@ effective_acquisition_cost = US$ 1 por uso
 
 O custo original continua registrado; apenas a análise econômica usa a divisão informada.
 
+Custos de setup de opções marcadas como não reutilizáveis **não** são amortizados.
+
 Na CLI:
 
 ```bash
@@ -130,9 +156,17 @@ Na CLI:
 O planner prioriza candidatos que:
 
 1. cobrem todas as capabilities reconhecidas;
-2. apresentam economia mais favorável;
-3. têm menor custo conservador quando comparável;
-4. possuem maior confiança declarada no catálogo.
+2. possuem evidência fresca quando o catálogo exige evidência;
+3. apresentam economia mais favorável;
+4. têm menor custo conservador quando comparável;
+5. possuem maior confiança efetiva.
+
+No v2:
+
+```text
+effective_confidence =
+  min(option_confidence, evidence_confidence)
+```
 
 `best_option_id` é uma prioridade técnica/econômica dentro do catálogo fornecido.
 
@@ -163,11 +197,11 @@ fallback = USE_EXISTING
 
 ## CLI
 
-Exemplo:
+Planejamento com catálogo v2:
 
 ```bash
 cog acquisition-plan frantic \
-  --catalog ./examples/acquisition-catalog.example.json \
+  --catalog ./examples/acquisition-catalog-v2.example.json \
   --capability file_io \
   --hourly-cost-usd 0.60 \
   --amortization-uses 10 \
@@ -184,15 +218,23 @@ cog acquisition-plan all \
   --limit 100
 ```
 
+Inspecionar freshness e claims sem rodar Scouts:
+
+```bash
+cog catalog-check \
+  --catalog ./examples/acquisition-catalog-v2.example.json
+```
+
 Os arquivos passados nesses argumentos pertencem ao contexto da execução do Coins on the Ground.
 O comando não sai procurando registros em outros repositórios.
 
 ## Limites atuais
 
-A v1:
+A versão atual:
 
 - trabalha apenas com opções declaradas;
-- não pesquisa preços de providers;
+- exige evidência estruturada no catálogo v2;
+- não pesquisa preços de providers automaticamente;
 - não cria credenciais;
 - não instala software;
 - não modifica Machine Bridge ou Bridge Mesh;
