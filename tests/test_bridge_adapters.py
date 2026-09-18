@@ -104,3 +104,26 @@ def test_inventory_does_not_union_capabilities_across_workers() -> None:
         item.estimate.feasibility is FeasibilityClass.PARTIAL
         for item in estimates
     )
+
+
+def test_current_arca_worker_capabilities_are_not_overgeneralized() -> None:
+    observation = adapt_machine_bridge_registration(
+        {
+            "format": "arca-worker-registration-v1",
+            "protocolVersion": 3,
+            "worker": {
+                "format": "arca-worker-v1",
+                "workerId": "github-actions",
+                "capabilities": ["aie", "node", "pncp-plan", "repository"],
+                "heartbeatAt": "2026-09-18T02:17:59.800Z",
+            },
+        }
+    )
+
+    assert observation.profile.capabilities == frozenset()
+    assert observation.unmapped_capabilities == (
+        "aie",
+        "node",
+        "pncp-plan",
+        "repository",
+    )
