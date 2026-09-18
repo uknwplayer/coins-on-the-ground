@@ -11,6 +11,7 @@ from coins_on_the_ground.policies import evaluate_for_review
 _SOURCE_EVIDENCE_SCORE = {
     "keep3r": 95,
     "frantic": 90,
+    "sherlock": 88,
     "immunefi": 85,
     "algora": 80,
     "issuehunt-oss": 75,
@@ -41,7 +42,10 @@ def _parse_datetime(value: str) -> datetime | None:
 
 
 def _freshness_score(opportunity: Opportunity, now: datetime) -> int:
-    updated_at = _parse_datetime(opportunity.metadata.get("github_updated_at", ""))
+    updated_at = _parse_datetime(
+        opportunity.metadata.get("source_updated_at", "")
+        or opportunity.metadata.get("github_updated_at", "")
+    )
     if updated_at is None:
         return 40
 
