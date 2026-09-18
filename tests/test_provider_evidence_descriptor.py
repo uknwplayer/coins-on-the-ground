@@ -7,7 +7,6 @@ from coins_on_the_ground.estimation import Capability
 from coins_on_the_ground.evidence import parse_provider_evidence_descriptor
 from coins_on_the_ground.planning import EvidenceClaim
 
-
 _NOW = datetime(2026, 9, 18, 12, tzinfo=UTC)
 
 
