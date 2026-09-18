@@ -31,6 +31,13 @@ def serialize(opportunity: Opportunity) -> dict[str, Any]:
     }
 
 
+def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as handle:
+        for row in rows:
+            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+
 async def _scan_github(args: argparse.Namespace) -> int:
     scout = GitHubBountyScout(query=args.query, limit=args.limit)
     rows: list[dict[str, Any]] = []
@@ -39,11 +46,7 @@ async def _scan_github(args: argparse.Namespace) -> int:
         rows.append(serialize(opportunity))
 
     if args.output:
-        path = Path(args.output)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("w", encoding="utf-8") as handle:
-            for row in rows:
-                handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+        await asyncio.to_thread(_write_jsonl, Path(args.output), rows)
     else:
         for row in rows:
             print(json.dumps(row, ensure_ascii=False))
