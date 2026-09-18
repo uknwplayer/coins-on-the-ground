@@ -1,10 +1,10 @@
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 
 from coins_on_the_ground.planning.evidence import (
+    assess_evidence,
     CapabilityEvidence,
     EvidenceClaim,
     EvidenceStatus,
-    assess_evidence,
 )
 
 
