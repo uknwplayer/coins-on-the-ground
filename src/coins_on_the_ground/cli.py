@@ -21,7 +21,13 @@ from coins_on_the_ground.estimation import (
     FeasibilityClass,
     ProfitabilityClass,
 )
-from coins_on_the_ground.evidence import collect_sources_report, parse_evidence_sources
+from coins_on_the_ground.evidence import (
+    collect_sources_report,
+    materialize_acquisition_catalog,
+    parse_collected_record,
+    parse_evidence_sources,
+    parse_materialization_policy,
+)
 from coins_on_the_ground.opportunity import Opportunity, review_and_deduplicate
 from coins_on_the_ground.planning import (
     assess_evidence,
@@ -62,6 +68,23 @@ def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
 
 def _load_json(path: Path) -> object:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _load_jsonl(path: Path) -> list[object]:
+    rows: list[object] = []
+    with path.open(encoding="utf-8") as handle:
+        for line in handle:
+            if line.strip():
+                rows.append(json.loads(line))
+    return rows
+
+
+def _write_json(path: Path, value: object) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(value, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
 
 async def _collect(scout: Scout) -> list[Opportunity]:
@@ -408,6 +431,41 @@ async def _evidence_collect(args: argparse.Namespace) -> int:
     return 1 if report.failures else 0
 
 
+async def _evidence_materialize(args: argparse.Namespace) -> int:
+    collection_rows = await asyncio.to_thread(_load_jsonl, Path(args.records))
+    records = []
+    for raw_row in collection_rows:
+        if not isinstance(raw_row, dict):
+            raise TypeError("collection JSONL rows must be objects")
+        if raw_row.get("status") != "success":
+            continue
+        records.append(parse_collected_record(raw_row.get("record")))
+
+    policy_value = await asyncio.to_thread(_load_json, Path(args.policy))
+    rules = parse_materialization_policy(policy_value)
+    report = materialize_acquisition_catalog(tuple(records), rules)
+
+    parse_acquisition_catalog(report.catalog)
+    await asyncio.to_thread(_write_json, Path(args.output), report.catalog)
+
+    print(
+        json.dumps(
+            {
+                "engine": "evidence-materializer",
+                "records": len(records),
+                "rules": len(rules),
+                "catalog_options": len(report.catalog["options"]),
+                "missing_source_ids": list(report.missing_source_ids),
+                "unused_source_ids": list(report.unused_source_ids),
+                "output": args.output,
+                "execution_performed": False,
+            },
+            ensure_ascii=False,
+        )
+    )
+    return 1 if report.missing_source_ids else 0
+
+
 async def _catalog_check(args: argparse.Namespace) -> int:
     catalog_value = await asyncio.to_thread(_load_json, Path(args.catalog))
     options = parse_acquisition_catalog(catalog_value)
@@ -641,6 +699,27 @@ def build_parser() -> argparse.ArgumentParser:
         help="optional JSONL output path for collection records",
     )
     evidence_collect.set_defaults(handler=_evidence_collect)
+
+    evidence_materialize = subparsers.add_parser(
+        "evidence-materialize",
+        help="materialize collected evidence into a new acquisition catalog v2",
+    )
+    evidence_materialize.add_argument(
+        "--records",
+        required=True,
+        help="JSONL produced by cog evidence-collect --output",
+    )
+    evidence_materialize.add_argument(
+        "--policy",
+        required=True,
+        help="path to a local cog-evidence-materialization-v1 policy",
+    )
+    evidence_materialize.add_argument(
+        "--output",
+        required=True,
+        help="destination path for the generated acquisition catalog v2",
+    )
+    evidence_materialize.set_defaults(handler=_evidence_materialize)
 
     return parser
 
