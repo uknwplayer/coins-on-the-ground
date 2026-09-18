@@ -76,6 +76,7 @@ Descoberta:
 
 ```bash
 cog scan akash --limit 25
+cog scan bidpostloop --limit 25
 cog scan frantic --limit 25
 cog scan github-bounties --limit 25
 cog scan issuehunt --limit 25
@@ -221,12 +222,14 @@ Já estão implementados:
 
 - Scouts públicos somente leitura;
 - descoberta global sem filtro geográfico prévio;
-- Akash, GitHub, Frantic, IssueHunt OSS, Algora, Immunefi, Keep3r, Sherlock e Taskmarket;
+- Akash, BidPostLoop, GitHub, Frantic, IssueHunt OSS, Algora, Immunefi, Keep3r, Sherlock e Taskmarket;
 - Source Registry `clearnet/onion` sem crawling automático;
 - isolamento de falhas por Scout em agregações globais;
 - reward semantics explícita para diferenciar payout exato, maximum bounty, maximum_rate, gross_escrow e pool_credits;
 - descoberta read-only de Keep3r jobs com créditos positivos on-chain;
 - descoberta read-only de Akash open compute orders;
+- microtarefas financiadas de centavos via BidPostLoop;
+- regras de custo específicas para microtasks, permitindo filtrar tarefas de US$0,05–0,10 por tempo esperado;
 - Opportunity Model e deduplicação;
 - `review_score`;
 - Cost & Feasibility Estimator;
