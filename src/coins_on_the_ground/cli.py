@@ -135,10 +135,32 @@ def _scouts_for_source(source: str, limit: int) -> list[Scout]:
     ]
 
 
-async def _discover(source: str, limit: int) -> list[Opportunity]:
+async def _discover(
+    source: str,
+    limit: int,
+) -> tuple[list[Opportunity], list[dict[str, str]]]:
     scouts = _scouts_for_source(source, limit)
-    batches = await asyncio.gather(*(_collect(scout) for scout in scouts))
-    return [opportunity for batch in batches for opportunity in batch]
+    batches = await asyncio.gather(
+        *(_collect(scout) for scout in scouts),
+        return_exceptions=True,
+    )
+
+    opportunities: list[Opportunity] = []
+    failures: list[dict[str, str]] = []
+
+    for scout, batch in zip(scouts, batches, strict=True):
+        if isinstance(batch, BaseException):
+            failures.append(
+                {
+                    "source": scout.name,
+                    "error_type": type(batch).__name__,
+                    "message": str(batch),
+                }
+            )
+            continue
+        opportunities.extend(batch)
+
+    return opportunities, failures
 
 
 async def _emit_scan(scout: Scout, args: argparse.Namespace) -> int:
@@ -224,7 +246,7 @@ async def _sources_check(args: argparse.Namespace) -> int:
 
 async def _review(args: argparse.Namespace) -> int:
     scouts = _scouts_for_source(args.source, args.limit)
-    opportunities = await _discover(args.source, args.limit)
+    opportunities, discovery_failures = await _discover(args.source, args.limit)
     reviews = review_and_deduplicate(opportunities)
 
     rows = [
@@ -252,6 +274,7 @@ async def _review(args: argparse.Namespace) -> int:
                 "sources": [scout.name for scout in scouts],
                 "raw_candidates": len(opportunities),
                 "deduplicated_candidates": len(rows),
+                "source_failures": discovery_failures,
                 "execution_performed": False,
             }
         )
@@ -375,7 +398,7 @@ def _estimate_sort_key(row: dict[str, Any]) -> tuple[int, int, int, int]:
 
 async def _estimate(args: argparse.Namespace) -> int:
     observations = await _load_observations(args)
-    opportunities = await _discover(args.source, args.limit)
+    opportunities, discovery_failures = await _discover(args.source, args.limit)
     reviews = review_and_deduplicate(opportunities)
 
     rows: list[dict[str, Any]] = []
@@ -414,6 +437,7 @@ async def _estimate(args: argparse.Namespace) -> int:
                 "profiles": len(observations),
                 "raw_candidates": len(opportunities),
                 "deduplicated_candidates": len(rows),
+                "source_failures": discovery_failures,
                 "execution_performed": False,
             }
         )
@@ -423,7 +447,7 @@ async def _estimate(args: argparse.Namespace) -> int:
 
 async def _gaps(args: argparse.Namespace) -> int:
     observations = await _load_observations(args)
-    opportunities = await _discover(args.source, args.limit)
+    opportunities, discovery_failures = await _discover(args.source, args.limit)
     reviews = review_and_deduplicate(opportunities)
 
     rows: list[dict[str, Any]] = []
@@ -453,6 +477,7 @@ async def _gaps(args: argparse.Namespace) -> int:
                 "profiles": len(observations),
                 "raw_candidates": len(opportunities),
                 "deduplicated_candidates": len(rows),
+                "source_failures": discovery_failures,
                 "execution_performed": False,
             }
         )
@@ -711,7 +736,7 @@ async def _acquisition_plan(args: argparse.Namespace) -> int:
             policy,
         )
 
-    opportunities = await _discover(args.source, args.limit)
+    opportunities, discovery_failures = await _discover(args.source, args.limit)
     reviews = review_and_deduplicate(opportunities)
 
     rows: list[dict[str, Any]] = []
@@ -754,6 +779,7 @@ async def _acquisition_plan(args: argparse.Namespace) -> int:
                 "amortization_uses": args.amortization_uses,
                 "raw_candidates": len(opportunities),
                 "deduplicated_candidates": len(rows),
+                "source_failures": discovery_failures,
                 "execution_performed": False,
             }
         )
