@@ -522,3 +522,46 @@ podem ser economicamente positivas individualmente, mas ainda precisam acumular 
 antes de um saque externo.
 
 O Scout não autentica, não propõe subtarefa, não entrega resultado e não movimenta saldo.
+
+
+## Settlement de microtarefas
+
+Para fontes com reward fixo, slots públicos e payout mínimo conhecido, o projeto pode resumir a
+capacidade bruta atual de settlement:
+
+```bash
+cog settlement-summary bidpostloop --limit 100
+```
+
+A saída distingue:
+
+```text
+REACHABLE
+NOT_REACHABLE
+UNKNOWN
+NOT_APPLICABLE
+```
+
+`REACHABLE` significa somente que, partindo de saldo zero, a soma bruta dos slots públicos
+atualmente observados é suficiente para cruzar o payout mínimo.
+
+Não significa:
+
+- garantia de que todos os slots continuarão disponíveis;
+- garantia de aceite do trabalho;
+- garantia de settlement;
+- autorização para executar automaticamente as tarefas.
+
+O resumo também calcula:
+
+```text
+eligible_opportunities
+total_available_actions
+gross_available_value
+minimum_payout_value
+gap_to_minimum_from_zero
+minimum_actions_from_zero
+```
+
+Rewards com semântica não exata, como `maximum`, `gross_escrow`, `pool_credits` e
+`maximum_rate`, não entram nessa capacidade como se fossem dinheiro garantido.
