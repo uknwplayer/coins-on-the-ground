@@ -7,7 +7,7 @@ permissions:
   contents: read
 
 jobs:
-  scan:
+  review:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,17 +19,17 @@ jobs:
       - name: Install
         run: python -m pip install .
 
-      - name: Scan structured Frantic bounties
+      - name: Discover, deduplicate, and score opportunities
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           mkdir -p data
-          cog scan frantic --limit 100 --output data/frantic.jsonl
+          cog review all --limit 100 --output data/opportunity-review.jsonl
 
-      - name: Upload observations
+      - name: Upload review report
         uses: actions/upload-artifact@v4
         with:
-          name: value-scout-frantic
-          path: data/frantic.jsonl
+          name: value-scout-review
+          path: data/opportunity-review.jsonl
           if-no-files-found: error
           retention-days: 7
