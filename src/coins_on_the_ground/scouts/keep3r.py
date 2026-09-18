@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from collections.abc import AsyncIterator
 from decimal import Decimal
+
 import httpx
 
 from coins_on_the_ground.opportunity import Opportunity, OpportunityClass, RiskClass
