@@ -44,6 +44,9 @@ class Opportunity:
 
     @property
     def expected_net_value(self) -> Decimal | None:
+        reward_semantics = self.metadata.get("reward_semantics", "exact").casefold()
+        if reward_semantics not in {"exact", "fixed"}:
+            return None
         if self.estimated_cost is None:
             return None
         return self.reward - self.estimated_cost
