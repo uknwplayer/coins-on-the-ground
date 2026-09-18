@@ -340,3 +340,64 @@ e portanto não é tratado como lucro esperado.
 O Scout não interage com alvos e não executa pesquisa de segurança. Antes de qualquer atividade,
 o escopo, exclusões, severidades elegíveis, termos de submissão, KYC e regras específicas do
 programa precisam ser revisados.
+
+
+### Taskmarket
+
+`TaskmarketScout` consulta somente o endpoint público:
+
+```text
+GET https://api.taskmarket.dev/api/tasks
+status=open
+phase=active
+```
+
+Uso:
+
+```bash
+cog scan taskmarket --limit 25
+```
+
+A rede canônica é Base Mainnet e as tarefas são financiadas em USDC escrow.
+
+O Scout não:
+
+- cria wallet;
+- aceita termos;
+- assina mensagens;
+- faz claim;
+- envia bid;
+- submete trabalho;
+- movimenta USDC.
+
+Para modos `bounty`, `claim`, `pitch` e `benchmark`, o valor publicado entra como:
+
+```text
+reward_semantics = gross_escrow
+```
+
+porque o valor é o prêmio bruto financiado para um resultado aceito, não lucro esperado do Scout.
+
+Para `auction`:
+
+```text
+reward_semantics = maximum
+```
+
+pois o escrow máximo pode ser maior que o preço final.
+
+O parser também preserva:
+
+```text
+task_mode
+expiry
+platform_fee_bps
+stake_required
+stake_bps
+submission_count
+current_auction_price
+current_lowest_bid
+requester_actor_type
+```
+
+A descrição da tarefa é tratada como input não confiável e nunca é executada.
