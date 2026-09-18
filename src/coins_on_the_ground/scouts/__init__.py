@@ -12,6 +12,8 @@ from .issuehunt import parse_issuehunt_html as parse_issuehunt_html
 from .keep3r import Keep3rScout as Keep3rScout
 from .keep3r import discover_keep3r_jobs as discover_keep3r_jobs
 from .registry import RegisteredScoutSource as RegisteredScoutSource
+from .sherlock import SherlockScout as SherlockScout
+from .sherlock import parse_sherlock_bounties as parse_sherlock_bounties
 from .registry import parse_scout_source_registry as parse_scout_source_registry
 from .sources import NetworkSurface as NetworkSurface
 from .sources import ScoutSource as ScoutSource
@@ -27,6 +29,7 @@ __all__ = [
     "RegisteredScoutSource",
     "Scout",
     "ScoutSource",
+    "SherlockScout",
     "discover_keep3r_jobs",
     "extract_reward",
     "parse_algora_org_html",
@@ -34,4 +37,5 @@ __all__ = [
     "parse_immunefi_listing",
     "parse_issuehunt_html",
     "parse_scout_source_registry",
+    "parse_sherlock_bounties",
 ]
