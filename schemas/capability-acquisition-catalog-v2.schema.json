@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://coins-on-the-ground.local/schemas/capability-acquisition-catalog-v2.schema.json",
+  "title": "Coins on the Ground Capability Acquisition Catalog V2",
+  "type": "object",
+  "required": ["format", "options"],
+  "properties": {
+    "format": {
+      "const": "cog-capability-acquisition-catalog-v2"
+    },
+    "options": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "mode", "provides", "evidence"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mode": {
+            "enum": [
+              "EXTEND_PROFILE",
+              "CONNECT_PROVIDER",
+              "BUILD_ADAPTER",
+              "ADD_PROFILE",
+              "ROUTE_CAPABILITY"
+            ]
+          },
+          "provides": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "browser",
+                "http",
+                "text_analysis",
+                "code",
+                "git",
+                "file_io",
+                "ocr",
+                "transcription",
+                "email"
+              ]
+            }
+          },
+          "target_profile": {
+            "type": ["string", "null"]
+          },
+          "setup_cost_usd": {
+            "type": ["string", "null"],
+            "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+          },
+          "per_task_cost_usd": {
+            "type": ["string", "null"],
+            "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+          },
+          "hourly_cost_usd": {
+            "type": ["string", "null"],
+            "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+          },
+          "setup_minutes_low": {
+            "type": ["integer", "null"],
+            "minimum": 0
+          },
+          "setup_minutes_high": {
+            "type": ["integer", "null"],
+            "minimum": 0
+          },
+          "confidence_score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "default": 50
+          },
+          "reusable": {
+            "type": "boolean",
+            "default": false
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true
+          },
+          "evidence": {
+            "type": "object",
+            "required": [
+              "source_name",
+              "source_url",
+              "observed_at",
+              "max_age_days",
+              "claims",
+              "confidence_score"
+            ],
+            "properties": {
+              "source_name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "source_url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "observed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "expires_at": {
+                "type": ["string", "null"],
+                "format": "date-time"
+              },
+              "max_age_days": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "claims": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "CAPABILITY",
+                    "PRICING",
+                    "AVAILABILITY",
+                    "AUTHORIZATION"
+                  ]
+                }
+              },
+              "confidence_score": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "authorization_requirements": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "default": []
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
