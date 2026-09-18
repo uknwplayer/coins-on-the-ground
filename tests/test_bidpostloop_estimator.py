@@ -97,7 +97,7 @@ def test_non_exact_reward_never_gets_estimator_profitability() -> None:
         source="taskmarket",
         title="Transcription bounty",
         opportunity_class=OpportunityClass.EARN,
-        reward=Decimal("10"),
+        reward=Decimal(10),
         currency="USD",
         authorization_basis="Published escrowed task.",
         required_action="Transcribe the supplied file.",
