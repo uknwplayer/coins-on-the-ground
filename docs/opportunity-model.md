@@ -1,57 +1,57 @@
 # Opportunity Model
 
-Every source-specific finding is normalized into one Opportunity.
+Cada descoberta específica de uma fonte é normalizada em uma única `Opportunity`.
 
-## Opportunity classes
+## Classes de oportunidade
 
 ### FOUND
 
-Value is explicitly claimable by the eligible claimant under a published rule, contract,
-protocol, promotion, or equivalent mechanism.
+O valor é explicitamente reivindicável pelo agente elegível segundo uma regra publicada, contrato,
+protocolo, promoção ou mecanismo equivalente.
 
-Examples: an open claim, an explicit public reward, or a permissionless maintenance reward.
+Exemplos: claim aberto, recompensa pública explícita ou pagamento permissionless por manutenção.
 
 ### EARN
 
-Value is awarded after useful work is performed.
+O valor é concedido depois que trabalho útil é realizado.
 
-Examples: software bounties, computation, storage, public competitions, validation, or
-problem-solving.
+Exemplos: bounties de software, computação, armazenamento, competições públicas, validação ou
+resolução de problemas.
 
 ### RECOVER
 
-Value already belongs to the user or another represented principal and the system helps locate
-or recover it under authorization.
+O valor já pertence ao usuário ou a outro principal representado, e o sistema ajuda a localizar
+ou recuperar esse valor mediante autorização.
 
-## Evidence before action
+## Evidência antes da ação
 
-An opportunity should preserve enough evidence to answer:
+Uma oportunidade deve preservar evidência suficiente para responder:
 
-1. What is the source?
-2. What value is offered?
-3. Who is eligible?
-4. What published rule creates the entitlement?
-5. What action is required?
-6. What is the expected cost?
-7. What is the expected net value?
-8. What uncertainties remain?
+1. Qual é a fonte?
+2. Qual valor está sendo oferecido?
+3. Quem é elegível?
+4. Qual regra publicada cria o direito de recebimento?
+5. Qual ação é exigida?
+6. Qual é o custo esperado?
+7. Qual é o valor líquido esperado?
+8. Quais incertezas permanecem?
 
-## Risk classes
+## Classes de risco
 
-The initial classifier uses four descriptive buckets:
+O classificador inicial usa quatro categorias descritivas:
 
-- **CLEAR** — explicit entitlement or authorization is supported by evidence.
-- **CIVIL_REVIEW** — no obvious criminal mechanism is identified, but ownership, contract,
-  restitution, or other civil questions require review.
-- **PENAL_REVIEW** — facts may implicate fraud, unauthorized access, appropriation of another
-  party's property, or another criminal issue; no execution.
-- **REJECT** — violates project policy or lacks a credible authorization basis.
+- **CLEAR** — há evidência de autorização ou direito explícito.
+- **CIVIL_REVIEW** — nenhum mecanismo criminal evidente foi identificado, mas questões de
+  propriedade, contrato, restituição ou outras matérias civis exigem revisão.
+- **PENAL_REVIEW** — os fatos podem envolver fraude, acesso não autorizado, apropriação de
+  patrimônio de terceiro ou outra questão penal; não há execução.
+- **REJECT** — viola política do projeto ou não possui base de autorização minimamente crível.
 
-These labels are triage metadata, not legal conclusions.
+Esses rótulos são metadados de triagem, não conclusões jurídicas.
 
-## Economic model
+## Modelo econômico
 
-At minimum:
+No mínimo:
 
 ```text
 expected_net_value =
@@ -62,5 +62,5 @@ expected_net_value =
   - expected_failure_cost
 ```
 
-Later versions may model probability, time, capital lockup, opportunity cost, volatility, tax,
-and liquidity.
+Versões futuras podem modelar probabilidade, tempo, capital imobilizado, custo de oportunidade,
+volatilidade, tributação e liquidez.
