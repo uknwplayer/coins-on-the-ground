@@ -39,8 +39,8 @@ def _decimal_metadata(opportunity: Opportunity, key: str) -> Decimal | None:
     return value if value > 0 else None
 
 
-def _positive_slots(opportunity: Opportunity) -> int | None:
-    raw = opportunity.metadata.get("remaining_slots")
+def _positive_int_metadata(opportunity: Opportunity, key: str) -> int | None:
+    raw = opportunity.metadata.get(key)
     if raw is None:
         return None
     try:
@@ -50,9 +50,15 @@ def _positive_slots(opportunity: Opportunity) -> int | None:
     return value if value > 0 else None
 
 
+def _positive_slots(opportunity: Opportunity) -> int | None:
+    return _positive_int_metadata(opportunity, "remaining_slots")
+
+
 def _minimum_actions_to_threshold(
     capacity: list[tuple[Decimal, int]],
     threshold: Decimal,
+    *,
+    max_actions: int | None = None,
 ) -> int | None:
     remaining = threshold
     actions = 0
@@ -61,8 +67,14 @@ def _minimum_actions_to_threshold(
         if remaining <= 0:
             break
 
+        available_slots = slots
+        if max_actions is not None:
+            available_slots = min(available_slots, max_actions - actions)
+            if available_slots <= 0:
+                break
+
         needed = int((remaining / reward).to_integral_value(rounding=ROUND_CEILING))
-        used = min(slots, needed)
+        used = min(available_slots, needed)
         actions += used
         remaining -= reward * used
 
@@ -72,10 +84,11 @@ def _minimum_actions_to_threshold(
 def summarize_settlement_pool(
     opportunities: Iterable[Opportunity],
 ) -> SettlementPoolSummary:
-    """Summarize whether current fixed-reward capacity can cross a payout threshold.
+    """Summarize gross public capacity against a payout threshold.
 
-    REACHABLE describes gross public capacity from a zero starting balance. It does
-    not imply that work will be accepted, remain available, or settle successfully.
+    Shared source funding is binding when published. Template-level remaining_slots
+    are never summed as independent funded pools when the source declares a shared
+    funded budget.
     """
 
     eligible: list[tuple[Opportunity, int, Decimal]] = []
@@ -112,10 +125,70 @@ def summarize_settlement_pool(
         )
 
     total_actions = sum(slots for _, slots, _ in eligible)
-    gross = sum(
+    template_gross = sum(
         (reward * slots for _, slots, reward in eligible),
         start=Decimal(0),
     )
+    gross = template_gross
+    capacity_rationale = "template_slot_capacity"
+
+    shared_budget_values = {
+        value
+        for opportunity, _, _ in eligible
+        if (
+            value := _decimal_metadata(
+                opportunity,
+                "source_available_funded_usd",
+            )
+        )
+        is not None
+    }
+    shared_action_values = {
+        value
+        for opportunity, _, _ in eligible
+        if (
+            value := _positive_int_metadata(
+                opportunity,
+                "source_total_paid_actions_available",
+            )
+        )
+        is not None
+    }
+    uses_shared_budget = any(
+        opportunity.metadata.get("capacity_basis") == "shared_funded_budget"
+        for opportunity, _, _ in eligible
+    )
+
+    if uses_shared_budget:
+        if len(shared_budget_values) != 1:
+            return SettlementPoolSummary(
+                status=SettlementStatus.UNKNOWN,
+                currency=None,
+                eligible_opportunities=len(eligible),
+                total_available_actions=total_actions,
+                gross_available_value=None,
+                minimum_payout_value=None,
+                gap_to_minimum_from_zero=None,
+                minimum_actions_from_zero=None,
+                rationale=("shared_funded_budget_inconsistent_or_missing",),
+            )
+        gross = min(template_gross, next(iter(shared_budget_values)))
+        capacity_rationale = "shared_funded_budget"
+
+        if len(shared_action_values) == 1:
+            total_actions = min(total_actions, next(iter(shared_action_values)))
+        elif len(shared_action_values) > 1:
+            return SettlementPoolSummary(
+                status=SettlementStatus.UNKNOWN,
+                currency=None,
+                eligible_opportunities=len(eligible),
+                total_available_actions=total_actions,
+                gross_available_value=gross,
+                minimum_payout_value=None,
+                gap_to_minimum_from_zero=None,
+                minimum_actions_from_zero=None,
+                rationale=("shared_action_capacity_inconsistent",),
+            )
 
     if len(currencies) != 1:
         return SettlementPoolSummary(
@@ -154,7 +227,7 @@ def summarize_settlement_pool(
             minimum_payout_value=None,
             gap_to_minimum_from_zero=None,
             minimum_actions_from_zero=None,
-            rationale=("minimum_payout_unknown",),
+            rationale=("minimum_payout_unknown", capacity_rationale),
         )
 
     if len(thresholds) != 1:
@@ -167,17 +240,20 @@ def summarize_settlement_pool(
             minimum_payout_value=None,
             gap_to_minimum_from_zero=None,
             minimum_actions_from_zero=None,
-            rationale=("inconsistent_minimum_payout_values",),
+            rationale=("inconsistent_minimum_payout_values", capacity_rationale),
         )
 
     threshold = next(iter(thresholds))
     gap = max(Decimal(0), threshold - gross)
-    minimum_actions = _minimum_actions_to_threshold(
-        [(reward, slots) for _, slots, reward in eligible],
-        threshold,
-    )
-
+    minimum_actions = None
     if gross >= threshold:
+        minimum_actions = _minimum_actions_to_threshold(
+            [(reward, slots) for _, slots, reward in eligible],
+            threshold,
+            max_actions=total_actions if uses_shared_budget else None,
+        )
+
+    if gross >= threshold and minimum_actions is not None:
         return SettlementPoolSummary(
             status=SettlementStatus.REACHABLE,
             currency=currency,
@@ -189,6 +265,7 @@ def summarize_settlement_pool(
             minimum_actions_from_zero=minimum_actions,
             rationale=(
                 "gross_public_capacity_reaches_minimum_payout_from_zero",
+                capacity_rationale,
                 "acceptance_and_availability_are_not_guaranteed",
             ),
         )
@@ -204,6 +281,7 @@ def summarize_settlement_pool(
         minimum_actions_from_zero=None,
         rationale=(
             "gross_public_capacity_below_minimum_payout_from_zero",
+            capacity_rationale,
             "other_opportunities_or_existing_balance_may_change_reachability",
         ),
     )
