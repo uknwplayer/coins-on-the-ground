@@ -31,6 +31,8 @@ class CapabilityEvidence:
     claims: tuple[EvidenceClaim, ...]
     confidence_score: int
     authorization_requirements: tuple[str, ...] = ()
+    collector_source_id: str | None = None
+    payload_sha256: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,6 +110,19 @@ def assess_evidence(
             rationale=("invalid_evidence_confidence_score",),
         )
 
+    if evidence.payload_sha256 is not None:
+        digest = evidence.payload_sha256
+        if len(digest) != 64 or any(char not in "0123456789abcdef" for char in digest.casefold()):
+            return EvidenceAssessment(
+                status=EvidenceStatus.INVALID,
+                claims=evidence.claims,
+                confidence_score=evidence.confidence_score,
+                usable_for_capability=False,
+                usable_for_pricing=False,
+                requires_authorization_review=bool(evidence.authorization_requirements),
+                rationale=("invalid_payload_sha256",),
+            )
+
     if observed_at > current_time:
         return EvidenceAssessment(
             status=EvidenceStatus.INVALID,
@@ -151,6 +166,8 @@ def assess_evidence(
         rationale.append("availability_not_evidenced")
     if evidence.authorization_requirements:
         rationale.append("authorization_review_required")
+    if evidence.payload_sha256 is not None:
+        rationale.append("payload_hash_present")
 
     return EvidenceAssessment(
         status=status,
