@@ -90,3 +90,15 @@ TASKMARKET = ScoutSource(
     eligibility_review_required=True,
     authorization_review_required=True,
 )
+
+
+AKASH = ScoutSource(
+    source_id="akash",
+    display_name="Akash Network",
+    base_url="https://akash.network",
+    network_surface=NetworkSurface.CLEARNET,
+    country=None,
+    jurisdiction=None,
+    eligibility_review_required=True,
+    authorization_review_required=True,
+)
