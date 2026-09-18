@@ -42,6 +42,20 @@
       ],
       "enabled": true,
       "notes": "Public bug-bounty programs; maximum bounty is not a guaranteed payout. Scope, prohibited activities, KYC and payout rules require review."
+    },
+    {
+      "id": "keep3r",
+      "display_name": "Keep3r Network",
+      "base_url": "https://keep3r.network",
+      "network_surface": "clearnet",
+      "country": null,
+      "jurisdiction": null,
+      "categories": [
+        "permissionless_keeper_job",
+        "onchain_reward"
+      ],
+      "enabled": true,
+      "notes": "Read-only discovery from Keep3r v2 Ethereum mainnet. Job credits are a reward pool, not guaranteed per-call payout."
     }
   ]
 }
