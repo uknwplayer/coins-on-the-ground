@@ -66,3 +66,15 @@ KEEP3R = ScoutSource(
     eligibility_review_required=True,
     authorization_review_required=True,
 )
+
+
+SHERLOCK = ScoutSource(
+    source_id="sherlock",
+    display_name="Sherlock",
+    base_url="https://audits.sherlock.xyz",
+    network_surface=NetworkSurface.CLEARNET,
+    country=None,
+    jurisdiction=None,
+    eligibility_review_required=True,
+    authorization_review_required=True,
+)
