@@ -13,6 +13,14 @@ def _payload() -> dict[str, object]:
             "unit": "agent_credits",
             "credits_per_dollar": 100,
         },
+        "total_paid_actions_available": 80,
+        "funding": {
+            "available_funded_credits": 400,
+        },
+        "self_proposal": {
+            "max_daily_pool_credits": 200,
+            "max_open_proposals_per_agent": 3,
+        },
         "seeded_opportunities": [
             {
                 "id": "verify-company-metadata",
@@ -54,6 +62,11 @@ def test_parse_funded_bidpostloop_microtask() -> None:
     assert opportunity.metadata["reward_semantics"] == "fixed"
     assert opportunity.metadata["reward_credits"] == "5"
     assert opportunity.metadata["remaining_slots"] == "80"
+    assert opportunity.metadata["capacity_basis"] == "shared_funded_budget"
+    assert opportunity.metadata["source_available_funded_usd"] == "4"
+    assert opportunity.metadata["source_total_paid_actions_available"] == "80"
+    assert opportunity.metadata["source_max_open_proposals_per_agent"] == "3"
+    assert opportunity.metadata["source_max_daily_pool_credits"] == "200"
     assert opportunity.metadata["minimum_payout_usd"] == "10"
     assert opportunity.metadata["auto_approved"] == "true"
 
