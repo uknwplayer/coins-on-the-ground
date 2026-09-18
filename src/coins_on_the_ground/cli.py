@@ -15,13 +15,13 @@ from coins_on_the_ground.adapters import (
     adapt_machine_bridge_registration,
     estimate_against_inventory,
 )
-from coins_on_the_ground.evidence import collect_sources_report, parse_evidence_sources
 from coins_on_the_ground.estimation import (
     Capability,
     CapabilityProfile,
     FeasibilityClass,
     ProfitabilityClass,
 )
+from coins_on_the_ground.evidence import collect_sources_report, parse_evidence_sources
 from coins_on_the_ground.opportunity import Opportunity, review_and_deduplicate
 from coins_on_the_ground.planning import (
     assess_evidence,
