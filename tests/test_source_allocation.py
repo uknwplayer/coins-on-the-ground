@@ -21,7 +21,7 @@ def _observation() -> CapabilityObservation:
         name="micro-worker",
         capabilities=frozenset(
             {
-                Capability.HTTP,
+                Capability.FILE_IO,
                 Capability.TEXT_ANALYSIS,
             }
         ),
@@ -37,15 +37,15 @@ def _observation() -> CapabilityObservation:
     )
 
 
-def _microtask(source: str, reward: str = "0.10") -> Opportunity:
+def _microtask(source: str, reward: str = "1.50") -> Opportunity:
     return Opportunity(
         source=source,
-        title="Analyze public data",
+        title="Document analysis",
         opportunity_class=OpportunityClass.EARN,
         reward=Decimal(reward),
         currency="USD",
         authorization_basis="Published funded task.",
-        required_action="Analyze the published public data.",
+        required_action="Review the supplied document.",
         risk_class=RiskClass.CIVIL_REVIEW,
         metadata={
             "reward_semantics": "fixed",
@@ -101,8 +101,8 @@ def _history(
 
 def test_allocation_prefers_economic_source_with_replenishment() -> None:
     opportunities = (
-        _microtask("source-a", reward="0.10"),
-        _microtask("source-b", reward="0.05"),
+        _microtask("source-a", reward="1.50"),
+        _microtask("source-b", reward="0.50"),
     )
     histories = (
         _history(
