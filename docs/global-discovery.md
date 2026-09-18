@@ -167,6 +167,7 @@ Atualmente `all` agrega:
 
 ```text
 AkashScout
+BidPostLoopScout
 GitHubBountyScout
 FranticBountyScout
 IssueHuntScout
@@ -174,6 +175,7 @@ AlgoraScout
 ImmunefiScout
 Keep3rScout
 SherlockScout
+TaskmarketScout
 ```
 
 O limite é aplicado por Scout antes da deduplicação.
@@ -464,3 +466,59 @@ O Scout não:
 Antes de qualquer participação futura ainda precisam ser considerados capacidade física,
 disponibilidade, preço competitivo, custos de energia/hosting, collateral/deposit, uptime e margem
 líquida.
+
+
+### BidPostLoop
+
+`BidPostLoopScout` consulta somente o endpoint público de oportunidades para agentes:
+
+```text
+GET https://bidpostloop.com/api/public/agent-opportunities
+```
+
+Uso:
+
+```bash
+cog scan bidpostloop --limit 25
+```
+
+O Scout só normaliza ações que estejam simultaneamente:
+
+```text
+funded = true
+kind = paid_work
+status = open
+remaining_slots > 0
+reward_credits > 0
+```
+
+A conversão publicada pela fonte é preservada via `credits_per_dollar`, e o reward normalizado
+entra como USD com:
+
+```text
+reward_semantics = fixed
+```
+
+Isso permite ao estimator calcular economia por tarefa quando o custo operacional também é conhecido.
+
+O Scout preserva ainda:
+
+```text
+reward_credits
+remaining_slots
+category
+expected_output
+acceptance_criteria
+auth_required
+claim_via
+auto_approved
+expires_at
+minimum_payout_credits
+minimum_payout_usd
+```
+
+O payout mínimo é uma restrição operacional separada do lucro por ação: várias tarefas pequenas
+podem ser economicamente positivas individualmente, mas ainda precisam acumular saldo suficiente
+antes de um saque externo.
+
+O Scout não autentica, não propõe subtarefa, não entrega resultado e não movimenta saldo.
