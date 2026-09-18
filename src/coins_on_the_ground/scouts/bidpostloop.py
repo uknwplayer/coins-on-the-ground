@@ -48,6 +48,26 @@ def parse_bidpostloop_opportunities(
     payout = raw_payout if isinstance(raw_payout, dict) else {}
     min_payout_credits = _positive_int(payout.get("min_payout_credits"))
 
+    raw_funding = payload.get("funding")
+    funding = raw_funding if isinstance(raw_funding, dict) else {}
+    available_funded_credits = _positive_int(
+        funding.get("available_funded_credits")
+    ) or _positive_int(payload.get("available_credits"))
+    total_paid_actions_available = _positive_int(
+        payload.get("total_paid_actions_available")
+    )
+
+    raw_self_proposal = payload.get("self_proposal")
+    self_proposal = (
+        raw_self_proposal if isinstance(raw_self_proposal, dict) else {}
+    )
+    max_open_proposals_per_agent = _positive_int(
+        self_proposal.get("max_open_proposals_per_agent")
+    )
+    max_daily_pool_credits = _positive_int(
+        self_proposal.get("max_daily_pool_credits")
+    )
+
     raw_opportunities = payload.get("seeded_opportunities")
     if not isinstance(raw_opportunities, list):
         raise TypeError("BidPostLoop seeded_opportunities must be a list")
@@ -130,6 +150,39 @@ def parse_bidpostloop_opportunities(
                     "reward_credits": str(reward_credits),
                     "credits_per_dollar": str(credits_per_dollar),
                     "remaining_slots": str(remaining_slots),
+                    "capacity_basis": (
+                        "shared_funded_budget"
+                        if available_funded_credits is not None
+                        else "template_slots"
+                    ),
+                    "source_available_funded_credits": (
+                        str(available_funded_credits)
+                        if available_funded_credits is not None
+                        else ""
+                    ),
+                    "source_available_funded_usd": (
+                        str(
+                            Decimal(available_funded_credits)
+                            / Decimal(credits_per_dollar)
+                        )
+                        if available_funded_credits is not None
+                        else ""
+                    ),
+                    "source_total_paid_actions_available": (
+                        str(total_paid_actions_available)
+                        if total_paid_actions_available is not None
+                        else ""
+                    ),
+                    "source_max_open_proposals_per_agent": (
+                        str(max_open_proposals_per_agent)
+                        if max_open_proposals_per_agent is not None
+                        else ""
+                    ),
+                    "source_max_daily_pool_credits": (
+                        str(max_daily_pool_credits)
+                        if max_daily_pool_credits is not None
+                        else ""
+                    ),
                     "category": category if isinstance(category, str) else "",
                     "expected_output": (
                         expected_output if isinstance(expected_output, str) else ""
