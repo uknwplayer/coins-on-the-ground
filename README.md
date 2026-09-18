@@ -79,6 +79,7 @@ cog scan frantic --limit 25
 cog scan github-bounties --limit 25
 cog scan issuehunt --limit 25
 cog scan algora --limit 25
+cog scan immunefi --limit 25
 ```
 
 Algora também aceita organizações explícitas:
@@ -216,9 +217,10 @@ Já estão implementados:
 
 - Scouts públicos somente leitura;
 - descoberta global sem filtro geográfico prévio;
-- GitHub, Frantic, IssueHunt OSS e Algora;
+- GitHub, Frantic, IssueHunt OSS, Algora e Immunefi;
 - Source Registry `clearnet/onion` sem crawling automático;
 - isolamento de falhas por Scout em agregações globais;
+- reward semantics explícita para diferenciar payout exato de maximum bounty;
 - Opportunity Model e deduplicação;
 - `review_score`;
 - Cost & Feasibility Estimator;
