@@ -3,7 +3,10 @@
   "$id": "https://coins-on-the-ground.local/schemas/capability-acquisition-catalog-v2.schema.json",
   "title": "Coins on the Ground Capability Acquisition Catalog V2",
   "type": "object",
-  "required": ["format", "options"],
+  "required": [
+    "format",
+    "options"
+  ],
   "properties": {
     "format": {
       "const": "cog-capability-acquisition-catalog-v2"
@@ -12,7 +15,12 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "mode", "provides", "evidence"],
+        "required": [
+          "id",
+          "mode",
+          "provides",
+          "evidence"
+        ],
         "properties": {
           "id": {
             "type": "string",
@@ -46,26 +54,44 @@
             }
           },
           "target_profile": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "setup_cost_usd": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$"
           },
           "per_task_cost_usd": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$"
           },
           "hourly_cost_usd": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$"
           },
           "setup_minutes_low": {
-            "type": ["integer", "null"],
+            "type": [
+              "integer",
+              "null"
+            ],
             "minimum": 0
           },
           "setup_minutes_high": {
-            "type": ["integer", "null"],
+            "type": [
+              "integer",
+              "null"
+            ],
             "minimum": 0
           },
           "confidence_score": {
@@ -106,7 +132,10 @@
                 "format": "date-time"
               },
               "expires_at": {
-                "type": ["string", "null"],
+                "type": [
+                  "string",
+                  "null"
+                ],
                 "format": "date-time"
               },
               "max_age_days": {
@@ -139,6 +168,20 @@
                   "minLength": 1
                 },
                 "default": []
+              },
+              "collector_source_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1
+              },
+              "payload_sha256": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^[A-Fa-f0-9]{64}$"
               }
             },
             "additionalProperties": false
