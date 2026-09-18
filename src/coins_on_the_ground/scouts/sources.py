@@ -102,3 +102,15 @@ AKASH = ScoutSource(
     eligibility_review_required=True,
     authorization_review_required=True,
 )
+
+
+BIDPOSTLOOP = ScoutSource(
+    source_id="bidpostloop",
+    display_name="BidPostLoop",
+    base_url="https://bidpostloop.com",
+    network_surface=NetworkSurface.CLEARNET,
+    country=None,
+    jurisdiction=None,
+    eligibility_review_required=True,
+    authorization_review_required=True,
+)
