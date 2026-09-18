@@ -215,15 +215,14 @@ def _candidate(
     )
 
     base_capabilities = base.capabilities if base is not None else frozenset()
-    resulting = frozenset(base_capabilities | frozenset(option.provides))
+    declared_resulting = frozenset(base_capabilities | frozenset(option.provides))
+    effective_resulting = (
+        declared_resulting if capability_evidence_usable else base_capabilities
+    )
     remaining = tuple(
-        capability for capability in required if capability not in resulting
+        capability for capability in required if capability not in effective_resulting
     )
-    covers = (
-        not remaining
-        and not explicit_target_missing
-        and capability_evidence_usable
-    )
+    covers = not remaining and not explicit_target_missing
 
     if option.hourly_cost_usd is not None:
         hourly_cost = (
@@ -234,7 +233,7 @@ def _candidate(
 
     projected_profile = CapabilityProfile(
         name=f"acquisition:{option.option_id}",
-        capabilities=resulting if capability_evidence_usable else base_capabilities,
+        capabilities=effective_resulting,
         hourly_cost_usd=hourly_cost,
         configured=True,
     )
@@ -304,7 +303,7 @@ def _candidate(
         target_profile=base.name if base is not None else option.target_profile,
         covers_requirements=covers,
         resulting_capabilities=tuple(
-            sorted(resulting, key=lambda capability: capability.value)
+            sorted(effective_resulting, key=lambda capability: capability.value)
         ),
         remaining_capabilities=remaining,
         effective_acquisition_cost_usd=acquisition_cost,
