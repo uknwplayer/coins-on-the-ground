@@ -47,6 +47,7 @@ from coins_on_the_ground.scouts import (
     GitHubBountyScout,
     IssueHuntScout,
     Scout,
+    parse_scout_source_registry,
 )
 
 
@@ -180,6 +181,45 @@ async def _scan_issuehunt(args: argparse.Namespace) -> int:
 async def _scan_algora(args: argparse.Namespace) -> int:
     orgs = tuple(args.org) if args.org else None
     return await _emit_scan(AlgoraScout(limit=args.limit, orgs=orgs), args)
+
+
+async def _sources_check(args: argparse.Namespace) -> int:
+    registry_value = await asyncio.to_thread(_load_json, Path(args.registry))
+    sources = parse_scout_source_registry(registry_value)
+
+    rows = [
+        {
+            "source_id": source.source_id,
+            "display_name": source.display_name,
+            "base_url": source.base_url,
+            "network_surface": source.network_surface.value,
+            "country": source.country,
+            "jurisdiction": source.jurisdiction,
+            "categories": list(source.categories),
+            "enabled": source.enabled,
+            "notes": source.notes,
+        }
+        for source in sources
+    ]
+
+    for row in rows:
+        print(json.dumps(row, ensure_ascii=False))
+
+    print(
+        json.dumps(
+            {
+                "engine": "scout-source-registry",
+                "sources": len(sources),
+                "enabled_sources": sum(1 for source in sources if source.enabled),
+                "onion_sources": sum(
+                    1 for source in sources if source.network_surface.value == "onion"
+                ),
+                "execution_performed": False,
+            },
+            ensure_ascii=False,
+        )
+    )
+    return 0
 
 
 async def _review(args: argparse.Namespace) -> int:
@@ -802,6 +842,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_common_scan_args(algora)
     algora.set_defaults(handler=_scan_algora)
+
+    sources_check = subparsers.add_parser(
+        "sources-check",
+        help="validate and inspect a global scout source registry",
+    )
+    sources_check.add_argument(
+        "--registry",
+        required=True,
+        help="path to cog-scout-source-registry-v1 JSON",
+    )
+    sources_check.set_defaults(handler=_sources_check)
 
     review = subparsers.add_parser(
         "review",
