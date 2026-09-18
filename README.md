@@ -82,6 +82,7 @@ cog scan algora --limit 25
 cog scan immunefi --limit 25
 cog scan keep3r --limit 25
 cog scan sherlock --limit 25
+cog scan taskmarket --limit 25
 ```
 
 Algora também aceita organizações explícitas:
@@ -219,10 +220,10 @@ Já estão implementados:
 
 - Scouts públicos somente leitura;
 - descoberta global sem filtro geográfico prévio;
-- GitHub, Frantic, IssueHunt OSS, Algora, Immunefi, Keep3r e Sherlock;
+- GitHub, Frantic, IssueHunt OSS, Algora, Immunefi, Keep3r, Sherlock e Taskmarket;
 - Source Registry `clearnet/onion` sem crawling automático;
 - isolamento de falhas por Scout em agregações globais;
-- reward semantics explícita para diferenciar payout exato, maximum bounty e pool_credits;
+- reward semantics explícita para diferenciar payout exato, maximum bounty, gross_escrow e pool_credits;
 - descoberta read-only de Keep3r jobs com créditos positivos on-chain;
 - Opportunity Model e deduplicação;
 - `review_score`;
