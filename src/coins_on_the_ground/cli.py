@@ -47,6 +47,7 @@ from coins_on_the_ground.scouts import (
     GitHubBountyScout,
     ImmunefiScout,
     IssueHuntScout,
+    Keep3rScout,
     Scout,
     parse_scout_source_registry,
 )
@@ -130,12 +131,15 @@ def _scouts_for_source(source: str, limit: int) -> list[Scout]:
         return [AlgoraScout(limit=limit)]
     if source == "immunefi":
         return [ImmunefiScout(limit=limit)]
+    if source == "keep3r":
+        return [Keep3rScout(limit=limit)]
     return [
         FranticBountyScout(limit=limit),
         GitHubBountyScout(limit=limit),
         IssueHuntScout(limit=limit),
         AlgoraScout(limit=limit),
         ImmunefiScout(limit=limit),
+        Keep3rScout(limit=limit),
     ]
 
 
@@ -211,6 +215,13 @@ async def _scan_algora(args: argparse.Namespace) -> int:
 
 async def _scan_immunefi(args: argparse.Namespace) -> int:
     return await _emit_scan(ImmunefiScout(limit=args.limit), args)
+
+
+async def _scan_keep3r(args: argparse.Namespace) -> int:
+    return await _emit_scan(
+        Keep3rScout(limit=args.limit, rpc_url=args.rpc_url),
+        args,
+    )
 
 
 async def _sources_check(args: argparse.Namespace) -> int:
@@ -803,7 +814,7 @@ def _add_common_scan_args(parser: argparse.ArgumentParser) -> None:
 def _add_source_argument(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "source",
-        choices=("all", "frantic", "github-bounties", "issuehunt", "algora", "immunefi"),
+        choices=("all", "frantic", "github-bounties", "issuehunt", "algora", "immunefi", "keep3r"),
         default="all",
         nargs="?",
     )
@@ -883,6 +894,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_common_scan_args(immunefi)
     immunefi.set_defaults(handler=_scan_immunefi)
+
+    keep3r = scan_sub.add_parser(
+        "keep3r",
+        help="scan Keep3r v2 mainnet jobs with positive on-chain credits",
+    )
+    keep3r.add_argument(
+        "--rpc-url",
+        help="optional HTTPS Ethereum RPC override; defaults to Keep3r frontend RPC",
+    )
+    _add_common_scan_args(keep3r)
+    keep3r.set_defaults(handler=_scan_keep3r)
 
     sources_check = subparsers.add_parser(
         "sources-check",
