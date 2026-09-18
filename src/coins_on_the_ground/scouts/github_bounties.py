@@ -13,7 +13,10 @@ from coins_on_the_ground.opportunity import Opportunity, OpportunityClass, RiskC
 _GITHUB_SEARCH_URL = "https://api.github.com/search/issues"
 
 _REWARD_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
-    ("USD", re.compile(r"(?i)(?:US\$|USD|\$)\s*([0-9][0-9,]*(?:\.\d{1,2})?)")),
+    (
+        "USD",
+        re.compile(r"(?i)(?:US\$|USD|(?<![A-Za-z])\$)\s*([0-9][0-9,]*(?:\.\d{1,2})?)"),
+    ),
     ("EUR", re.compile(r"(?i)(?:EUR|€)\s*([0-9][0-9.,]*(?:[.,]\d{1,2})?)")),
     ("BRL", re.compile(r"(?i)(?:BRL|R\$)\s*([0-9][0-9.,]*(?:[.,]\d{1,2})?)")),
 )
