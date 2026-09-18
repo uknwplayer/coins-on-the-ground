@@ -31,6 +31,13 @@ from .portfolio import (
     PortfolioStatus,
     plan_microtask_portfolio,
 )
+from .source_allocation import (
+    SourceAllocationCandidate,
+    SourceAllocationPlan,
+    SourceAllocationPolicy,
+    SourceAllocationStatus,
+    plan_source_allocation,
+)
 from .settlement import (
     SettlementPoolSummary,
     SettlementStatus,
@@ -57,6 +64,10 @@ __all__ = [
     "PortfolioSettlementStep",
     "PortfolioStatus",
     "SettlementPoolSummary",
+    "SourceAllocationCandidate",
+    "SourceAllocationPlan",
+    "SourceAllocationPolicy",
+    "SourceAllocationStatus",
     "SettlementStatus",
     "assess_evidence",
     "assess_historical_confidence",
@@ -66,5 +77,6 @@ __all__ = [
     "plan_capability_acquisition",
     "plan_capability_gap",
     "plan_microtask_portfolio",
+    "plan_source_allocation",
     "summarize_settlement_pool",
 ]
