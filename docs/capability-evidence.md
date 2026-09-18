@@ -205,6 +205,8 @@ evidence.claims
 evidence.confidence_score
 source_url
 authorization_requirements
+collector_source_id
+payload_sha256
 ```
 
 E termina com um resumo:
@@ -236,3 +238,25 @@ planner
 ```
 
 O catálogo é uma observação local e versionada. A fonte externa continua independente.
+
+
+## Provenance coletada
+
+Evidências materializadas a partir dos Evidence Collectors podem preservar:
+
+```text
+collector_source_id
+payload_sha256
+```
+
+`collector_source_id` identifica qual fonte configurada produziu o record.
+
+`payload_sha256` identifica exatamente o payload bruto observado pelo collector. O assessment
+valida que esse valor possui formato SHA-256 antes de aceitar a evidência como válida.
+
+O hash não prova que a fonte está correta; ele torna a observação rastreável e reproduzível.
+
+Veja também:
+
+- `docs/evidence-collectors.md`;
+- `docs/evidence-materialization.md`.
