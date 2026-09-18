@@ -6,7 +6,7 @@ from decimal import Decimal
 from enum import StrEnum
 
 from coins_on_the_ground.estimation import Capability
-from coins_on_the_ground.planning import CapabilityEvidence
+from coins_on_the_ground.planning.evidence import CapabilityEvidence
 
 
 class EvidenceSourceKind(StrEnum):
