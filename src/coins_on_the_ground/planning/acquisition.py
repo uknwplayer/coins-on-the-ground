@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass
+from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
 from enum import StrEnum
 
@@ -14,6 +15,11 @@ from coins_on_the_ground.estimation import (
     estimate_feasibility,
 )
 from coins_on_the_ground.opportunity.model import Opportunity
+from coins_on_the_ground.planning.evidence import (
+    CapabilityEvidence,
+    EvidenceStatus,
+    assess_evidence,
+)
 from coins_on_the_ground.planning.gaps import plan_capability_gap
 from coins_on_the_ground.planning.model import GapType
 
@@ -49,6 +55,8 @@ class CapabilityAcquisitionOption:
     confidence_score: int = 50
     reusable: bool = False
     enabled: bool = True
+    evidence: CapabilityEvidence | None = None
+    evidence_required: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,6 +75,10 @@ class AcquisitionCandidate:
     profitability: ProfitabilityClass
     post_acquisition_feasibility: FeasibilityClass
     confidence_score: int
+    evidence_status: EvidenceStatus
+    evidence_source_url: str | None
+    evidence_confidence_score: int
+    requires_authorization_review: bool
     rationale: tuple[str, ...]
 
 
@@ -136,7 +148,11 @@ def _select_base_profile(
 def _effective_acquisition_cost(
     option: CapabilityAcquisitionOption,
     amortization_uses: int,
+    *,
+    pricing_usable: bool,
 ) -> Decimal | None:
+    if not pricing_usable:
+        return None
     if option.setup_cost_usd is None or option.per_task_cost_usd is None:
         return None
 
@@ -180,8 +196,10 @@ def _candidate(
     nearest_profile: str | None,
     profiles: dict[str, CapabilityProfile],
     amortization_uses: int,
+    now: datetime | None,
 ) -> AcquisitionCandidate:
     _validate_option(option)
+    assessment = assess_evidence(option.evidence, now=now)
     base = _select_base_profile(option, nearest_profile, profiles)
     explicit_target_missing = (
         option.target_profile is not None
@@ -189,28 +207,44 @@ def _candidate(
         and base is None
     )
 
+    capability_evidence_usable = (
+        assessment.usable_for_capability if option.evidence_required else True
+    )
+    pricing_evidence_usable = (
+        assessment.usable_for_pricing if option.evidence_required else True
+    )
+
     base_capabilities = base.capabilities if base is not None else frozenset()
     resulting = frozenset(base_capabilities | frozenset(option.provides))
     remaining = tuple(
         capability for capability in required if capability not in resulting
     )
-    covers = not remaining and not explicit_target_missing
-
-    hourly_cost = (
-        option.hourly_cost_usd
-        if option.hourly_cost_usd is not None
-        else base.hourly_cost_usd if base is not None else None
+    covers = (
+        not remaining
+        and not explicit_target_missing
+        and capability_evidence_usable
     )
+
+    if option.hourly_cost_usd is not None:
+        hourly_cost = (
+            option.hourly_cost_usd if pricing_evidence_usable else None
+        )
+    else:
+        hourly_cost = base.hourly_cost_usd if base is not None else None
 
     projected_profile = CapabilityProfile(
         name=f"acquisition:{option.option_id}",
-        capabilities=resulting,
+        capabilities=resulting if capability_evidence_usable else base_capabilities,
         hourly_cost_usd=hourly_cost,
         configured=True,
     )
     estimate = estimate_feasibility(opportunity, projected_profile)
 
-    acquisition_cost = _effective_acquisition_cost(option, amortization_uses)
+    acquisition_cost = _effective_acquisition_cost(
+        option,
+        amortization_uses,
+        pricing_usable=pricing_evidence_usable,
+    )
     total_low: Decimal | None = None
     total_high: Decimal | None = None
 
@@ -229,6 +263,10 @@ def _candidate(
         total_high,
     )
 
+    confidence = option.confidence_score
+    if option.evidence_required:
+        confidence = min(confidence, assessment.confidence_score)
+
     rationale: list[str] = []
     if base is not None:
         rationale.append(f"base_profile={base.name}")
@@ -237,6 +275,13 @@ def _candidate(
 
     if explicit_target_missing:
         rationale.append(f"target_profile_unavailable={option.target_profile}")
+
+    rationale.extend(assessment.rationale)
+
+    if option.evidence_required and not capability_evidence_usable:
+        rationale.append("capability_evidence_not_usable")
+    if option.evidence_required and not pricing_evidence_usable:
+        rationale.append("pricing_evidence_not_usable")
 
     if covers:
         rationale.append("option_covers_all_recognized_requirements")
@@ -269,7 +314,13 @@ def _candidate(
         projected_net_value_usd_high=net_high,
         profitability=profitability,
         post_acquisition_feasibility=estimate.feasibility,
-        confidence_score=option.confidence_score,
+        confidence_score=confidence,
+        evidence_status=assessment.status,
+        evidence_source_url=(
+            option.evidence.source_url if option.evidence is not None else None
+        ),
+        evidence_confidence_score=assessment.confidence_score,
+        requires_authorization_review=assessment.requires_authorization_review,
         rationale=tuple(rationale),
     )
 
@@ -282,11 +333,13 @@ _PROFITABILITY_RANK = {
 }
 
 
-def _candidate_sort_key(candidate: AcquisitionCandidate) -> tuple[int, int, Decimal, int]:
+def _candidate_sort_key(candidate: AcquisitionCandidate) -> tuple[int, int, int, Decimal, int]:
     cost = candidate.projected_total_cost_usd_high
     sortable_cost = -cost if cost is not None else Decimal(-999999999)
+    evidence_rank = int(candidate.evidence_status is EvidenceStatus.FRESH)
     return (
         int(candidate.covers_requirements),
+        evidence_rank,
         _PROFITABILITY_RANK[candidate.profitability],
         sortable_cost,
         candidate.confidence_score,
@@ -299,6 +352,7 @@ def plan_capability_acquisition(
     options: Iterable[CapabilityAcquisitionOption],
     *,
     amortization_uses: int = 1,
+    now: datetime | None = None,
 ) -> CapabilityAcquisitionPlan:
     """Plan how a declared local catalog could close capability gaps.
 
@@ -342,6 +396,7 @@ def plan_capability_acquisition(
             nearest_profile=gap.nearest_profile,
             profiles=profiles,
             amortization_uses=amortization_uses,
+            now=now,
         )
         for option in options
         if option.enabled
