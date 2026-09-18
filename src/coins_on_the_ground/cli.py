@@ -22,11 +22,15 @@ from coins_on_the_ground.estimation import (
     ProfitabilityClass,
 )
 from coins_on_the_ground.evidence import (
+    append_evidence_ledger,
     collect_sources_report,
+    detect_evidence_drift,
+    load_evidence_ledger,
     materialize_acquisition_catalog,
     parse_collected_record,
     parse_evidence_sources,
     parse_materialization_policy,
+    summarize_evidence_stability,
 )
 from coins_on_the_ground.opportunity import Opportunity, review_and_deduplicate
 from coins_on_the_ground.planning import (
@@ -85,6 +89,17 @@ def _write_json(path: Path, value: object) -> None:
         json.dumps(value, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
+
+
+def _collection_records_from_rows(rows: list[object]) -> list[Any]:
+    records = []
+    for raw_row in rows:
+        if not isinstance(raw_row, dict):
+            raise TypeError("collection JSONL rows must be objects")
+        if raw_row.get("status") != "success":
+            continue
+        records.append(parse_collected_record(raw_row.get("record")))
+    return records
 
 
 async def _collect(scout: Scout) -> list[Opportunity]:
@@ -433,13 +448,7 @@ async def _evidence_collect(args: argparse.Namespace) -> int:
 
 async def _evidence_materialize(args: argparse.Namespace) -> int:
     collection_rows = await asyncio.to_thread(_load_jsonl, Path(args.records))
-    records = []
-    for raw_row in collection_rows:
-        if not isinstance(raw_row, dict):
-            raise TypeError("collection JSONL rows must be objects")
-        if raw_row.get("status") != "success":
-            continue
-        records.append(parse_collected_record(raw_row.get("record")))
+    records = _collection_records_from_rows(collection_rows)
 
     policy_value = await asyncio.to_thread(_load_json, Path(args.policy))
     rules = parse_materialization_policy(policy_value)
@@ -464,6 +473,74 @@ async def _evidence_materialize(args: argparse.Namespace) -> int:
         )
     )
     return 1 if report.missing_source_ids else 0
+
+
+async def _evidence_ledger_append(args: argparse.Namespace) -> int:
+    collection_rows = await asyncio.to_thread(_load_jsonl, Path(args.records))
+    records = _collection_records_from_rows(collection_rows)
+    report = await asyncio.to_thread(
+        append_evidence_ledger,
+        Path(args.ledger),
+        tuple(records),
+    )
+
+    print(
+        json.dumps(
+            {
+                "engine": "evidence-ledger-append",
+                "records": len(records),
+                "appended": report.appended,
+                "duplicates": report.duplicates,
+                "total_entries": report.total_entries,
+                "ledger": args.ledger,
+                "execution_performed": False,
+            },
+            ensure_ascii=False,
+        )
+    )
+    return 0
+
+
+async def _evidence_ledger_analyze(args: argparse.Namespace) -> int:
+    entries = await asyncio.to_thread(load_evidence_ledger, Path(args.ledger))
+    drift = detect_evidence_drift(entries, source_id=args.source_id)
+    summaries = summarize_evidence_stability(entries, source_id=args.source_id)
+
+    rows = [
+        {
+            "type": "drift",
+            "event": _json_value(asdict(event)),
+        }
+        for event in drift
+    ]
+    rows.extend(
+        {
+            "type": "summary",
+            "summary": _json_value(asdict(summary)),
+        }
+        for summary in summaries
+    )
+
+    if args.output:
+        await asyncio.to_thread(_write_jsonl, Path(args.output), rows)
+    else:
+        for row in rows:
+            print(json.dumps(row, ensure_ascii=False))
+
+    print(
+        json.dumps(
+            {
+                "engine": "evidence-ledger-analysis",
+                "entries": len(entries),
+                "sources": len(summaries),
+                "drift_events": len(drift),
+                "source_filter": args.source_id,
+                "execution_performed": False,
+            },
+            ensure_ascii=False,
+        )
+    )
+    return 0
 
 
 async def _catalog_check(args: argparse.Namespace) -> int:
