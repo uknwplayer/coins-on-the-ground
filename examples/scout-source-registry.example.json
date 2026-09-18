@@ -56,6 +56,20 @@
       ],
       "enabled": true,
       "notes": "Read-only discovery from Keep3r v2 Ethereum mainnet. Job credits are a reward pool, not guaranteed per-call payout."
+    },
+    {
+      "id": "sherlock",
+      "display_name": "Sherlock",
+      "base_url": "https://audits.sherlock.xyz",
+      "network_surface": "clearnet",
+      "country": null,
+      "jurisdiction": null,
+      "categories": [
+        "security_bounty",
+        "web3"
+      ],
+      "enabled": true,
+      "notes": "Public live bug-bounty listing. Payout is a program maximum, not guaranteed earnings; scope and eligibility require review."
     }
   ]
 }
