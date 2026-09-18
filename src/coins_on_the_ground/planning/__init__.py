@@ -24,6 +24,11 @@ from .historical_confidence import (
     parse_historical_confidence_policy,
 )
 from .model import CapabilityGapPlan, GapType
+from .settlement import (
+    SettlementPoolSummary,
+    SettlementStatus,
+    summarize_settlement_pool,
+)
 
 __all__ = [
     "AcquisitionCandidate",
@@ -40,6 +45,8 @@ __all__ = [
     "HistoricalConfidenceAssessment",
     "HistoricalConfidencePolicy",
     "HistoricalConfidenceStatus",
+    "SettlementPoolSummary",
+    "SettlementStatus",
     "assess_evidence",
     "assess_historical_confidence",
     "assess_historical_confidence_many",
@@ -47,4 +54,5 @@ __all__ = [
     "parse_historical_confidence_policy",
     "plan_capability_acquisition",
     "plan_capability_gap",
+    "summarize_settlement_pool",
 ]
