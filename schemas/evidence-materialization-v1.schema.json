@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://coins-on-the-ground.local/schemas/evidence-materialization-v1.schema.json",
+  "title": "Coins on the Ground Evidence Materialization Policy V1",
+  "type": "object",
+  "required": ["format", "rules"],
+  "properties": {
+    "format": {
+      "const": "cog-evidence-materialization-v1"
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source_id", "option_id", "mode"],
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "option_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mode": {
+            "enum": [
+              "EXTEND_PROFILE",
+              "CONNECT_PROVIDER",
+              "BUILD_ADAPTER",
+              "ADD_PROFILE",
+              "ROUTE_CAPABILITY"
+            ]
+          },
+          "target_profile": {
+            "type": ["string", "null"]
+          },
+          "reusable": {
+            "type": "boolean",
+            "default": false
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true
+          },
+          "setup_minutes_low": {
+            "type": ["integer", "null"],
+            "minimum": 0
+          },
+          "setup_minutes_high": {
+            "type": ["integer", "null"],
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
