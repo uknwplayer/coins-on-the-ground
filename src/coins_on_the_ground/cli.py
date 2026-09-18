@@ -41,6 +41,7 @@ from coins_on_the_ground.opportunity import (
     review_and_deduplicate,
 )
 from coins_on_the_ground.planning import (
+    ScoutCadencePolicy,
     assess_evidence,
     assess_historical_confidence_many,
     parse_acquisition_catalog,
@@ -50,7 +51,6 @@ from coins_on_the_ground.planning import (
     plan_microtask_portfolio,
     plan_scout_cadence,
     plan_source_allocation,
-    ScoutCadencePolicy,
     summarize_settlement_pool,
 )
 from coins_on_the_ground.scouts import (
