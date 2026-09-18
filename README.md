@@ -58,8 +58,11 @@ Ele:
 4. deduplica achados equivalentes;
 5. calcula prioridade para revisão;
 6. estima capacidades, esforço e custo quando houver dados suficientes;
-7. preserva incerteza quando capacidades ou custos ainda não forem conhecidos;
-8. mantém execução fora do pipeline.
+7. identifica gaps de capability;
+8. simula opções locais de aquisição de capability;
+9. valida evidência de capability/preço quando disponível;
+10. preserva incerteza quando capacidades, custos ou evidências não forem conhecidos;
+11. mantém execução fora do pipeline.
 
 ## Uso atual
 
@@ -76,7 +79,7 @@ Revisão e deduplicação:
 cog review all --limit 100
 ```
 
-Estimativa de custo e viabilidade com um perfil declarado:
+Estimativa de custo e viabilidade:
 
 ```bash
 cog estimate frantic \
@@ -86,12 +89,33 @@ cog estimate frantic \
   --limit 25
 ```
 
-Sem capacidades declaradas, o estimator não presume que uma máquina seja capaz de realizar a
-tarefa.
+Gap de capabilities:
+
+```bash
+cog gaps frantic \
+  --capability file_io \
+  --limit 25
+```
+
+Planejamento de aquisição com evidência:
+
+```bash
+cog acquisition-plan frantic \
+  --catalog ./examples/acquisition-catalog-v2.example.json \
+  --capability file_io \
+  --hourly-cost-usd 0.60
+```
+
+Inspeção do catálogo:
+
+```bash
+cog catalog-check \
+  --catalog ./examples/acquisition-catalog-v2.example.json
+```
 
 Veja `docs/scouts.md`, `docs/opportunity-model.md`, `docs/feasibility.md`,
-`docs/bridge-integration.md`, `docs/capability-gaps.md` e
-`docs/capability-acquisition.md`.
+`docs/bridge-integration.md`, `docs/capability-gaps.md`,
+`docs/capability-acquisition.md` e `docs/capability-evidence.md`.
 
 ## Módulos iniciais
 
@@ -101,7 +125,7 @@ src/coins_on_the_ground/
   opportunity/     # modelo canônico, deduplicação e scoring
   estimation/      # custo, esforço e viabilidade por CapabilityProfile
   classifiers/     # FOUND / EARN / RECOVER e classificação de risco
-  planning/        # gaps e aquisição de capabilities
+  planning/        # gaps, evidência e aquisição de capabilities
   policies/        # regras específicas deste projeto
   audit/           # evidências e trilha de decisão
   adapters/        # integração com Machine Bridge / Bridge Mesh
@@ -130,14 +154,18 @@ Já estão implementados:
 - Cost & Feasibility Estimator com faixas de tempo/custo;
 - `CapabilityProfile` explícito;
 - classificação de viabilidade e rentabilidade;
-- adapters compatíveis com Machine Bridge Worker Registration V1 e Bridge Mesh Node Advertisement V1;
+- adapters compatíveis com contratos explícitos da Machine Bridge / Bridge Mesh;
 - inventário por worker/endpoint, sem união artificial de capacidades;
 - Capability Gap Planner;
-- Capability Acquisition Planner baseado em catálogo local explícito;
-- schema versionado para opções de aquisição;
+- Capability Acquisition Planner;
+- catálogo v1 declarado;
+- catálogo v2 evidence-backed;
+- `FRESH / STALE / EXPIRED / INVALID / UNVERIFIED`;
+- claims `CAPABILITY / PRICING / AVAILABILITY / AUTHORIZATION`;
+- inspeção de catálogo via `cog catalog-check`;
 - amortização explícita de custos de setup;
 - recálculo de custo e valor líquido após aquisição hipotética;
 - testes automatizados e CI.
 
-A próxima evolução é alimentar esse catálogo com fontes deliberadamente configuradas e evidência
-de custo/confiabilidade, sem transformar repositórios externos em dependências implícitas.
+A próxima evolução é automatizar a **coleta deliberada de evidência para fontes configuradas**,
+sem transformar a internet ou repositórios externos em estado implícito do projeto.
