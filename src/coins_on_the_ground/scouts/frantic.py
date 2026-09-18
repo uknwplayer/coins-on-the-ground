@@ -105,7 +105,6 @@ def parse_frantic_issue(item: dict[str, Any]) -> Opportunity | None:
         currency="USD",
         authorization_basis=authorization,
         required_action="Review the live Frantic claim page and complete only the published task.",
-        estimated_cost=Decimal(0),
         risk_class=RiskClass.CIVIL_REVIEW,
         evidence_urls=evidence,
         metadata={
