@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://coins-on-the-ground.local/schemas/historical-confidence-policy-v1.schema.json",
+  "title": "Coins on the Ground Historical Confidence Policy V1",
+  "type": "object",
+  "required": [
+    "format",
+    "min_observations",
+    "max_semantic_change_ratio",
+    "max_price_range_pct"
+  ],
+  "properties": {
+    "format": {
+      "const": "cog-historical-confidence-policy-v1"
+    },
+    "min_observations": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "max_semantic_change_ratio": {
+      "type": "string",
+      "pattern": "^(0(\\.[0-9]+)?|1(\\.0+)?)$"
+    },
+    "max_price_range_pct": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+    },
+    "require_current_availability": {
+      "type": "boolean",
+      "default": true
+    },
+    "require_known_per_task_price": {
+      "type": "boolean",
+      "default": true
+    },
+    "unavailable_is_fail": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "additionalProperties": false
+}
