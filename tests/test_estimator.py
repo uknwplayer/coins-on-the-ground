@@ -76,7 +76,7 @@ def test_cost_range_can_make_profitability_uncertain() -> None:
     profile = CapabilityProfile(
         name="expensive-worker",
         capabilities=frozenset({Capability.BROWSER}),
-        hourly_cost_usd=Decimal("10"),
+        hourly_cost_usd=Decimal(10),
         configured=True,
     )
 
@@ -92,7 +92,7 @@ def test_negative_hourly_cost_is_rejected() -> None:
     profile = CapabilityProfile(
         name="invalid",
         capabilities=frozenset({Capability.BROWSER}),
-        hourly_cost_usd=Decimal("-1"),
+        hourly_cost_usd=Decimal(-1),
         configured=True,
     )
 
