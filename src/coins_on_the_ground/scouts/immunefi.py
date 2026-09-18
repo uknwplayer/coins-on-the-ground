@@ -85,10 +85,13 @@ def parse_immunefi_listing(
         if maximum_bounty is None:
             continue
 
-        anchor_end = document.find("</a>", match.end())
+        anchor_start = document.find(">", match.end())
+        if anchor_start == -1:
+            anchor_start = match.end() - 1
+        anchor_end = document.find("</a>", anchor_start + 1)
         if anchor_end == -1:
-            anchor_end = min(len(document), match.end() + 500)
-        title = _clean_text(document[match.end():anchor_end])
+            anchor_end = min(len(document), anchor_start + 501)
+        title = _clean_text(document[anchor_start + 1 : anchor_end])
         if not title:
             title = slug.replace("-", " ").strip().title()
 
