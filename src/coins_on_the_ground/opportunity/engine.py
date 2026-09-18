@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Iterable
 
 from coins_on_the_ground.opportunity.model import Opportunity, RiskClass
 from coins_on_the_ground.policies import evaluate_for_review
@@ -32,7 +32,7 @@ def _parse_datetime(value: str) -> datetime | None:
     except ValueError:
         return None
     if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=UTC)
+        return None
     return parsed.astimezone(UTC)
 
 
@@ -127,7 +127,7 @@ def _normalized_identifiers(opportunity: Opportunity) -> set[str]:
 
 
 def fingerprint(opportunity: Opportunity) -> str:
-    canonical = sorted(_normalized_identifiers(opportunity))[0]
+    canonical = min(_normalized_identifiers(opportunity))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:20]
 
 
