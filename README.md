@@ -60,9 +60,11 @@ Ele:
 6. estima capacidades, esforço e custo quando houver dados suficientes;
 7. identifica gaps de capability;
 8. simula opções locais de aquisição de capability;
-9. valida evidência de capability/preço quando disponível;
-10. preserva incerteza quando capacidades, custos ou evidências não forem conhecidos;
-11. mantém execução fora do pipeline.
+9. coleta evidência apenas de fontes explicitamente configuradas;
+10. preserva hash e provenance do payload observado;
+11. materializa evidência em catálogo por policy explícita;
+12. valida freshness, claims e requisitos de autorização;
+13. mantém execução fora do pipeline.
 
 ## Uso atual
 
@@ -73,7 +75,7 @@ cog scan frantic --limit 25
 cog scan github-bounties --limit 25
 ```
 
-Revisão e deduplicação:
+Revisão:
 
 ```bash
 cog review all --limit 100
@@ -85,37 +87,52 @@ Estimativa de custo e viabilidade:
 cog estimate frantic \
   --capability transcription \
   --capability file_io \
-  --hourly-cost-usd 0.60 \
-  --limit 25
+  --hourly-cost-usd 0.60
 ```
 
 Gap de capabilities:
 
 ```bash
 cog gaps frantic \
-  --capability file_io \
-  --limit 25
+  --capability file_io
 ```
 
-Planejamento de aquisição com evidência:
+Coleta explícita de evidência:
 
 ```bash
-cog acquisition-plan frantic \
-  --catalog ./examples/acquisition-catalog-v2.example.json \
-  --capability file_io \
-  --hourly-cost-usd 0.60
+cog evidence-collect \
+  --config ./examples/evidence-sources.example.json \
+  --output ./data/evidence-records.jsonl
 ```
 
-Inspeção do catálogo:
+Materialização explícita:
+
+```bash
+cog evidence-materialize \
+  --records ./data/evidence-records.jsonl \
+  --policy ./examples/evidence-materialization.example.json \
+  --output ./data/acquisition-catalog-v2.json
+```
+
+Inspeção:
 
 ```bash
 cog catalog-check \
-  --catalog ./examples/acquisition-catalog-v2.example.json
+  --catalog ./data/acquisition-catalog-v2.json
+```
+
+Planejamento:
+
+```bash
+cog acquisition-plan frantic \
+  --catalog ./data/acquisition-catalog-v2.json \
+  --capability file_io
 ```
 
 Veja `docs/scouts.md`, `docs/opportunity-model.md`, `docs/feasibility.md`,
 `docs/bridge-integration.md`, `docs/capability-gaps.md`,
-`docs/capability-acquisition.md` e `docs/capability-evidence.md`.
+`docs/capability-acquisition.md`, `docs/capability-evidence.md`,
+`docs/evidence-collectors.md` e `docs/evidence-materialization.md`.
 
 ## Módulos iniciais
 
@@ -124,6 +141,7 @@ src/coins_on_the_ground/
   scouts/          # descoberta de oportunidades
   opportunity/     # modelo canônico, deduplicação e scoring
   estimation/      # custo, esforço e viabilidade por CapabilityProfile
+  evidence/        # coleta, provenance e materialização explícita
   classifiers/     # FOUND / EARN / RECOVER e classificação de risco
   planning/        # gaps, evidência e aquisição de capabilities
   policies/        # regras específicas deste projeto
@@ -140,32 +158,33 @@ O projeto não foi criado para:
 - usar credenciais vazadas ou chaves privadas de terceiros;
 - contornar autenticação ou autorização;
 - induzir sistemas ou pessoas a erro;
-- explorar ativos de terceiros apenas porque estão tecnicamente acessíveis.
+- explorar ativos de terceiros apenas porque estão tecnicamente acessíveis;
+- fazer crawling aberto para preencher automaticamente o catálogo.
 
 ## Estado atual
 
 Já estão implementados:
 
 - Scouts públicos somente leitura;
-- Opportunity Model;
-- deduplicação;
+- Opportunity Model e deduplicação;
 - `review_score`;
-- distinção entre custo zero e custo desconhecido;
-- Cost & Feasibility Estimator com faixas de tempo/custo;
+- Cost & Feasibility Estimator;
 - `CapabilityProfile` explícito;
-- classificação de viabilidade e rentabilidade;
-- adapters compatíveis com contratos explícitos da Machine Bridge / Bridge Mesh;
-- inventário por worker/endpoint, sem união artificial de capacidades;
+- adapters para contratos explícitos das Bridges;
 - Capability Gap Planner;
 - Capability Acquisition Planner;
 - catálogo v1 declarado;
 - catálogo v2 evidence-backed;
+- Evidence Collectors `HTTPS_JSON` e `LOCAL_JSON`;
+- SHA-256 e provenance por observação;
+- relatório de coleta com sucessos e falhas parciais;
+- policy `cog-evidence-materialization-v1`;
+- materialização explícita record → catálogo v2;
+- provenance `collector_source_id + payload_sha256` no catálogo;
 - `FRESH / STALE / EXPIRED / INVALID / UNVERIFIED`;
 - claims `CAPABILITY / PRICING / AVAILABILITY / AUTHORIZATION`;
-- inspeção de catálogo via `cog catalog-check`;
-- amortização explícita de custos de setup;
-- recálculo de custo e valor líquido após aquisição hipotética;
 - testes automatizados e CI.
 
-A próxima evolução é automatizar a **coleta deliberada de evidência para fontes configuradas**,
-sem transformar a internet ou repositórios externos em estado implícito do projeto.
+A próxima evolução é adicionar um **Evidence Ledger local**: histórico append-only de observações,
+mudanças de preço/disponibilidade e detecção de drift, sem transformar fontes externas em estado
+implícito do projeto.
