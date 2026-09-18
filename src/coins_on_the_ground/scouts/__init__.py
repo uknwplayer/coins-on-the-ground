@@ -9,6 +9,8 @@ from .immunefi import ImmunefiScout as ImmunefiScout
 from .immunefi import parse_immunefi_listing as parse_immunefi_listing
 from .issuehunt import IssueHuntScout as IssueHuntScout
 from .issuehunt import parse_issuehunt_html as parse_issuehunt_html
+from .keep3r import Keep3rScout as Keep3rScout
+from .keep3r import discover_keep3r_jobs as discover_keep3r_jobs
 from .registry import RegisteredScoutSource as RegisteredScoutSource
 from .registry import parse_scout_source_registry as parse_scout_source_registry
 from .sources import NetworkSurface as NetworkSurface
@@ -20,10 +22,12 @@ __all__ = [
     "GitHubBountyScout",
     "ImmunefiScout",
     "IssueHuntScout",
+    "Keep3rScout",
     "NetworkSurface",
     "RegisteredScoutSource",
     "Scout",
     "ScoutSource",
+    "discover_keep3r_jobs",
     "extract_reward",
     "parse_algora_org_html",
     "parse_frantic_issue",
