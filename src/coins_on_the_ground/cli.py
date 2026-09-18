@@ -48,6 +48,7 @@ from coins_on_the_ground.planning import (
     plan_capability_acquisition,
     plan_capability_gap,
     plan_microtask_portfolio,
+    plan_source_allocation,
     summarize_settlement_pool,
 )
 from coins_on_the_ground.scouts import (
@@ -386,6 +387,36 @@ async def _replenishment_analyze(args: argparse.Namespace) -> int:
             _json_value(asdict(item))
             for item in summaries
         ],
+        "execution_performed": False,
+    }
+
+    if args.output:
+        await asyncio.to_thread(_write_json, Path(args.output), row)
+    else:
+        print(json.dumps(row, ensure_ascii=False))
+    return 0
+
+
+async def _source_allocation(args: argparse.Namespace) -> int:
+    observations = await _load_observations(args)
+    opportunities, discovery_failures = await _discover(args.source, args.limit)
+    snapshots = await asyncio.to_thread(
+        load_opportunity_snapshots,
+        Path(args.snapshot_ledger),
+    )
+    _, summaries = analyze_replenishment(snapshots)
+    plan = plan_source_allocation(
+        opportunities,
+        observations,
+        summaries,
+    )
+    row = {
+        "engine": "source-allocation-planner",
+        "source": args.source,
+        "profiles": len(observations),
+        "snapshot_ledger_entries": len(snapshots),
+        "plan": _json_value(asdict(plan)),
+        "source_failures": discovery_failures,
         "execution_performed": False,
     }
 
@@ -1174,6 +1205,20 @@ def build_parser() -> argparse.ArgumentParser:
         help="optional JSON output path",
     )
     replenishment_analyze.set_defaults(handler=_replenishment_analyze)
+
+    source_allocation = subparsers.add_parser(
+        "source-allocation",
+        help="rank where scouting attention should go using current and historical signals",
+    )
+    _add_source_argument(source_allocation)
+    _add_common_scan_args(source_allocation)
+    _add_capability_profile_args(source_allocation)
+    source_allocation.add_argument(
+        "--snapshot-ledger",
+        required=True,
+        help="opportunity snapshot JSONL ledger used for replenishment history",
+    )
+    source_allocation.set_defaults(handler=_source_allocation)
 
     sources_check = subparsers.add_parser(
         "sources-check",
