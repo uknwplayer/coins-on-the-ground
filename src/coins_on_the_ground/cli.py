@@ -40,6 +40,7 @@ from coins_on_the_ground.planning import (
     parse_historical_confidence_policy,
     plan_capability_acquisition,
     plan_capability_gap,
+    plan_microtask_portfolio,
     summarize_settlement_pool,
 )
 from coins_on_the_ground.scouts import (
@@ -276,6 +277,31 @@ async def _settlement_summary(args: argparse.Namespace) -> int:
             ensure_ascii=False,
         )
     )
+    return 0
+
+
+async def _portfolio(args: argparse.Namespace) -> int:
+    observations = await _load_observations(args)
+    opportunities, discovery_failures = await _discover(args.source, args.limit)
+    plan = plan_microtask_portfolio(
+        opportunities,
+        observations,
+        starting_balance_usd=args.current_balance_usd,
+    )
+    row = {
+        "engine": "microtask-portfolio-planner",
+        "source": args.source,
+        "profiles": len(observations),
+        "plan": _json_value(asdict(plan)),
+        "source_failures": discovery_failures,
+        "execution_performed": False,
+    }
+
+    if args.output:
+        await asyncio.to_thread(_write_json, Path(args.output), row)
+    else:
+        print(json.dumps(row, ensure_ascii=False))
+
     return 0
 
 
@@ -1005,6 +1031,26 @@ def build_parser() -> argparse.ArgumentParser:
     )
     settlement_summary.add_argument("--limit", type=int, default=100)
     settlement_summary.set_defaults(handler=_settlement_summary)
+
+    portfolio = subparsers.add_parser(
+        "portfolio",
+        help="prioritize profitable microtasks and model a path to payout",
+    )
+    portfolio.add_argument(
+        "source",
+        choices=("bidpostloop",),
+        default="bidpostloop",
+        nargs="?",
+    )
+    _add_common_scan_args(portfolio)
+    _add_capability_profile_args(portfolio)
+    portfolio.add_argument(
+        "--current-balance-usd",
+        type=Decimal,
+        default=Decimal(0),
+        help="known current funded balance expressed in USD-equivalent units",
+    )
+    portfolio.set_defaults(handler=_portfolio)
 
     sources_check = subparsers.add_parser(
         "sources-check",
