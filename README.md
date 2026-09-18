@@ -52,7 +52,7 @@ O primeiro marco **não** movimenta dinheiro nem ativos.
 
 Ele:
 
-1. descobre oportunidades públicas;
+1. descobre oportunidades públicas em fontes globais, sem filtro prévio por país;
 2. normaliza cada descoberta em um modelo comum;
 3. registra a fonte e a base de autorização;
 4. deduplica achados equivalentes;
@@ -77,6 +77,24 @@ Descoberta:
 ```bash
 cog scan frantic --limit 25
 cog scan github-bounties --limit 25
+cog scan issuehunt --limit 25
+cog scan algora --limit 25
+```
+
+Algora também aceita organizações explícitas:
+
+```bash
+cog scan algora \
+  --org projectdiscovery \
+  --org Dokploy \
+  --limit 25
+```
+
+Registry global de fontes:
+
+```bash
+cog sources-check \
+  --registry ./examples/scout-source-registry.example.json
 ```
 
 Revisão:
@@ -162,7 +180,8 @@ Veja `docs/scouts.md`, `docs/opportunity-model.md`, `docs/feasibility.md`,
 `docs/bridge-integration.md`, `docs/capability-gaps.md`,
 `docs/capability-acquisition.md`, `docs/capability-evidence.md`,
 `docs/evidence-collectors.md`, `docs/evidence-materialization.md` e
-`docs/evidence-ledger.md` e `docs/historical-confidence.md`.
+`docs/evidence-ledger.md`, `docs/historical-confidence.md` e
+`docs/global-discovery.md`.
 
 ## Módulos iniciais
 
@@ -196,6 +215,10 @@ O projeto não foi criado para:
 Já estão implementados:
 
 - Scouts públicos somente leitura;
+- descoberta global sem filtro geográfico prévio;
+- GitHub, Frantic, IssueHunt OSS e Algora;
+- Source Registry `clearnet/onion` sem crawling automático;
+- isolamento de falhas por Scout em agregações globais;
 - Opportunity Model e deduplicação;
 - `review_score`;
 - Cost & Feasibility Estimator;
@@ -222,7 +245,7 @@ Já estão implementados:
 - claims `CAPABILITY / PRICING / AVAILABILITY / AUTHORIZATION`;
 - testes automatizados e CI.
 
-A próxima evolução é usar essa confiança histórica para **ajustar a faixa econômica projetada**
-sem esconder a incerteza: por exemplo, ampliar o custo conservador quando uma fonte tem preço
-volátil ou exigir margem mínima maior quando o histórico é curto. Isso continuará sendo policy
-explícita do Coins on the Ground, não comportamento implícito do provider.
+A próxima evolução principal volta a ser **aumentar a superfície de descoberta**: novos Scouts
+globais para recompensas on-chain permissionless, competições, compute/storage/bandwidth rewards,
+mercados públicos de tarefas e fontes onion legítimas previamente revisadas. O pipeline econômico
+e de evidência continuará filtrando essas descobertas depois da coleta.
