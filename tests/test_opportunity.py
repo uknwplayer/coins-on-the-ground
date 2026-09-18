@@ -27,7 +27,7 @@ def test_penal_review_is_blocked() -> None:
         source="example",
         title="Ambiguous asset",
         opportunity_class=OpportunityClass.FOUND,
-        reward=Decimal("10"),
+        reward=Decimal(10),
         currency="USD",
         authorization_basis="Unclear.",
         required_action="Unknown.",
