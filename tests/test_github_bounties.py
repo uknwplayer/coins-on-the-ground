@@ -8,9 +8,9 @@ from coins_on_the_ground.scouts.github_bounties import GitHubBountyScout, extrac
 @pytest.mark.parametrize(
     ("text", "expected"),
     [
-        ("Bounty: $50 for this fix", (Decimal("50"), "USD")),
+        ("Bounty: $50 for this fix", (Decimal(50), "USD")),
         ("Reward US$ 125.50", (Decimal("125.50"), "USD")),
-        ("Bounty EUR 80", (Decimal("80"), "EUR")),
+        ("Bounty EUR 80", (Decimal(80), "EUR")),
         ("Recompensa R$ 25,00", (Decimal("25.00"), "BRL")),
         ("No explicit reward", None),
         ("Issue #500 needs help", None),
