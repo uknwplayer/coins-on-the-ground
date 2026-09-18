@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://coins-on-the-ground.local/schemas/provider-evidence-v1.schema.json",
+  "title": "Coins on the Ground Provider Evidence V1",
+  "type": "object",
+  "required": [
+    "format",
+    "provider_name",
+    "capabilities",
+    "claims",
+    "max_age_days",
+    "confidence_score"
+  ],
+  "properties": {
+    "format": {
+      "const": "cog-provider-evidence-v1"
+    },
+    "provider_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "browser",
+          "http",
+          "text_analysis",
+          "code",
+          "git",
+          "file_io",
+          "ocr",
+          "transcription",
+          "email"
+        ]
+      }
+    },
+    "pricing": {
+      "type": "object",
+      "properties": {
+        "setup_cost_usd": {
+          "type": ["string", "null"],
+          "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+        },
+        "per_task_cost_usd": {
+          "type": ["string", "null"],
+          "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+        },
+        "hourly_cost_usd": {
+          "type": ["string", "null"],
+          "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "available": {
+      "type": ["boolean", "null"]
+    },
+    "claims": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "CAPABILITY",
+          "PRICING",
+          "AVAILABILITY",
+          "AUTHORIZATION"
+        ]
+      }
+    },
+    "max_age_days": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "expires_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "confidence_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "authorization_requirements": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "default": []
+    }
+  },
+  "additionalProperties": false
+}
