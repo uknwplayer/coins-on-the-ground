@@ -30,3 +30,29 @@ def test_bidpostloop_settlement_summary_is_registered() -> None:
     assert args.source == "bidpostloop"
     assert args.limit == 100
     assert args.handler.__name__ == "_settlement_summary"
+
+
+def test_bidpostloop_portfolio_is_registered() -> None:
+    args = build_parser().parse_args(
+        [
+            "portfolio",
+            "bidpostloop",
+            "--limit",
+            "100",
+            "--capability",
+            "http",
+            "--capability",
+            "text_analysis",
+            "--hourly-cost-usd",
+            "0.60",
+            "--current-balance-usd",
+            "1.25",
+        ]
+    )
+
+    assert args.source == "bidpostloop"
+    assert args.limit == 100
+    assert [str(value) for value in args.capability] == ["http", "text_analysis"]
+    assert str(args.hourly_cost_usd) == "0.60"
+    assert str(args.current_balance_usd) == "1.25"
+    assert args.handler.__name__ == "_portfolio"
