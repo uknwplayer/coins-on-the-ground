@@ -1,29 +1,29 @@
 # Scouts
 
-Scouts are read-only source adapters. They discover public candidates and normalize them into the
-canonical Opportunity model.
+Scouts são adaptadores de fonte somente leitura. Eles descobrem candidatos públicos e os
+normalizam para o modelo canônico `Opportunity`.
 
-A scout must not:
+Um Scout não deve:
 
-- claim a reward;
-- move money or assets;
-- submit work;
-- use leaked credentials;
-- authenticate as another party;
-- infer ownership from technical accessibility.
+- reivindicar recompensa;
+- movimentar dinheiro ou ativos;
+- enviar trabalho;
+- usar credenciais vazadas;
+- autenticar-se como outra parte;
+- inferir propriedade apenas pela acessibilidade técnica.
 
 ## GitHub Bounties
 
-`GitHubBountyScout` is a broad discovery source.
+`GitHubBountyScout` é uma fonte ampla de descoberta.
 
-It queries public, open GitHub issues containing the word `bounty`, then keeps only candidates
-with an explicit fiat-denominated amount in the issue title or body.
+Ele consulta issues públicas e abertas do GitHub contendo a palavra `bounty` e mantém apenas
+candidatos com valor explícito denominado em moeda fiduciária no título ou corpo da issue.
 
-The filter is intentionally conservative. Bare numbers are ignored, and the scout does not yet
-attempt to value crypto-token rewards.
+O filtro é intencionalmente conservador. Números sem indicação de moeda são ignorados, e o Scout
+ainda não tenta atribuir valor a recompensas em tokens.
 
-Because generic GitHub search can surface aggregators, mirrors, or incomplete terms, every
-candidate begins as `CIVIL_REVIEW`.
+Como a busca genérica no GitHub pode retornar agregadores, mirrors ou termos incompletos, todo
+candidato começa como `CIVIL_REVIEW`.
 
 ```bash
 cog scan github-bounties --limit 25
@@ -31,43 +31,45 @@ cog scan github-bounties --limit 25
 
 ## Frantic Bounties
 
-`FranticBountyScout` is the first source-specific Scout.
+`FranticBountyScout` é o primeiro Scout específico de uma fonte.
 
-It reads structured public mirror issues from `auscaster/frantic-board` and only emits a
-candidate when all of these conditions are visible:
+Ele lê issues públicas estruturadas em `auscaster/frantic-board` e só emite um candidato quando
+todas estas condições estão visíveis:
 
-- `Worker price` is greater than zero;
-- `Status` is `Available`;
-- at least one slot remains available;
-- a HTTPS claim URL points to `gofrantic.com/bounties/...`.
+- `Worker price` maior que zero;
+- `Status` igual a `Available`;
+- pelo menos um slot ainda disponível;
+- URL HTTPS de claim apontando para `gofrantic.com/bounties/...`.
 
-The mirror itself states that Frantic is the source of truth. Therefore the claim page must still
-be checked before work begins, and these candidates also remain `CIVIL_REVIEW` for now.
+O próprio mirror informa que o Frantic é a fonte de verdade. Portanto, a página de claim ainda
+precisa ser verificada antes do início do trabalho, e esses candidatos também permanecem como
+`CIVIL_REVIEW` por enquanto.
 
 ```bash
 cog scan frantic --limit 25
 ```
 
-This source is intentionally narrow: stronger evidence is preferred over a high candidate count.
+Essa fonte é deliberadamente estreita: evidência mais forte é preferida a uma contagem alta de
+candidatos.
 
-## Authentication
+## Autenticação
 
-Optional authentication increases GitHub API rate limits:
+Autenticação opcional aumenta os limites da API do GitHub:
 
 ```bash
 export GITHUB_TOKEN=...
 cog scan frantic
 ```
 
-Do not commit the token. `.env` files are ignored by Git.
+Não faça commit do token. Arquivos `.env` são ignorados pelo Git.
 
-## Persisting observations
+## Persistência das observações
 
-Either Scout can write JSONL without taking any action:
+Qualquer um dos Scouts pode gravar JSONL sem executar ação financeira:
 
 ```bash
 cog scan frantic --limit 50 --output data/frantic.jsonl
 cog scan github-bounties --limit 50 --output data/github-bounties.jsonl
 ```
 
-The CLI prints a final summary with `execution_performed=false`.
+A CLI imprime ao final um resumo com `execution_performed=false`.
