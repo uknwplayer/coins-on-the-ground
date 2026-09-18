@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import hashlib
 import json
-from itertools import pairwise
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
 from enum import StrEnum
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
