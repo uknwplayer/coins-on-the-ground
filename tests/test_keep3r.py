@@ -1,5 +1,6 @@
 import json
 from decimal import Decimal
+
 import httpx
 import pytest
 
@@ -67,7 +68,11 @@ async def test_discover_keep3r_positive_credit_jobs() -> None:
             assert payload["params"][0]["to"] == _CONTRACT
             return httpx.Response(
                 200,
-                json={"jsonrpc": "2.0", "id": 1, "result": _jobs_result((_JOB_A, _JOB_B))},
+                json={
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "result": _jobs_result((_JOB_A, _JOB_B)),
+                },
                 request=request,
             )
 
