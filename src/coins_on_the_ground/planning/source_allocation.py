@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 from enum import StrEnum
 
 from coins_on_the_ground.adapters import CapabilityObservation, estimate_against_inventory
@@ -33,10 +33,10 @@ class SourceAllocationPolicy:
     settlement_weight: Decimal = Decimal("0.10")
     history_confidence_weight: Decimal = Decimal("0.10")
     net_per_minute_reference_usd: Decimal = Decimal("0.05")
-    replenishment_usd_per_day_reference: Decimal = Decimal("10")
+    replenishment_usd_per_day_reference: Decimal = Decimal(10)
     new_opportunities_per_day_reference: Decimal = Decimal("10")
     full_history_snapshots: int = 6
-    full_history_hours: Decimal = Decimal("48")
+    full_history_hours: Decimal = Decimal(48)
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,7 +75,7 @@ _SHARE_QUANTUM = Decimal("0.01")
 
 def _clamp_score(value: Decimal) -> int:
     bounded = max(Decimal(0), min(Decimal(100), value))
-    return int(bounded.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+    return int(bounded.quantize(Decimal(1), rounding=ROUND_HALF_UP))
 
 
 def _scaled_score(value: Decimal | None, reference: Decimal) -> int | None:
