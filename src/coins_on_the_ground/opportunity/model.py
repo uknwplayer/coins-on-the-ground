@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from decimal import Decimal
 from enum import StrEnum
-from typing import Mapping
 
 
 class OpportunityClass(StrEnum):
@@ -34,7 +34,7 @@ class Opportunity:
     currency: str
     authorization_basis: str
     required_action: str
-    estimated_cost: Decimal = Decimal("0")
+    estimated_cost: Decimal = Decimal(0)
     risk_class: RiskClass = RiskClass.CIVIL_REVIEW
     evidence_urls: tuple[str, ...] = ()
     metadata: Mapping[str, str] = field(default_factory=dict)
