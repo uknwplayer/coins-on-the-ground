@@ -166,6 +166,7 @@ cog review all --limit 100
 Atualmente `all` agrega:
 
 ```text
+AkashScout
 GitHubBountyScout
 FranticBountyScout
 IssueHuntScout
@@ -401,3 +402,65 @@ requester_actor_type
 ```
 
 A descrição da tarefa é tratada como input não confiável e nunca é executada.
+
+
+### Akash Network
+
+`AkashScout` consulta somente a API REST pública da Akash mainnet para listar orders abertas:
+
+```text
+GET /akash/market/v1beta5/orders/list
+filters.state=open
+```
+
+Uso:
+
+```bash
+cog scan akash --limit 25
+```
+
+Endpoint alternativo:
+
+```bash
+cog scan akash \
+  --rest-url https://api.akashnet.net:443 \
+  --limit 25
+```
+
+Cada order representa demanda pública por compute no marketplace da Akash.
+
+O Scout preserva:
+
+```text
+owner / dseq / gseq / oseq
+group name
+resource units
+replica count
+GPU requirement
+maximum price per block
+```
+
+O valor entra como:
+
+```text
+reward_semantics = maximum_rate
+currency = <denom>/block
+```
+
+A taxa é calculada a partir do teto de preço declarado para as resource units e seus counts.
+
+Ela **não** representa payout garantido. Providers competem por preço e uma lease só existe se um bid
+for aceito.
+
+O Scout não:
+
+- cria provider;
+- assina bid;
+- cria lease;
+- publica manifest;
+- movimenta AKT/ACT/USDC;
+- usa chave privada.
+
+Antes de qualquer participação futura ainda precisam ser considerados capacidade física,
+disponibilidade, preço competitivo, custos de energia/hosting, collateral/deposit, uptime e margem
+líquida.
