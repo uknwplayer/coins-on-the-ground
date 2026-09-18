@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
@@ -8,8 +9,13 @@ from coins_on_the_ground.planning.acquisition import (
     AcquisitionMode,
     CapabilityAcquisitionOption,
 )
+from coins_on_the_ground.planning.evidence import (
+    CapabilityEvidence,
+    EvidenceClaim,
+)
 
-_CATALOG_FORMAT = "cog-capability-acquisition-catalog-v1"
+_CATALOG_V1 = "cog-capability-acquisition-catalog-v1"
+_CATALOG_V2 = "cog-capability-acquisition-catalog-v2"
 
 
 def _mapping(value: object, label: str) -> dict[str, Any]:
@@ -42,9 +48,84 @@ def _optional_int(value: object, label: str) -> int | None:
     return value
 
 
+def _datetime(value: object, label: str, *, required: bool) -> datetime | None:
+    if value is None and not required:
+        return None
+    if not isinstance(value, str):
+        raise TypeError(f"{label} must be an ISO 8601 string")
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise ValueError(f"invalid {label}") from exc
+    if parsed.tzinfo is None:
+        raise ValueError(f"{label} must include a timezone")
+    return parsed
+
+
+def _evidence(item: dict[str, Any]) -> CapabilityEvidence:
+    raw = _mapping(item.get("evidence"), "evidence")
+
+    source_name = raw.get("source_name")
+    source_url = raw.get("source_url")
+    if not isinstance(source_name, str) or not source_name.strip():
+        raise ValueError("evidence source_name must be a non-empty string")
+    if not isinstance(source_url, str) or not source_url.strip():
+        raise ValueError("evidence source_url must be a non-empty string")
+
+    observed_at = _datetime(raw.get("observed_at"), "observed_at", required=True)
+    expires_at = _datetime(raw.get("expires_at"), "expires_at", required=False)
+    assert observed_at is not None
+
+    max_age_days = raw.get("max_age_days")
+    if not isinstance(max_age_days, int) or isinstance(max_age_days, bool):
+        raise TypeError("evidence max_age_days must be an integer")
+    if max_age_days < 1:
+        raise ValueError("evidence max_age_days must be at least 1")
+
+    raw_claims = raw.get("claims")
+    if not isinstance(raw_claims, list) or not raw_claims:
+        raise ValueError("evidence claims must be a non-empty list")
+    try:
+        claims = tuple(
+            sorted(
+                {EvidenceClaim(value) for value in raw_claims},
+                key=lambda claim: claim.value,
+            )
+        )
+    except (TypeError, ValueError) as exc:
+        raise ValueError("invalid evidence claim") from exc
+
+    confidence = raw.get("confidence_score")
+    if not isinstance(confidence, int) or isinstance(confidence, bool):
+        raise TypeError("evidence confidence_score must be an integer")
+    if not 0 <= confidence <= 100:
+        raise ValueError("evidence confidence_score must be between 0 and 100")
+
+    requirements = raw.get("authorization_requirements", [])
+    if not isinstance(requirements, list):
+        raise TypeError("authorization_requirements must be a list")
+    normalized_requirements: list[str] = []
+    for requirement in requirements:
+        if not isinstance(requirement, str) or not requirement.strip():
+            raise ValueError("authorization requirements must be non-empty strings")
+        normalized_requirements.append(requirement.strip())
+
+    return CapabilityEvidence(
+        source_name=source_name.strip(),
+        source_url=source_url.strip(),
+        observed_at=observed_at,
+        expires_at=expires_at,
+        max_age_days=max_age_days,
+        claims=claims,
+        confidence_score=confidence,
+        authorization_requirements=tuple(sorted(set(normalized_requirements))),
+    )
+
+
 def parse_acquisition_catalog(value: object) -> tuple[CapabilityAcquisitionOption, ...]:
     catalog = _mapping(value, "acquisition catalog")
-    if catalog.get("format") != _CATALOG_FORMAT:
+    catalog_format = catalog.get("format")
+    if catalog_format not in {_CATALOG_V1, _CATALOG_V2}:
         raise ValueError("unsupported acquisition catalog format")
 
     raw_options = catalog.get("options")
@@ -78,7 +159,7 @@ def parse_acquisition_catalog(value: object) -> tuple[CapabilityAcquisitionOptio
         try:
             provides = tuple(
                 sorted(
-                    {Capability(value) for value in raw_provides},
+                    {Capability(capability) for capability in raw_provides},
                     key=lambda capability: capability.value,
                 )
             )
@@ -99,6 +180,8 @@ def parse_acquisition_catalog(value: object) -> tuple[CapabilityAcquisitionOptio
         enabled = item.get("enabled", True)
         if not isinstance(reusable, bool) or not isinstance(enabled, bool):
             raise TypeError("reusable and enabled must be booleans")
+
+        evidence = _evidence(item) if catalog_format == _CATALOG_V2 else None
 
         options.append(
             CapabilityAcquisitionOption(
@@ -126,6 +209,8 @@ def parse_acquisition_catalog(value: object) -> tuple[CapabilityAcquisitionOptio
                 confidence_score=confidence,
                 reusable=reusable,
                 enabled=enabled,
+                evidence=evidence,
+                evidence_required=catalog_format == _CATALOG_V2,
             )
         )
 
