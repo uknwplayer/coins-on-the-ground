@@ -210,3 +210,44 @@ reviewed onion sources
 ```
 
 Cada nova superfície precisa de seu próprio adapter/Scout e testes.
+
+
+### Immunefi
+
+`ImmunefiScout` lê a listagem pública global de programas de bug bounty.
+
+```bash
+cog scan immunefi --limit 25
+```
+
+O Scout somente descobre metadata do programa.
+
+Ele não:
+
+- testa ativos;
+- executa scanners;
+- gera exploit;
+- envia report;
+- interage com contratos ou aplicações do alvo.
+
+O valor normalizado em `reward` corresponde ao **Maximum Bounty** anunciado pelo programa e entra
+com:
+
+```text
+reward_semantics = maximum
+```
+
+Portanto, esse valor não é tratado como payout exato nem entra automaticamente em cálculo de valor
+líquido.
+
+Antes de qualquer pesquisa de segurança, ainda precisam ser revisados:
+
+```text
+assets in scope
+impacts in scope
+prohibited activities
+PoC requirements
+KYC/payout eligibility
+program-specific rules
+responsible disclosure terms
+```
