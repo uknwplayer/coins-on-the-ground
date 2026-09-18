@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from coins_on_the_ground.opportunity import Opportunity, RiskClass
+from coins_on_the_ground.opportunity.model import Opportunity, RiskClass
 
 
 def evaluate_for_review(opportunity: Opportunity) -> tuple[bool, str]:
