@@ -1,14 +1,14 @@
-# Architecture
+# Arquitetura
 
-## Boundary
+## Fronteira
 
-Coins on the Ground is an application, not a fork of Machine Bridge or Bridge Mesh.
+Coins on the Ground é uma aplicação, não um fork da Machine Bridge nem da Bridge Mesh.
 
 ```text
                     +-----------------------+
                     | Coins on the Ground   |
                     |                       |
-Public sources ---> | Scouts                |
+Fontes públicas --> | Scouts                |
                     |   |                   |
                     |   v                   |
                     | Opportunity Model     |
@@ -27,30 +27,30 @@ Public sources ---> | Scouts                |
                      Core             Core
 ```
 
-## Rule
+## Regra
 
 **Core knows capabilities. Project knows intentions.**
 
-Machine Bridge may expose generic operations such as tool execution, messaging, task handoff,
-validation, or agent invocation.
+A Machine Bridge pode expor operações genéricas como execução de ferramentas, troca de mensagens,
+handoff de tarefas, validação ou invocação de agentes.
 
-Bridge Mesh may expose generic operations such as distribution, redundancy, coordination,
-consensus, routing, or auditing.
+A Bridge Mesh pode expor operações genéricas como distribuição, redundância, coordenação,
+consenso, roteamento ou auditoria.
 
-Coins on the Ground owns concepts such as:
+Coins on the Ground é responsável por conceitos como:
 
-- opportunity discovery;
+- descoberta de oportunidades;
 - FOUND / EARN / RECOVER;
-- authorization evidence;
-- reward and cost estimation;
-- legal-risk metadata;
-- profitability thresholds;
-- execution policy;
-- financial audit trail.
+- evidência de autorização;
+- estimativa de recompensa e custo;
+- metadados de risco jurídico;
+- limites de rentabilidade;
+- política de execução;
+- trilha de auditoria financeira.
 
-None of those concepts should be pushed into the generic cores.
+Nenhum desses conceitos deve ser empurrado para os cores genéricos.
 
-## Read-only-first pipeline
+## Pipeline somente leitura
 
 ```text
 SOURCE
@@ -64,12 +64,14 @@ SOURCE
   -> AUDIT RECORD
 ```
 
-Execution is deliberately outside the first milestone.
+A execução fica deliberadamente fora do primeiro marco.
 
-## Future execution boundary
+## Fronteira futura de execução
 
-When execution is introduced, it must be isolated behind an explicit interface and disabled by
-default. Discovery components must never require custody of credentials or assets.
+Quando a execução for introduzida, ela deverá ficar isolada atrás de uma interface explícita e
+desabilitada por padrão. Componentes de descoberta nunca devem exigir custódia de credenciais ou
+ativos.
 
-A future executor should receive an already-reviewed Opportunity plus a specific authorization
-decision. It should not make ownership assumptions from technical accessibility.
+Um executor futuro deverá receber uma `Opportunity` já revisada, além de uma decisão específica
+de autorização. Ele não deve inferir propriedade ou permissão apenas a partir de acessibilidade
+técnica.
