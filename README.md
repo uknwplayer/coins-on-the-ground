@@ -55,42 +55,50 @@ Ele:
 1. descobre oportunidades públicas;
 2. normaliza cada descoberta em um modelo comum;
 3. registra a fonte e a base de autorização;
-4. estima recompensa, custo e valor líquido esperado;
-5. classifica risco jurídico/político do projeto;
-6. prioriza candidatos para revisão humana;
-7. preserva trilha de auditoria.
+4. deduplica achados equivalentes;
+5. calcula prioridade para revisão;
+6. estima capacidades, esforço e custo quando houver dados suficientes;
+7. preserva incerteza quando capacidades ou custos ainda não forem conhecidos;
+8. mantém execução fora do pipeline.
 
-A execução será uma capacidade separada, introduzida apenas quando o pipeline de descoberta e
-validação estiver confiável.
+## Uso atual
 
-## Primeiro Value Scout real
-
-O primeiro adaptador de fonte pesquisa issues públicas do GitHub em busca de bounties com
-recompensa monetária explícita.
+Descoberta:
 
 ```bash
-python -m pip install -e ".[dev]"
+cog scan frantic --limit 25
 cog scan github-bounties --limit 25
 ```
 
-Ele é intencionalmente conservador:
+Revisão e deduplicação:
 
-- não envia submissões;
-- não faz claim;
-- não movimenta ativos;
-- não usa credenciais além de um token opcional do GitHub para ampliar limites da API;
-- candidatos começam como `CIVIL_REVIEW`, não como aprovação automática de execução;
-- na primeira versão, apenas recompensas explícitas denominadas em moeda fiduciária são extraídas.
+```bash
+cog review all --limit 100
+```
 
-Veja `docs/scouts.md`.
+Estimativa de custo e viabilidade com um perfil declarado:
+
+```bash
+cog estimate frantic \
+  --capability transcription \
+  --capability file_io \
+  --hourly-cost-usd 0.60 \
+  --limit 25
+```
+
+Sem capacidades declaradas, o estimator não presume que uma máquina seja capaz de realizar a
+tarefa.
+
+Veja `docs/scouts.md`, `docs/opportunity-model.md` e `docs/feasibility.md`.
 
 ## Módulos iniciais
 
 ```text
 src/coins_on_the_ground/
   scouts/          # descoberta de oportunidades
+  opportunity/     # modelo canônico, deduplicação e scoring
+  estimation/      # custo, esforço e viabilidade por CapabilityProfile
   classifiers/     # FOUND / EARN / RECOVER e classificação de risco
-  opportunity/     # modelo canônico e scoring de oportunidades
   policies/        # regras específicas deste projeto
   audit/           # evidências e trilha de decisão
   adapters/        # integração com Machine Bridge / Bridge Mesh
@@ -109,6 +117,18 @@ O projeto não foi criado para:
 
 ## Estado atual
 
-A fundação e os primeiros Scouts somente leitura estão implementados. O objetivo atual é melhorar
-a qualidade do sinal, adicionar validação específica por fonte e incorporar novas superfícies
-independentes de oportunidade antes de considerar qualquer capacidade de execução.
+Já estão implementados:
+
+- Scouts públicos somente leitura;
+- Opportunity Model;
+- deduplicação;
+- `review_score`;
+- distinção entre custo zero e custo desconhecido;
+- Cost & Feasibility Estimator com faixas de tempo/custo;
+- `CapabilityProfile` explícito;
+- classificação de viabilidade e rentabilidade;
+- testes automatizados e CI.
+
+O próximo passo arquitetural é permitir que adapters locais do Coins on the Ground obtenham
+capacidades reais da Machine Bridge / Bridge Mesh e as convertam em `CapabilityProfile`, sem
+alterar o core de nenhuma das duas arquiteturas.
