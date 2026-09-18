@@ -90,3 +90,27 @@ def test_replenishment_analyze_cli_is_registered() -> None:
     assert args.ledger == "data/opportunity-snapshots.jsonl"
     assert args.source_id == "bidpostloop"
     assert args.handler.__name__ == "_replenishment_analyze"
+
+
+def test_source_allocation_cli_is_registered() -> None:
+    args = build_parser().parse_args(
+        [
+            "source-allocation",
+            "all",
+            "--snapshot-ledger",
+            "data/opportunity-snapshots.jsonl",
+            "--capability",
+            "http",
+            "--capability",
+            "text_analysis",
+            "--hourly-cost-usd",
+            "0.60",
+            "--limit",
+            "100",
+        ]
+    )
+
+    assert args.source == "all"
+    assert args.snapshot_ledger == "data/opportunity-snapshots.jsonl"
+    assert args.limit == 100
+    assert args.handler.__name__ == "_source_allocation"
