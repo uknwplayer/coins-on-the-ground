@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from itertools import pairwise
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -347,7 +348,7 @@ def detect_evidence_drift(
     events: list[EvidenceDriftEvent] = []
     for source_entries in grouped.values():
         source_entries.sort(key=lambda entry: (entry.record.collected_at, entry.entry_id))
-        for previous, current in zip(source_entries, source_entries[1:], strict=False):
+        for previous, current in pairwise(source_entries):
             events.extend(_pair_drift(previous, current))
 
     events.sort(key=lambda event: (event.collected_at, event.source_id, event.kind.value, event.field))
@@ -374,7 +375,7 @@ def summarize_evidence_stability(
         payload_change_transitions = 0
         stable_transitions = 0
 
-        for previous, current in zip(source_entries, source_entries[1:], strict=False):
+        for previous, current in pairwise(source_entries):
             pair_events = _pair_drift(previous, current)
             if previous.record.payload_sha256 != current.record.payload_sha256:
                 payload_change_transitions += 1
