@@ -111,6 +111,14 @@ def _evidence(item: dict[str, Any]) -> CapabilityEvidence:
             raise ValueError("authorization requirements must be non-empty strings")
         normalized_requirements.append(requirement.strip())
 
+    collector_source_id = raw.get("collector_source_id")
+    if collector_source_id is not None and not isinstance(collector_source_id, str):
+        raise TypeError("collector_source_id must be a string or null")
+
+    payload_sha256 = raw.get("payload_sha256")
+    if payload_sha256 is not None and not isinstance(payload_sha256, str):
+        raise TypeError("payload_sha256 must be a string or null")
+
     return CapabilityEvidence(
         source_name=source_name.strip(),
         source_url=source_url.strip(),
@@ -120,6 +128,8 @@ def _evidence(item: dict[str, Any]) -> CapabilityEvidence:
         claims=claims,
         confidence_score=confidence,
         authorization_requirements=tuple(sorted(set(normalized_requirements))),
+        collector_source_id=collector_source_id,
+        payload_sha256=payload_sha256,
     )
 
 
