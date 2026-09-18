@@ -8,7 +8,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-from coins_on_the_ground.opportunity import Opportunity
+from coins_on_the_ground.opportunity import Opportunity, review_and_deduplicate
 from coins_on_the_ground.scouts import FranticBountyScout, GitHubBountyScout, Scout
 
 
@@ -20,13 +20,13 @@ def _json_value(value: Any) -> Any:
     if isinstance(value, tuple):
         return list(value)
     if isinstance(value, dict):
-        return {str(k): _json_value(v) for k, v in value.items()}
+        return {str(key): _json_value(item) for key, item in value.items()}
     return value
 
 
 def serialize(opportunity: Opportunity) -> dict[str, Any]:
     return {key: _json_value(value) for key, value in asdict(opportunity).items()} | {
-        "expected_net_value": str(opportunity.expected_net_value),
+        "expected_net_value": _json_value(opportunity.expected_net_value),
         "execution_candidate": opportunity.execution_candidate,
     }
 
@@ -38,11 +38,16 @@ def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
-async def _emit_scan(scout: Scout, args: argparse.Namespace) -> int:
-    rows: list[dict[str, Any]] = []
-
+async def _collect(scout: Scout) -> list[Opportunity]:
+    opportunities: list[Opportunity] = []
     async for opportunity in scout.discover():
-        rows.append(serialize(opportunity))
+        opportunities.append(opportunity)
+    return opportunities
+
+
+async def _emit_scan(scout: Scout, args: argparse.Namespace) -> int:
+    opportunities = await _collect(scout)
+    rows = [serialize(opportunity) for opportunity in opportunities]
 
     if args.output:
         await asyncio.to_thread(_write_jsonl, Path(args.output), rows)
@@ -73,6 +78,54 @@ async def _scan_frantic(args: argparse.Namespace) -> int:
     return await _emit_scan(FranticBountyScout(limit=args.limit), args)
 
 
+async def _review(args: argparse.Namespace) -> int:
+    scouts: list[Scout]
+    if args.source == "frantic":
+        scouts = [FranticBountyScout(limit=args.limit)]
+    elif args.source == "github-bounties":
+        scouts = [GitHubBountyScout(limit=args.limit)]
+    else:
+        scouts = [
+            FranticBountyScout(limit=args.limit),
+            GitHubBountyScout(limit=args.limit),
+        ]
+
+    batches = await asyncio.gather(*(_collect(scout) for scout in scouts))
+    opportunities = [opportunity for batch in batches for opportunity in batch]
+    reviews = review_and_deduplicate(opportunities)
+
+    rows = [
+        {
+            "fingerprint": review.fingerprint,
+            "review_score": review.review_score,
+            "score_breakdown": review.score_breakdown,
+            "review_allowed": review.review_allowed,
+            "review_reason": review.review_reason,
+            "opportunity": serialize(review.opportunity),
+        }
+        for review in reviews
+    ]
+
+    if args.output:
+        await asyncio.to_thread(_write_jsonl, Path(args.output), rows)
+    else:
+        for row in rows:
+            print(json.dumps(row, ensure_ascii=False))
+
+    print(
+        json.dumps(
+            {
+                "engine": "opportunity-review",
+                "sources": [scout.name for scout in scouts],
+                "raw_candidates": len(opportunities),
+                "deduplicated_candidates": len(rows),
+                "execution_performed": False,
+            }
+        )
+    )
+    return 0
+
+
 def _add_common_scan_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--limit", type=int, default=25)
     parser.add_argument("--output", help="optional JSONL output path")
@@ -97,6 +150,19 @@ def build_parser() -> argparse.ArgumentParser:
     frantic = scan_sub.add_parser("frantic", help="scan structured Frantic bounty mirrors")
     _add_common_scan_args(frantic)
     frantic.set_defaults(handler=_scan_frantic)
+
+    review = subparsers.add_parser(
+        "review",
+        help="score and deduplicate discovered opportunities for human review",
+    )
+    review.add_argument(
+        "source",
+        choices=("all", "frantic", "github-bounties"),
+        default="all",
+        nargs="?",
+    )
+    _add_common_scan_args(review)
+    review.set_defaults(handler=_review)
 
     return parser
 
