@@ -86,6 +86,32 @@ Machine Bridge / Bridge Mesh -> adapter -> CapabilityProfile -> estimator
 
 As Bridges não precisam conhecer bounties, lucro, FOUND/EARN/RECOVER ou regras financeiras.
 
+## Isolamento de repositórios
+
+A fronteira arquitetural também é uma fronteira de repositório.
+
+Um repositório externo pode ser usado como referência para compreender um contrato público, mas
+seu estado operacional, workflows, arquivos internos e regras de negócio não pertencem ao
+Coins on the Ground.
+
+O projeto só deve consumir dados externos quando eles forem fornecidos deliberadamente por uma
+interface/adaptador configurado para esta finalidade.
+
+Em particular:
+
+```text
+outro projeto/repositório
+        |
+        | contrato público / export explícito
+        v
+adapter mantido em Coins on the Ground
+        |
+        v
+modelo interno do Coins on the Ground
+```
+
+Não existe dependência implícita de repositório para repositório.
+
 ## Fronteira futura de execução
 
 Quando a execução for introduzida, ela deverá ficar isolada atrás de uma interface explícita e
