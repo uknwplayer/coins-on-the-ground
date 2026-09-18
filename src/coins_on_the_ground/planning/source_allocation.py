@@ -34,7 +34,7 @@ class SourceAllocationPolicy:
     history_confidence_weight: Decimal = Decimal("0.10")
     net_per_minute_reference_usd: Decimal = Decimal("0.05")
     replenishment_usd_per_day_reference: Decimal = Decimal(10)
-    new_opportunities_per_day_reference: Decimal = Decimal("10")
+    new_opportunities_per_day_reference: Decimal = Decimal(10)
     full_history_snapshots: int = 6
     full_history_hours: Decimal = Decimal(48)
 
