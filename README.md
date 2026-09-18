@@ -1,16 +1,22 @@
 # Coins on the Ground
 
-Coins on the Ground is an experimental system for discovering small, legitimate economic opportunities that are easy for humans to overlook because they are fragmented, low-value, technical, or expensive to find manually.
+Coins on the Ground is an experimental system for discovering small, legitimate economic
+opportunities that are easy for humans to overlook because they are fragmented, low-value,
+technical, or expensive to find manually.
 
-The project is designed as an application layer that can use **Machine Bridge** and **Bridge Mesh** without modifying either core architecture.
+The project is designed as an application layer that can use **Machine Bridge** and
+**Bridge Mesh** without modifying either core architecture.
 
 ## Core idea
 
 Search for economic value that can be legitimately:
 
-- **FOUND** — explicitly claimable or publicly available under a protocol, contract, promotion, bounty, or comparable rule.
-- **EARNED** — obtained by performing useful work such as computation, code, analysis, storage, validation, problem-solving, or other rewarded tasks.
-- **RECOVERED** — returned to the rightful beneficiary when value already belongs to the user or an authorized principal.
+- **FOUND** — explicitly claimable or publicly available under a protocol, contract, promotion,
+  bounty, or comparable rule.
+- **EARNED** — obtained by performing useful work such as computation, code, analysis, storage,
+  validation, problem-solving, or other rewarded tasks.
+- **RECOVERED** — returned to the rightful beneficiary when value already belongs to the user or
+  an authorized principal.
 
 The system must distinguish "technically accessible" from "legitimately acquirable".
 
@@ -18,7 +24,9 @@ The system must distinguish "technically accessible" from "legitimately acquirab
 
 > Core knows capabilities. Project knows intentions.
 
-Machine Bridge and Bridge Mesh remain generic. Coins on the Ground contains all project-specific discovery rules, economic models, legal-risk classification, opportunity scoring, and execution policy.
+Machine Bridge and Bridge Mesh remain generic. Coins on the Ground contains all project-specific
+discovery rules, economic models, legal-risk classification, opportunity scoring, and execution
+policy.
 
 ```text
 Machine Bridge Core <-> Adapter <-> Coins on the Ground <-> Adapter <-> Bridge Mesh Core
@@ -40,7 +48,28 @@ It:
 6. ranks candidates for human review;
 7. preserves an audit trail.
 
-Execution will be a separate capability introduced only after the discovery and validation pipeline is reliable.
+Execution will be a separate capability introduced only after the discovery and validation
+pipeline is reliable.
+
+## First live Value Scout
+
+The first source adapter scans public GitHub issues for explicit monetary bounties.
+
+```bash
+python -m pip install -e ".[dev]"
+cog scan github-bounties --limit 25
+```
+
+It is intentionally conservative:
+
+- no submissions;
+- no claiming;
+- no asset movement;
+- no use of credentials except an optional GitHub token for API rate limits;
+- candidates start as `CIVIL_REVIEW`, not automatic execution approvals;
+- only explicit fiat-denominated rewards are parsed in the first version.
+
+See `docs/scouts.md`.
 
 ## Initial modules
 
@@ -67,4 +96,6 @@ The project is not intended to:
 
 ## Status
 
-Foundation stage. Initial target: build a **Value Scout** that can discover and classify public opportunities without executing them.
+The foundation and first live read-only Scout are implemented. Current target: improve signal
+quality, add source-specific validation, and introduce additional independent opportunity sources
+before any execution capability is considered.
