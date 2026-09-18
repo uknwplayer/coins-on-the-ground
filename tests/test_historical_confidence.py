@@ -47,7 +47,7 @@ def _policy() -> HistoricalConfidencePolicy:
     return HistoricalConfidencePolicy(
         min_observations=5,
         max_semantic_change_ratio=Decimal("0.20"),
-        max_price_range_pct=Decimal("30"),
+        max_price_range_pct=Decimal(30),
         require_current_availability=True,
         require_known_per_task_price=True,
         unavailable_is_fail=True,
