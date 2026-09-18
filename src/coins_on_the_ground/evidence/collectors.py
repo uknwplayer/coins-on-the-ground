@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 from urllib.parse import urlparse
 
 import httpx
@@ -12,6 +12,8 @@ import httpx
 from coins_on_the_ground.evidence.descriptor import parse_provider_evidence_descriptor
 from coins_on_the_ground.evidence.model import (
     CollectedEvidenceRecord,
+    EvidenceCollectionFailure,
+    EvidenceCollectionReport,
     EvidenceSource,
     EvidenceSourceKind,
 )
@@ -68,10 +70,9 @@ async def collect_https_json(
 
     try:
         response = await client.get(source.location)
-        response.raise_for_status()
-
         if response.is_redirect:
             raise ValueError("redirects are not allowed for evidence sources")
+        response.raise_for_status()
 
         final_url = str(response.url)
         requested = urlparse(source.location)
@@ -133,8 +134,6 @@ async def collect_local_json(
 
 
 async def _read_limited(path: Path, max_bytes: int) -> bytes:
-    import asyncio
-
     def _read() -> bytes:
         with path.open("rb") as handle:
             raw = handle.read(max_bytes + 1)
@@ -179,3 +178,42 @@ async def collect_sources(
             )
         )
     return tuple(records)
+
+
+async def collect_sources_report(
+    sources: tuple[EvidenceSource, ...],
+    *,
+    local_root: Path,
+    client: httpx.AsyncClient | None = None,
+    now: datetime | None = None,
+) -> EvidenceCollectionReport:
+    records: list[CollectedEvidenceRecord] = []
+    failures: list[EvidenceCollectionFailure] = []
+
+    for source in sources:
+        if not source.enabled:
+            continue
+        try:
+            record = await collect_source(
+                source,
+                local_root=local_root,
+                client=client,
+                now=now,
+            )
+        except (httpx.HTTPError, OSError, TypeError, ValueError) as exc:
+            failures.append(
+                EvidenceCollectionFailure(
+                    source_id=source.source_id,
+                    source_kind=source.kind,
+                    source_ref=source.location,
+                    error_type=type(exc).__name__,
+                    message=str(exc),
+                )
+            )
+            continue
+        records.append(record)
+
+    return EvidenceCollectionReport(
+        records=tuple(records),
+        failures=tuple(failures),
+    )
