@@ -1,7 +1,5 @@
 import json
 from decimal import Decimal
-from pathlib import Path
-
 import httpx
 import pytest
 
