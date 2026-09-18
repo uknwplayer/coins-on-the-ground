@@ -183,16 +183,30 @@ cog estimate all \
 `--hourly-cost-usd` é uma hipótese econômica fornecida pelo Coins on the Ground para aquela
 execução. Esse custo não é atribuído à Machine Bridge nem gravado no core.
 
-## Estado atual da integração
+## Fronteira de repositório
 
-O adapter já é compatível com os formatos de registro usados pelo ARCA Core observado durante o
-desenvolvimento deste projeto.
+A compatibilidade dos adapters com um contrato externo não cria vínculo entre repositórios.
 
-O worker atual observado anuncia capacidades específicas como `aie`, `node`, `pncp-plan` e
-`repository`. O mapeamento conservador não trata nenhuma delas como browser, OCR ou transcription.
+Coins on the Ground não lê automaticamente estado operacional de outro projeto e não trata
+workers, nodes, branches ou arquivos de outro repositório como inventário próprio.
 
-Isso é um resultado útil: a infraestrutura consegue dizer não apenas quais oportunidades existem,
-mas também quais lacunas de capacidade impedem sua execução hoje.
+Para que uma capability externa participe de uma análise, seu descriptor precisa ser fornecido
+explicitamente ao Coins on the Ground por uma integração configurada para isso.
+
+Exemplo conceitual:
+
+```text
+external descriptor
+      |
+      v
+Coins adapter
+      |
+      v
+CapabilityObservation
+```
+
+O descriptor pode seguir um contrato conhecido da Machine Bridge ou Bridge Mesh, mas sua origem
+continua externa e isolada.
 
 ## Próxima evolução
 
