@@ -24,6 +24,13 @@ from .historical_confidence import (
     parse_historical_confidence_policy,
 )
 from .model import CapabilityGapPlan, GapType
+from .portfolio import (
+    MicrotaskPortfolioPlan,
+    PortfolioCandidate,
+    PortfolioSettlementStep,
+    PortfolioStatus,
+    plan_microtask_portfolio,
+)
 from .settlement import (
     SettlementPoolSummary,
     SettlementStatus,
@@ -45,6 +52,10 @@ __all__ = [
     "HistoricalConfidenceAssessment",
     "HistoricalConfidencePolicy",
     "HistoricalConfidenceStatus",
+    "MicrotaskPortfolioPlan",
+    "PortfolioCandidate",
+    "PortfolioSettlementStep",
+    "PortfolioStatus",
     "SettlementPoolSummary",
     "SettlementStatus",
     "assess_evidence",
@@ -54,5 +65,6 @@ __all__ = [
     "parse_historical_confidence_policy",
     "plan_capability_acquisition",
     "plan_capability_gap",
+    "plan_microtask_portfolio",
     "summarize_settlement_pool",
 ]
