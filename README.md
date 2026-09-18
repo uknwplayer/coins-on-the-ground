@@ -89,7 +89,8 @@ cog estimate frantic \
 Sem capacidades declaradas, o estimator não presume que uma máquina seja capaz de realizar a
 tarefa.
 
-Veja `docs/scouts.md`, `docs/opportunity-model.md` e `docs/feasibility.md`.
+Veja `docs/scouts.md`, `docs/opportunity-model.md`, `docs/feasibility.md`,
+`docs/bridge-integration.md` e `docs/capability-gaps.md`.
 
 ## Módulos iniciais
 
@@ -127,8 +128,10 @@ Já estão implementados:
 - Cost & Feasibility Estimator com faixas de tempo/custo;
 - `CapabilityProfile` explícito;
 - classificação de viabilidade e rentabilidade;
+- adapters compatíveis com Machine Bridge Worker Registration V1 e Bridge Mesh Node Advertisement V1;
+- inventário por worker/endpoint, sem união artificial de capacidades;
+- Capability Gap Planner;
 - testes automatizados e CI.
 
-O próximo passo arquitetural é permitir que adapters locais do Coins on the Ground obtenham
-capacidades reais da Machine Bridge / Bridge Mesh e as convertam em `CapabilityProfile`, sem
-alterar o core de nenhuma das duas arquiteturas.
+A próxima evolução é transformar gaps de capacidade em opções de aquisição/roteamento de
+capabilities, ainda mantendo decisões econômicas e políticas dentro do Coins on the Ground.
