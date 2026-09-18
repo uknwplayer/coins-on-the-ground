@@ -64,7 +64,9 @@ Ele:
 10. preserva hash e provenance do payload observado;
 11. materializa evidência em catálogo por policy explícita;
 12. valida freshness, claims e requisitos de autorização;
-13. mantém execução fora do pipeline.
+13. registra observações em um Evidence Ledger local append-only;
+14. detecta drift de preço, capability, disponibilidade, claims e autorização;
+15. mantém execução fora do pipeline.
 
 ## Uso atual
 
@@ -105,6 +107,21 @@ cog evidence-collect \
   --output ./data/evidence-records.jsonl
 ```
 
+Registro histórico:
+
+```bash
+cog evidence-ledger-append \
+  --records ./data/evidence-records.jsonl \
+  --ledger ./data/evidence-ledger.jsonl
+```
+
+Análise de drift:
+
+```bash
+cog evidence-ledger-analyze \
+  --ledger ./data/evidence-ledger.jsonl
+```
+
 Materialização explícita:
 
 ```bash
@@ -132,7 +149,8 @@ cog acquisition-plan frantic \
 Veja `docs/scouts.md`, `docs/opportunity-model.md`, `docs/feasibility.md`,
 `docs/bridge-integration.md`, `docs/capability-gaps.md`,
 `docs/capability-acquisition.md`, `docs/capability-evidence.md`,
-`docs/evidence-collectors.md` e `docs/evidence-materialization.md`.
+`docs/evidence-collectors.md`, `docs/evidence-materialization.md` e
+`docs/evidence-ledger.md`.
 
 ## Módulos iniciais
 
@@ -181,10 +199,15 @@ Já estão implementados:
 - policy `cog-evidence-materialization-v1`;
 - materialização explícita record → catálogo v2;
 - provenance `collector_source_id + payload_sha256` no catálogo;
+- Evidence Ledger local append-only;
+- `entry_id` determinístico e deduplicação de observações;
+- drift `PRICING / CAPABILITIES / AVAILABILITY / CLAIMS / AUTHORIZATION / CONTENT`;
+- métricas observáveis de estabilidade e faixa de preço;
 - `FRESH / STALE / EXPIRED / INVALID / UNVERIFIED`;
 - claims `CAPABILITY / PRICING / AVAILABILITY / AUTHORIZATION`;
 - testes automatizados e CI.
 
-A próxima evolução é adicionar um **Evidence Ledger local**: histórico append-only de observações,
-mudanças de preço/disponibilidade e detecção de drift, sem transformar fontes externas em estado
-implícito do projeto.
+A próxima evolução é conectar o histórico do Evidence Ledger ao planejamento econômico por uma
+policy explícita de **historical confidence**. Essa camada poderá considerar volatilidade,
+disponibilidade histórica e frequência de mudanças sem transformar métricas observáveis em
+confiança implícita ou não auditável.
