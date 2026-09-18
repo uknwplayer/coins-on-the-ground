@@ -22,6 +22,23 @@ def test_positive_clear_opportunity_is_review_candidate() -> None:
     assert evaluate_for_review(opportunity) == (True, "candidate for human review")
 
 
+def test_unknown_cost_is_not_treated_as_zero() -> None:
+    opportunity = Opportunity(
+        source="example",
+        title="Unknown effort",
+        opportunity_class=OpportunityClass.EARN,
+        reward=Decimal(5),
+        currency="USD",
+        authorization_basis="Published bounty.",
+        required_action="Complete task.",
+        risk_class=RiskClass.CIVIL_REVIEW,
+    )
+
+    assert opportunity.expected_net_value is None
+    assert opportunity.execution_candidate is False
+    assert evaluate_for_review(opportunity) == (True, "candidate for human review")
+
+
 def test_penal_review_is_blocked() -> None:
     opportunity = Opportunity(
         source="example",
