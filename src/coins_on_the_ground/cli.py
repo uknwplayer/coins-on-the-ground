@@ -8,6 +8,13 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
+from coins_on_the_ground.estimation import (
+    Capability,
+    CapabilityProfile,
+    FeasibilityClass,
+    ProfitabilityClass,
+    estimate_feasibility,
+)
 from coins_on_the_ground.opportunity import Opportunity, review_and_deduplicate
 from coins_on_the_ground.scouts import FranticBountyScout, GitHubBountyScout, Scout
 
@@ -17,8 +24,8 @@ def _json_value(value: Any) -> Any:
         return str(value)
     if hasattr(value, "value"):
         return value.value
-    if isinstance(value, tuple):
-        return list(value)
+    if isinstance(value, (tuple, list, set, frozenset)):
+        return [_json_value(item) for item in value]
     if isinstance(value, dict):
         return {str(key): _json_value(item) for key, item in value.items()}
     return value
@@ -43,6 +50,23 @@ async def _collect(scout: Scout) -> list[Opportunity]:
     async for opportunity in scout.discover():
         opportunities.append(opportunity)
     return opportunities
+
+
+def _scouts_for_source(source: str, limit: int) -> list[Scout]:
+    if source == "frantic":
+        return [FranticBountyScout(limit=limit)]
+    if source == "github-bounties":
+        return [GitHubBountyScout(limit=limit)]
+    return [
+        FranticBountyScout(limit=limit),
+        GitHubBountyScout(limit=limit),
+    ]
+
+
+async def _discover(source: str, limit: int) -> list[Opportunity]:
+    scouts = _scouts_for_source(source, limit)
+    batches = await asyncio.gather(*(_collect(scout) for scout in scouts))
+    return [opportunity for batch in batches for opportunity in batch]
 
 
 async def _emit_scan(scout: Scout, args: argparse.Namespace) -> int:
@@ -79,19 +103,8 @@ async def _scan_frantic(args: argparse.Namespace) -> int:
 
 
 async def _review(args: argparse.Namespace) -> int:
-    scouts: list[Scout]
-    if args.source == "frantic":
-        scouts = [FranticBountyScout(limit=args.limit)]
-    elif args.source == "github-bounties":
-        scouts = [GitHubBountyScout(limit=args.limit)]
-    else:
-        scouts = [
-            FranticBountyScout(limit=args.limit),
-            GitHubBountyScout(limit=args.limit),
-        ]
-
-    batches = await asyncio.gather(*(_collect(scout) for scout in scouts))
-    opportunities = [opportunity for batch in batches for opportunity in batch]
+    scouts = _scouts_for_source(args.source, args.limit)
+    opportunities = await _discover(args.source, args.limit)
     reviews = review_and_deduplicate(opportunities)
 
     rows = [
@@ -126,9 +139,98 @@ async def _review(args: argparse.Namespace) -> int:
     return 0
 
 
+def _capability_profile(args: argparse.Namespace) -> CapabilityProfile:
+    declared = frozenset(Capability(value) for value in args.capability)
+    return CapabilityProfile(
+        name=args.profile_name,
+        capabilities=declared,
+        hourly_cost_usd=args.hourly_cost_usd,
+        configured=bool(declared),
+    )
+
+
+def _estimate_sort_key(row: dict[str, Any]) -> tuple[int, int, int, int]:
+    profitability_rank = {
+        ProfitabilityClass.POSITIVE.value: 3,
+        ProfitabilityClass.UNCERTAIN.value: 2,
+        ProfitabilityClass.UNKNOWN.value: 1,
+        ProfitabilityClass.NEGATIVE.value: 0,
+    }
+    feasibility_rank = {
+        FeasibilityClass.FEASIBLE.value: 3,
+        FeasibilityClass.PARTIAL.value: 2,
+        FeasibilityClass.UNKNOWN.value: 1,
+        FeasibilityClass.NOT_FEASIBLE.value: 0,
+    }
+    estimate = row["estimate"]
+    return (
+        int(row["review_allowed"]),
+        profitability_rank[str(estimate["profitability"])],
+        feasibility_rank[str(estimate["feasibility"])],
+        int(row["review_score"]),
+    )
+
+
+async def _estimate(args: argparse.Namespace) -> int:
+    profile = _capability_profile(args)
+    opportunities = await _discover(args.source, args.limit)
+    reviews = review_and_deduplicate(opportunities)
+
+    rows: list[dict[str, Any]] = []
+    for review in reviews:
+        estimate = estimate_feasibility(review.opportunity, profile)
+        rows.append(
+            {
+                "fingerprint": review.fingerprint,
+                "review_score": review.review_score,
+                "review_allowed": review.review_allowed,
+                "review_reason": review.review_reason,
+                "estimate": _json_value(asdict(estimate)),
+                "opportunity": serialize(review.opportunity),
+            }
+        )
+
+    rows.sort(key=_estimate_sort_key, reverse=True)
+
+    if args.output:
+        await asyncio.to_thread(_write_jsonl, Path(args.output), rows)
+    else:
+        for row in rows:
+            print(json.dumps(row, ensure_ascii=False))
+
+    print(
+        json.dumps(
+            {
+                "engine": "cost-feasibility-estimator",
+                "profile": {
+                    "name": profile.name,
+                    "configured": profile.configured,
+                    "capabilities": sorted(
+                        capability.value for capability in profile.capabilities
+                    ),
+                    "hourly_cost_usd": _json_value(profile.hourly_cost_usd),
+                },
+                "raw_candidates": len(opportunities),
+                "deduplicated_candidates": len(rows),
+                "execution_performed": False,
+            }
+        )
+    )
+    return 0
+
+
 def _add_common_scan_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--limit", type=int, default=25)
     parser.add_argument("--output", help="optional JSONL output path")
+
+
+def _add_source_argument(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "source",
+        choices=("all", "frantic", "github-bounties"),
+        default="all",
+        nargs="?",
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -155,14 +257,30 @@ def build_parser() -> argparse.ArgumentParser:
         "review",
         help="score and deduplicate discovered opportunities for human review",
     )
-    review.add_argument(
-        "source",
-        choices=("all", "frantic", "github-bounties"),
-        default="all",
-        nargs="?",
-    )
+    _add_source_argument(review)
     _add_common_scan_args(review)
     review.set_defaults(handler=_review)
+
+    estimate = subparsers.add_parser(
+        "estimate",
+        help="estimate cost and machine feasibility using a declared capability profile",
+    )
+    _add_source_argument(estimate)
+    _add_common_scan_args(estimate)
+    estimate.add_argument("--profile-name", default="cli-profile")
+    estimate.add_argument(
+        "--capability",
+        action="append",
+        choices=tuple(capability.value for capability in Capability),
+        default=[],
+        help="declared capability; repeat for multiple capabilities",
+    )
+    estimate.add_argument(
+        "--hourly-cost-usd",
+        type=Decimal,
+        help="declared operating cost in USD/hour",
+    )
+    estimate.set_defaults(handler=_estimate)
 
     return parser
 
