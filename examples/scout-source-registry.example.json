@@ -85,6 +85,20 @@
       ],
       "enabled": true,
       "notes": "Public open tasks backed by Base Mainnet USDC escrow. Discovery is read-only; wallet, legal acceptance, claims, bids and submissions remain separate."
+    },
+    {
+      "id": "akash",
+      "display_name": "Akash Network",
+      "base_url": "https://akash.network",
+      "network_surface": "clearnet",
+      "country": null,
+      "jurisdiction": null,
+      "categories": [
+        "compute_market",
+        "onchain_reward"
+      ],
+      "enabled": true,
+      "notes": "Public open compute orders from Akash mainnet REST. Order price is a maximum rate per block, not guaranteed provider revenue."
     }
   ]
 }
