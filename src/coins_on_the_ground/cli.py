@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import json
 from dataclasses import asdict
+from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -14,6 +15,7 @@ from coins_on_the_ground.adapters import (
     adapt_machine_bridge_registration,
     estimate_against_inventory,
 )
+from coins_on_the_ground.evidence import collect_sources_report, parse_evidence_sources
 from coins_on_the_ground.estimation import (
     Capability,
     CapabilityProfile,
@@ -31,6 +33,8 @@ from coins_on_the_ground.scouts import FranticBountyScout, GitHubBountyScout, Sc
 
 
 def _json_value(value: Any) -> Any:
+    if isinstance(value, datetime):
+        return value.isoformat().replace("+00:00", "Z")
     if isinstance(value, Decimal):
         return str(value)
     if hasattr(value, "value"):
@@ -355,6 +359,55 @@ async def _gaps(args: argparse.Namespace) -> int:
     return 0
 
 
+async def _evidence_collect(args: argparse.Namespace) -> int:
+    config_path = Path(args.config)
+    config_value = await asyncio.to_thread(_load_json, config_path)
+    sources = parse_evidence_sources(config_value)
+    report = await collect_sources_report(
+        sources,
+        local_root=config_path.parent,
+    )
+
+    rows: list[dict[str, Any]] = []
+    for record in report.records:
+        rows.append(
+            {
+                "status": "success",
+                "record": _json_value(asdict(record)),
+                "assessment": _json_value(
+                    asdict(assess_evidence(record.descriptor.evidence))
+                ),
+            }
+        )
+
+    for failure in report.failures:
+        rows.append(
+            {
+                "status": "failure",
+                "failure": _json_value(asdict(failure)),
+            }
+        )
+
+    if args.output:
+        await asyncio.to_thread(_write_jsonl, Path(args.output), rows)
+    else:
+        for row in rows:
+            print(json.dumps(row, ensure_ascii=False))
+
+    print(
+        json.dumps(
+            {
+                "engine": "evidence-collector",
+                "configured_sources": len(sources),
+                "successful_records": len(report.records),
+                "failures": len(report.failures),
+                "execution_performed": False,
+            }
+        )
+    )
+    return 1 if report.failures else 0
+
+
 async def _catalog_check(args: argparse.Namespace) -> int:
     catalog_value = await asyncio.to_thread(_load_json, Path(args.catalog))
     options = parse_acquisition_catalog(catalog_value)
@@ -573,6 +626,21 @@ def build_parser() -> argparse.ArgumentParser:
         help="path to a local capability acquisition catalog JSON",
     )
     catalog_check.set_defaults(handler=_catalog_check)
+
+    evidence_collect = subparsers.add_parser(
+        "evidence-collect",
+        help="collect versioned evidence from explicitly configured JSON sources",
+    )
+    evidence_collect.add_argument(
+        "--config",
+        required=True,
+        help="path to a local cog-evidence-sources-v1 config JSON",
+    )
+    evidence_collect.add_argument(
+        "--output",
+        help="optional JSONL output path for collection records",
+    )
+    evidence_collect.set_defaults(handler=_evidence_collect)
 
     return parser
 
