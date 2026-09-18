@@ -115,6 +115,17 @@ Capacidade de atravessar payout mínimo em microtarefas:
 cog settlement-summary bidpostloop --limit 100
 ```
 
+Portfolio econômico de microtarefas:
+
+```bash
+cog portfolio bidpostloop \
+  --capability http \
+  --capability text_analysis \
+  --hourly-cost-usd 0.60 \
+  --current-balance-usd 0 \
+  --limit 100
+```
+
 Estimativa de custo e viabilidade:
 
 ```bash
@@ -236,7 +247,8 @@ Já estão implementados:
 - descoberta read-only de Akash open compute orders;
 - microtarefas financiadas de centavos via BidPostLoop;
 - regras de custo específicas para microtasks, permitindo filtrar tarefas de US$0,05–0,10 por tempo esperado;
-- Settlement Pool Summary para comparar capacidade bruta disponível com payout mínimo;
+- Settlement Pool Summary que respeita budget financiado compartilhado em vez de somar slots de templates como cofres independentes;
+- Microtask Portfolio Planner com prioridade por net conservador/minuto e rota de menor número de ações até payout;
 - Opportunity Model e deduplicação;
 - `review_score`;
 - Cost & Feasibility Estimator;
