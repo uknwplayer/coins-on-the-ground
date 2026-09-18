@@ -111,7 +111,8 @@ cog scan frantic
 
 Não faça commit do token. Arquivos `.env` são ignorados pelo Git.
 
-IssueHunt e Algora atuais usam somente páginas públicas.
+IssueHunt, Algora, Immunefi, Sherlock e Taskmarket atuais usam somente superfícies públicas.
+Keep3r usa chamadas RPC read-only e uma API pública opcional de registry.
 
 ## Persistência das observações
 
@@ -120,6 +121,10 @@ cog scan frantic --limit 50 --output data/frantic.jsonl
 cog scan github-bounties --limit 50 --output data/github-bounties.jsonl
 cog scan issuehunt --limit 50 --output data/issuehunt.jsonl
 cog scan algora --limit 50 --output data/algora.jsonl
+cog scan immunefi --limit 50 --output data/immunefi.jsonl
+cog scan keep3r --limit 50 --output data/keep3r.jsonl
+cog scan sherlock --limit 50 --output data/sherlock.jsonl
+cog scan taskmarket --limit 50 --output data/taskmarket.jsonl
 ```
 
 A CLI imprime ao final `execution_performed=false`.
@@ -135,6 +140,47 @@ Atualmente agrega:
 - GitHub;
 - Frantic;
 - IssueHunt OSS;
-- Algora.
+- Algora;
+- Immunefi;
+- Keep3r;
+- Sherlock;
+- Taskmarket.
 
 A deduplicação continua acontecendo depois da descoberta.
+
+
+## Security bounty Scouts
+
+`ImmunefiScout` e `SherlockScout` descobrem programas públicos de bug bounty.
+
+Eles somente coletam metadata publicada e nunca:
+
+- testam alvo;
+- executam scanner;
+- geram exploit;
+- enviam finding;
+- autenticam em nome do usuário.
+
+Os valores anunciados entram como `reward_semantics=maximum`.
+
+## Permissionless on-chain Scout
+
+`Keep3rScout` usa `eth_call` para descobrir jobs registrados com créditos positivos.
+
+```text
+reward_semantics = pool_credits
+```
+
+Nenhuma transação é assinada ou transmitida.
+
+## Agent task market
+
+`TaskmarketScout` usa o endpoint público `GET /api/tasks` para encontrar tarefas abertas
+financiadas em USDC na Base Mainnet.
+
+```text
+bounty/claim/pitch/benchmark -> gross_escrow
+auction                     -> maximum
+```
+
+O Scout não cria wallet, não aceita termos, não faz claim, não envia bid e não submete trabalho.
