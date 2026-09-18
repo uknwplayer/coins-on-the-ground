@@ -1,3 +1,5 @@
+from .akash import AkashScout as AkashScout
+from .akash import parse_akash_orders as parse_akash_orders
 from .algora import AlgoraScout as AlgoraScout
 from .algora import parse_algora_org_html as parse_algora_org_html
 from .base import Scout as Scout
@@ -21,6 +23,7 @@ from .taskmarket import TaskmarketScout as TaskmarketScout
 from .taskmarket import parse_taskmarket_response as parse_taskmarket_response
 
 __all__ = [
+    "AkashScout",
     "AlgoraScout",
     "FranticBountyScout",
     "GitHubBountyScout",
@@ -35,6 +38,7 @@ __all__ = [
     "TaskmarketScout",
     "discover_keep3r_jobs",
     "extract_reward",
+    "parse_akash_orders",
     "parse_algora_org_html",
     "parse_frantic_issue",
     "parse_immunefi_listing",
