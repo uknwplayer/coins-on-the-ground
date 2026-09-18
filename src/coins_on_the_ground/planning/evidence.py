@@ -44,9 +44,13 @@ class EvidenceAssessment:
     rationale: tuple[str, ...]
 
 
-def _valid_http_url(value: str) -> bool:
+def _valid_source_uri(value: str) -> bool:
     parsed = urlparse(value)
-    return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+    if parsed.scheme in {"http", "https"}:
+        return bool(parsed.netloc)
+    if parsed.scheme == "file":
+        return bool(parsed.path)
+    return False
 
 
 def assess_evidence(
@@ -68,7 +72,7 @@ def assess_evidence(
     current_time = now.astimezone(UTC) if now is not None else datetime.now(UTC)
     rationale: list[str] = []
 
-    if not evidence.source_name.strip() or not _valid_http_url(evidence.source_url):
+    if not evidence.source_name.strip() or not _valid_source_uri(evidence.source_url):
         return EvidenceAssessment(
             status=EvidenceStatus.INVALID,
             claims=evidence.claims,
