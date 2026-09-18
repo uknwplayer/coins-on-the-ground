@@ -110,6 +110,26 @@ def test_setup_cost_can_be_amortized_without_hiding_it() -> None:
     assert ten_uses.candidates[0].effective_acquisition_cost_usd == Decimal("1.00")
 
 
+def test_non_reusable_setup_cost_is_not_amortized() -> None:
+    option = CapabilityAcquisitionOption(
+        option_id="single-use-transcription",
+        mode=AcquisitionMode.CONNECT_PROVIDER,
+        provides=(Capability.TRANSCRIPTION,),
+        setup_cost_usd=Decimal(10),
+        per_task_cost_usd=Decimal(0),
+        reusable=False,
+    )
+
+    plan = plan_capability_acquisition(
+        _opportunity(),
+        [_observation("worker-a", Capability.FILE_IO)],
+        [option],
+        amortization_uses=10,
+    )
+
+    assert plan.candidates[0].effective_acquisition_cost_usd == Decimal("10.00")
+
+
 def test_partial_option_is_not_selected_as_covering() -> None:
     plan = plan_capability_acquisition(
         _opportunity(),
@@ -128,6 +148,27 @@ def test_partial_option_is_not_selected_as_covering() -> None:
     assert plan.status is AcquisitionPlanStatus.NO_OPTION
     assert plan.best_option_id is None
     assert plan.candidates[0].covers_requirements is False
+
+
+def test_missing_explicit_target_profile_cannot_be_faked() -> None:
+    plan = plan_capability_acquisition(
+        _opportunity(),
+        [],
+        [
+            CapabilityAcquisitionOption(
+                option_id="target-missing",
+                mode=AcquisitionMode.EXTEND_PROFILE,
+                provides=(Capability.TRANSCRIPTION, Capability.FILE_IO),
+                target_profile="worker-does-not-exist",
+                setup_cost_usd=Decimal(0),
+                per_task_cost_usd=Decimal(0),
+            )
+        ],
+    )
+
+    candidate = plan.candidates[0]
+    assert candidate.covers_requirements is False
+    assert "target_profile_unavailable=worker-does-not-exist" in candidate.rationale
 
 
 def test_unknown_cost_stays_unknown() -> None:
