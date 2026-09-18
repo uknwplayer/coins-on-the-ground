@@ -1,0 +1,13 @@
+{
+  "format": "cog-evidence-sources-v1",
+  "sources": [
+    {
+      "id": "local-example-provider",
+      "kind": "LOCAL_JSON",
+      "location": "provider-evidence.example.json",
+      "enabled": true,
+      "max_bytes": 100000,
+      "timeout_seconds": 15
+    }
+  ]
+}
