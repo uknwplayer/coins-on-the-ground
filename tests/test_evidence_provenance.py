@@ -7,7 +7,6 @@ from coins_on_the_ground.planning import (
     assess_evidence,
 )
 
-
 _NOW = datetime(2026, 9, 18, 12, tzinfo=UTC)
 
 
