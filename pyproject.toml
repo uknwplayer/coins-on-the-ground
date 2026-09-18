@@ -9,19 +9,26 @@ description = "Read-only-first discovery and classification of legitimate micro-
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Proprietary" }
-dependencies = []
+dependencies = [
+  "httpx>=0.27,<1",
+]
 
 [project.optional-dependencies]
 dev = [
   "pytest>=8.0",
+  "pytest-asyncio>=0.23",
   "ruff>=0.6",
 ]
+
+[project.scripts]
+cog = "coins_on_the_ground.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/coins_on_the_ground"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+asyncio_mode = "auto"
 
 [tool.ruff]
 line-length = 100
