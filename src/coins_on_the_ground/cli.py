@@ -21,7 +21,11 @@ from coins_on_the_ground.estimation import (
     ProfitabilityClass,
 )
 from coins_on_the_ground.opportunity import Opportunity, review_and_deduplicate
-from coins_on_the_ground.planning import plan_capability_gap
+from coins_on_the_ground.planning import (
+    parse_acquisition_catalog,
+    plan_capability_acquisition,
+    plan_capability_gap,
+)
 from coins_on_the_ground.scouts import FranticBountyScout, GitHubBountyScout, Scout
 
 
@@ -186,7 +190,7 @@ async def _load_observations(args: argparse.Namespace) -> list[CapabilityObserva
             )
         )
 
-    if args.capability or not observations:
+    if args.capability:
         observations.append(_manual_observation(args))
 
     return observations
@@ -350,6 +354,54 @@ async def _gaps(args: argparse.Namespace) -> int:
     return 0
 
 
+async def _acquisition_plan(args: argparse.Namespace) -> int:
+    observations = await _load_observations(args)
+    catalog_value = await asyncio.to_thread(_load_json, Path(args.catalog))
+    options = parse_acquisition_catalog(catalog_value)
+    opportunities = await _discover(args.source, args.limit)
+    reviews = review_and_deduplicate(opportunities)
+
+    rows: list[dict[str, Any]] = []
+    for review in reviews:
+        plan = plan_capability_acquisition(
+            review.opportunity,
+            observations,
+            options,
+            amortization_uses=args.amortization_uses,
+        )
+        rows.append(
+            {
+                "fingerprint": review.fingerprint,
+                "review_score": review.review_score,
+                "review_allowed": review.review_allowed,
+                "review_reason": review.review_reason,
+                "acquisition_plan": _json_value(asdict(plan)),
+                "opportunity": serialize(review.opportunity),
+            }
+        )
+
+    if args.output:
+        await asyncio.to_thread(_write_jsonl, Path(args.output), rows)
+    else:
+        for row in rows:
+            print(json.dumps(row, ensure_ascii=False))
+
+    print(
+        json.dumps(
+            {
+                "engine": "capability-acquisition-planner",
+                "profiles": len(observations),
+                "catalog_options": len(options),
+                "amortization_uses": args.amortization_uses,
+                "raw_candidates": len(opportunities),
+                "deduplicated_candidates": len(rows),
+                "execution_performed": False,
+            }
+        )
+    )
+    return 0
+
+
 def _add_common_scan_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--limit", type=int, default=25)
     parser.add_argument("--output", help="optional JSONL output path")
@@ -444,6 +496,26 @@ def build_parser() -> argparse.ArgumentParser:
     _add_common_scan_args(gaps)
     _add_capability_profile_args(gaps)
     gaps.set_defaults(handler=_gaps)
+
+    acquisition = subparsers.add_parser(
+        "acquisition-plan",
+        help="plan how an explicit local catalog could close capability gaps",
+    )
+    _add_source_argument(acquisition)
+    _add_common_scan_args(acquisition)
+    _add_capability_profile_args(acquisition)
+    acquisition.add_argument(
+        "--catalog",
+        required=True,
+        help="path to a local capability acquisition catalog JSON",
+    )
+    acquisition.add_argument(
+        "--amortization-uses",
+        type=int,
+        default=1,
+        help="number of expected uses over which reusable setup cost is amortized",
+    )
+    acquisition.set_defaults(handler=_acquisition_plan)
 
     return parser
 
