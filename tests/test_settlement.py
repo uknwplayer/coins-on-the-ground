@@ -1,3 +1,4 @@
+from dataclasses import replace
 from decimal import Decimal
 
 from coins_on_the_ground.opportunity import Opportunity, OpportunityClass, RiskClass
@@ -100,18 +101,8 @@ def test_shared_budget_caps_template_slot_capacity() -> None:
         "source_available_funded_usd": "4",
         "source_total_paid_actions_available": "80",
     }
-    first = Opportunity(
-        **{
-            **first.__dict__,
-            "metadata": {**first.metadata, **shared},
-        }
-    )
-    second = Opportunity(
-        **{
-            **second.__dict__,
-            "metadata": {**second.metadata, **shared},
-        }
-    )
+    first = replace(first, metadata={**first.metadata, **shared})
+    second = replace(second, metadata={**second.metadata, **shared})
 
     summary = summarize_settlement_pool((first, second))
 
