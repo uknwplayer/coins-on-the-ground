@@ -50,6 +50,7 @@ from coins_on_the_ground.scouts import (
     Keep3rScout,
     Scout,
     SherlockScout,
+    TaskmarketScout,
     parse_scout_source_registry,
 )
 
@@ -136,6 +137,8 @@ def _scouts_for_source(source: str, limit: int) -> list[Scout]:
         return [Keep3rScout(limit=limit)]
     if source == "sherlock":
         return [SherlockScout(limit=limit)]
+    if source == "taskmarket":
+        return [TaskmarketScout(limit=limit)]
     return [
         FranticBountyScout(limit=limit),
         GitHubBountyScout(limit=limit),
@@ -144,6 +147,7 @@ def _scouts_for_source(source: str, limit: int) -> list[Scout]:
         ImmunefiScout(limit=limit),
         Keep3rScout(limit=limit),
         SherlockScout(limit=limit),
+        TaskmarketScout(limit=limit),
     ]
 
 
@@ -230,6 +234,10 @@ async def _scan_keep3r(args: argparse.Namespace) -> int:
 
 async def _scan_sherlock(args: argparse.Namespace) -> int:
     return await _emit_scan(SherlockScout(limit=args.limit), args)
+
+
+async def _scan_taskmarket(args: argparse.Namespace) -> int:
+    return await _emit_scan(TaskmarketScout(limit=args.limit), args)
 
 
 async def _sources_check(args: argparse.Namespace) -> int:
@@ -822,7 +830,7 @@ def _add_common_scan_args(parser: argparse.ArgumentParser) -> None:
 def _add_source_argument(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "source",
-        choices=("all", "frantic", "github-bounties", "issuehunt", "algora", "immunefi", "keep3r", "sherlock"),
+        choices=("all", "frantic", "github-bounties", "issuehunt", "algora", "immunefi", "keep3r", "sherlock", "taskmarket"),
         default="all",
         nargs="?",
     )
@@ -920,6 +928,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_common_scan_args(sherlock)
     sherlock.set_defaults(handler=_scan_sherlock)
+
+    taskmarket = scan_sub.add_parser(
+        "taskmarket",
+        help="scan public open Taskmarket tasks with Base USDC escrow",
+    )
+    _add_common_scan_args(taskmarket)
+    taskmarket.set_defaults(handler=_scan_taskmarket)
 
     sources_check = subparsers.add_parser(
         "sources-check",
