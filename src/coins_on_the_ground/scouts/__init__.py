@@ -17,6 +17,8 @@ from .sherlock import parse_sherlock_bounties as parse_sherlock_bounties
 from .sherlock import SherlockScout as SherlockScout
 from .sources import NetworkSurface as NetworkSurface
 from .sources import ScoutSource as ScoutSource
+from .taskmarket import TaskmarketScout as TaskmarketScout
+from .taskmarket import parse_taskmarket_response as parse_taskmarket_response
 __all__ = [
     "AlgoraScout",
     "FranticBountyScout",
@@ -29,6 +31,7 @@ __all__ = [
     "Scout",
     "ScoutSource",
     "SherlockScout",
+    "TaskmarketScout",
     "discover_keep3r_jobs",
     "extract_reward",
     "parse_algora_org_html",
@@ -37,4 +40,5 @@ __all__ = [
     "parse_issuehunt_html",
     "parse_scout_source_registry",
     "parse_sherlock_bounties",
+    "parse_taskmarket_response",
 ]
