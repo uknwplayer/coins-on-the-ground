@@ -42,6 +42,7 @@ from coins_on_the_ground.planning import (
     plan_capability_gap,
 )
 from coins_on_the_ground.scouts import (
+    AkashScout,
     AlgoraScout,
     FranticBountyScout,
     GitHubBountyScout,
@@ -123,6 +124,8 @@ async def _collect(scout: Scout) -> list[Opportunity]:
 
 
 def _scouts_for_source(source: str, limit: int) -> list[Scout]:
+    if source == "akash":
+        return [AkashScout(limit=limit)]
     if source == "frantic":
         return [FranticBountyScout(limit=limit)]
     if source == "github-bounties":
@@ -140,6 +143,7 @@ def _scouts_for_source(source: str, limit: int) -> list[Scout]:
     if source == "taskmarket":
         return [TaskmarketScout(limit=limit)]
     return [
+        AkashScout(limit=limit),
         FranticBountyScout(limit=limit),
         GitHubBountyScout(limit=limit),
         IssueHuntScout(limit=limit),
@@ -199,6 +203,13 @@ async def _emit_scan(scout: Scout, args: argparse.Namespace) -> int:
         )
     )
     return 0
+
+
+async def _scan_akash(args: argparse.Namespace) -> int:
+    return await _emit_scan(
+        AkashScout(limit=args.limit, rest_url=args.rest_url),
+        args,
+    )
 
 
 async def _scan_github(args: argparse.Namespace) -> int:
@@ -830,7 +841,7 @@ def _add_common_scan_args(parser: argparse.ArgumentParser) -> None:
 def _add_source_argument(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "source",
-        choices=("all", "frantic", "github-bounties", "issuehunt", "algora", "immunefi", "keep3r", "sherlock", "taskmarket"),
+        choices=("all", "akash", "frantic", "github-bounties", "issuehunt", "algora", "immunefi", "keep3r", "sherlock", "taskmarket"),
         default="all",
         nargs="?",
     )
