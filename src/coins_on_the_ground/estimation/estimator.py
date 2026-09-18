@@ -77,6 +77,42 @@ _RULES = (
     ),
 )
 
+
+_BIDPOSTLOOP_RULES = {
+    "verify": _Rule(
+        name="bidpostloop-verify",
+        pattern=re.compile(r".", re.DOTALL),
+        capabilities=frozenset({Capability.HTTP, Capability.TEXT_ANALYSIS}),
+        minutes_low=1,
+        minutes_high=4,
+        confidence=90,
+    ),
+    "discover": _Rule(
+        name="bidpostloop-discover",
+        pattern=re.compile(r".", re.DOTALL),
+        capabilities=frozenset({Capability.BROWSER, Capability.TEXT_ANALYSIS}),
+        minutes_low=2,
+        minutes_high=8,
+        confidence=80,
+    ),
+    "analyze": _Rule(
+        name="bidpostloop-analyze",
+        pattern=re.compile(r".", re.DOTALL),
+        capabilities=frozenset({Capability.HTTP, Capability.TEXT_ANALYSIS}),
+        minutes_low=1,
+        minutes_high=6,
+        confidence=85,
+    ),
+    "organize": _Rule(
+        name="bidpostloop-organize",
+        pattern=re.compile(r".", re.DOTALL),
+        capabilities=frozenset({Capability.HTTP, Capability.TEXT_ANALYSIS}),
+        minutes_low=1,
+        minutes_high=6,
+        confidence=85,
+    ),
+}
+
 _REPORT_PATTERN = re.compile(r"(?i)\b(report|document the process|write[- ]?up)\b")
 _CENT = Decimal("0.01")
 
@@ -86,6 +122,12 @@ def _money(value: Decimal) -> Decimal:
 
 
 def _matched_rules(opportunity: Opportunity) -> list[_Rule]:
+    if opportunity.source == "bidpostloop":
+        category = opportunity.metadata.get("category", "").casefold()
+        source_rule = _BIDPOSTLOOP_RULES.get(category)
+        if source_rule is not None:
+            return [source_rule]
+
     text = f"{opportunity.title}\n{opportunity.required_action}"
     return [rule for rule in _RULES if rule.pattern.search(text)]
 
@@ -159,6 +201,10 @@ def _profitability(
     cost_low: Decimal | None,
     cost_high: Decimal | None,
 ) -> tuple[ProfitabilityClass, Decimal | None, Decimal | None]:
+    reward_semantics = opportunity.metadata.get("reward_semantics", "exact").casefold()
+    if reward_semantics not in {"exact", "fixed"}:
+        return ProfitabilityClass.UNKNOWN, None, None
+
     if opportunity.currency != "USD" or cost_low is None or cost_high is None:
         return ProfitabilityClass.UNKNOWN, None, None
 
