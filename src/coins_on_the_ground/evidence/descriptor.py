@@ -6,7 +6,7 @@ from typing import Any
 
 from coins_on_the_ground.estimation import Capability
 from coins_on_the_ground.evidence.model import ProviderEvidenceDescriptor
-from coins_on_the_ground.planning import CapabilityEvidence, EvidenceClaim
+from coins_on_the_ground.planning.evidence import CapabilityEvidence, EvidenceClaim
 
 _DESCRIPTOR_FORMAT = "cog-provider-evidence-v1"
 
