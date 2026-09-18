@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from decimal import ROUND_CEILING, Decimal, InvalidOperation
 from enum import StrEnum
+
 from coins_on_the_ground.opportunity import Opportunity
 
 
