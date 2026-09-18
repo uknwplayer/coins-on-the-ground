@@ -42,3 +42,15 @@ ALGORA = ScoutSource(
     eligibility_review_required=True,
     authorization_review_required=True,
 )
+
+
+IMMUNEFI = ScoutSource(
+    source_id="immunefi",
+    display_name="Immunefi",
+    base_url="https://immunefi.com",
+    network_surface=NetworkSurface.CLEARNET,
+    country=None,
+    jurisdiction=None,
+    eligibility_review_required=True,
+    authorization_review_required=True,
+)
