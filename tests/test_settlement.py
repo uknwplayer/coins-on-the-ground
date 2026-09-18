@@ -89,3 +89,35 @@ def test_unknown_minimum_payout_stays_unknown() -> None:
     assert summary.status is SettlementStatus.UNKNOWN
     assert summary.gross_available_value == Decimal(4)
     assert summary.minimum_payout_value is None
+
+
+def test_shared_budget_caps_template_slot_capacity() -> None:
+    first = _microtask(reward="0.05", slots=80)
+    second = _microtask(reward="0.10", slots=40)
+
+    shared = {
+        "capacity_basis": "shared_funded_budget",
+        "source_available_funded_usd": "4",
+        "source_total_paid_actions_available": "80",
+    }
+    first = Opportunity(
+        **{
+            **first.__dict__,
+            "metadata": {**first.metadata, **shared},
+        }
+    )
+    second = Opportunity(
+        **{
+            **second.__dict__,
+            "metadata": {**second.metadata, **shared},
+        }
+    )
+
+    summary = summarize_settlement_pool((first, second))
+
+    assert summary.status is SettlementStatus.NOT_REACHABLE
+    assert summary.total_available_actions == 80
+    assert summary.gross_available_value == Decimal(4)
+    assert summary.minimum_payout_value == Decimal(10)
+    assert summary.gap_to_minimum_from_zero == Decimal(6)
+    assert "shared_funded_budget" in summary.rationale
