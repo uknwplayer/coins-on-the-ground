@@ -15,7 +15,8 @@ def evaluate_for_review(opportunity: Opportunity) -> tuple[bool, str]:
     if not opportunity.authorization_basis.strip():
         return False, "missing authorization basis"
 
-    if opportunity.expected_net_value <= 0:
+    net_value = opportunity.expected_net_value
+    if net_value is not None and net_value <= 0:
         return False, "non-positive expected net value"
 
     return True, "candidate for human review"
