@@ -1,0 +1,9 @@
+{
+  "format": "cog-historical-confidence-policy-v1",
+  "min_observations": 5,
+  "max_semantic_change_ratio": "0.20",
+  "max_price_range_pct": "30",
+  "require_current_availability": true,
+  "require_known_per_task_price": true,
+  "unavailable_is_fail": true
+}
