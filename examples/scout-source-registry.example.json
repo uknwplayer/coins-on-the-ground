@@ -99,6 +99,21 @@
       ],
       "enabled": true,
       "notes": "Public open compute orders from Akash mainnet REST. Order price is a maximum rate per block, not guaranteed provider revenue."
+    },
+    {
+      "id": "bidpostloop",
+      "display_name": "BidPostLoop",
+      "base_url": "https://bidpostloop.com",
+      "network_surface": "clearnet",
+      "country": null,
+      "jurisdiction": null,
+      "categories": [
+        "microtask",
+        "agent_task_market",
+        "fixed_reward"
+      ],
+      "enabled": true,
+      "notes": "Public funded microtasks denominated in Agent Credits. Discovery is read-only; authentication is required later to propose or deliver work, and external payout has an accumulation threshold."
     }
   ]
 }
