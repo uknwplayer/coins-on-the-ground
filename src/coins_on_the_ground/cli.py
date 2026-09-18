@@ -41,7 +41,13 @@ from coins_on_the_ground.planning import (
     plan_capability_acquisition,
     plan_capability_gap,
 )
-from coins_on_the_ground.scouts import FranticBountyScout, GitHubBountyScout, Scout
+from coins_on_the_ground.scouts import (
+    AlgoraScout,
+    FranticBountyScout,
+    GitHubBountyScout,
+    IssueHuntScout,
+    Scout,
+)
 
 
 def _json_value(value: Any) -> Any:
@@ -116,9 +122,15 @@ def _scouts_for_source(source: str, limit: int) -> list[Scout]:
         return [FranticBountyScout(limit=limit)]
     if source == "github-bounties":
         return [GitHubBountyScout(limit=limit)]
+    if source == "issuehunt":
+        return [IssueHuntScout(limit=limit)]
+    if source == "algora":
+        return [AlgoraScout(limit=limit)]
     return [
         FranticBountyScout(limit=limit),
         GitHubBountyScout(limit=limit),
+        IssueHuntScout(limit=limit),
+        AlgoraScout(limit=limit),
     ]
 
 
@@ -159,6 +171,15 @@ async def _scan_github(args: argparse.Namespace) -> int:
 
 async def _scan_frantic(args: argparse.Namespace) -> int:
     return await _emit_scan(FranticBountyScout(limit=args.limit), args)
+
+
+async def _scan_issuehunt(args: argparse.Namespace) -> int:
+    return await _emit_scan(IssueHuntScout(limit=args.limit), args)
+
+
+async def _scan_algora(args: argparse.Namespace) -> int:
+    orgs = tuple(args.org) if args.org else None
+    return await _emit_scan(AlgoraScout(limit=args.limit, orgs=orgs), args)
 
 
 async def _review(args: argparse.Namespace) -> int:
@@ -708,7 +729,7 @@ def _add_common_scan_args(parser: argparse.ArgumentParser) -> None:
 def _add_source_argument(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "source",
-        choices=("all", "frantic", "github-bounties"),
+        choices=("all", "frantic", "github-bounties", "issuehunt", "algora"),
         default="all",
         nargs="?",
     )
@@ -761,6 +782,26 @@ def build_parser() -> argparse.ArgumentParser:
     frantic = scan_sub.add_parser("frantic", help="scan structured Frantic bounty mirrors")
     _add_common_scan_args(frantic)
     frantic.set_defaults(handler=_scan_frantic)
+
+    issuehunt = scan_sub.add_parser(
+        "issuehunt",
+        help="scan globally visible funded IssueHunt OSS tasks",
+    )
+    _add_common_scan_args(issuehunt)
+    issuehunt.set_defaults(handler=_scan_issuehunt)
+
+    algora = scan_sub.add_parser(
+        "algora",
+        help="scan public Algora bounty pages for configured organizations",
+    )
+    algora.add_argument(
+        "--org",
+        action="append",
+        default=[],
+        help="Algora organization handle; repeat to scan multiple organizations",
+    )
+    _add_common_scan_args(algora)
+    algora.set_defaults(handler=_scan_algora)
 
     review = subparsers.add_parser(
         "review",
@@ -893,6 +934,41 @@ def build_parser() -> argparse.ArgumentParser:
         help="destination path for the generated acquisition catalog v2",
     )
     evidence_materialize.set_defaults(handler=_evidence_materialize)
+
+    ledger_append = subparsers.add_parser(
+        "evidence-ledger-append",
+        help="append successful collected evidence records to a local append-only ledger",
+    )
+    ledger_append.add_argument(
+        "--records",
+        required=True,
+        help="JSONL produced by cog evidence-collect --output",
+    )
+    ledger_append.add_argument(
+        "--ledger",
+        required=True,
+        help="local append-only evidence ledger JSONL path",
+    )
+    ledger_append.set_defaults(handler=_evidence_ledger_append)
+
+    ledger_analyze = subparsers.add_parser(
+        "evidence-ledger-analyze",
+        help="derive drift events and stability metrics from a local evidence ledger",
+    )
+    ledger_analyze.add_argument(
+        "--ledger",
+        required=True,
+        help="local evidence ledger JSONL path",
+    )
+    ledger_analyze.add_argument(
+        "--source-id",
+        help="optional source_id filter",
+    )
+    ledger_analyze.add_argument(
+        "--output",
+        help="optional JSONL output path for drift and summaries",
+    )
+    ledger_analyze.set_defaults(handler=_evidence_ledger_analyze)
 
     return parser
 
