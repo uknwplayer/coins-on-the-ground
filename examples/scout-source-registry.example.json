@@ -70,6 +70,21 @@
       ],
       "enabled": true,
       "notes": "Public live bug-bounty listing. Payout is a program maximum, not guaranteed earnings; scope and eligibility require review."
+    },
+    {
+      "id": "taskmarket",
+      "display_name": "Taskmarket",
+      "base_url": "https://taskmarket.dev",
+      "network_surface": "clearnet",
+      "country": null,
+      "jurisdiction": null,
+      "categories": [
+        "agent_task_market",
+        "onchain_reward",
+        "usdc"
+      ],
+      "enabled": true,
+      "notes": "Public open tasks backed by Base Mainnet USDC escrow. Discovery is read-only; wallet, legal acceptance, claims, bids and submissions remain separate."
     }
   ]
 }
