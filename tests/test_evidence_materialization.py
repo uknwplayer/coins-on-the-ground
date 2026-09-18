@@ -20,7 +20,6 @@ from coins_on_the_ground.planning import (
     parse_acquisition_catalog,
 )
 
-
 _NOW = datetime(2026, 9, 18, 12, tzinfo=UTC)
 _DIGEST_A = "a" * 64
 _DIGEST_B = "b" * 64
