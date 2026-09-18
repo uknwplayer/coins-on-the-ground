@@ -1,11 +1,7 @@
 from decimal import Decimal
 
-from coins_on_the_ground.opportunity import (
-    Opportunity,
-    OpportunityClass,
-    RiskClass,
-    score_opportunity,
-)
+from coins_on_the_ground.opportunity import Opportunity, OpportunityClass, RiskClass
+from coins_on_the_ground.opportunity.engine import score_opportunity
 
 
 def test_immunefi_uses_structured_source_evidence_weight() -> None:
