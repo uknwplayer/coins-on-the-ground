@@ -31,17 +31,17 @@ from .portfolio import (
     PortfolioStatus,
     plan_microtask_portfolio,
 )
+from .settlement import (
+    SettlementPoolSummary,
+    SettlementStatus,
+    summarize_settlement_pool,
+)
 from .source_allocation import (
     SourceAllocationCandidate,
     SourceAllocationPlan,
     SourceAllocationPolicy,
     SourceAllocationStatus,
     plan_source_allocation,
-)
-from .settlement import (
-    SettlementPoolSummary,
-    SettlementStatus,
-    summarize_settlement_pool,
 )
 
 __all__ = [
@@ -64,11 +64,11 @@ __all__ = [
     "PortfolioSettlementStep",
     "PortfolioStatus",
     "SettlementPoolSummary",
+    "SettlementStatus",
     "SourceAllocationCandidate",
     "SourceAllocationPlan",
     "SourceAllocationPolicy",
     "SourceAllocationStatus",
-    "SettlementStatus",
     "assess_evidence",
     "assess_historical_confidence",
     "assess_historical_confidence_many",
