@@ -3,6 +3,10 @@ from .akash import parse_akash_orders as parse_akash_orders
 from .algora import AlgoraScout as AlgoraScout
 from .algora import parse_algora_org_html as parse_algora_org_html
 from .base import Scout as Scout
+from .bidpostloop import BidPostLoopScout as BidPostLoopScout
+from .bidpostloop import (
+    parse_bidpostloop_opportunities as parse_bidpostloop_opportunities,
+)
 from .frantic import FranticBountyScout as FranticBountyScout
 from .frantic import parse_frantic_issue as parse_frantic_issue
 from .github_bounties import GitHubBountyScout as GitHubBountyScout
@@ -25,6 +29,7 @@ from .taskmarket import parse_taskmarket_response as parse_taskmarket_response
 __all__ = [
     "AkashScout",
     "AlgoraScout",
+    "BidPostLoopScout",
     "FranticBountyScout",
     "GitHubBountyScout",
     "ImmunefiScout",
@@ -40,6 +45,7 @@ __all__ = [
     "extract_reward",
     "parse_akash_orders",
     "parse_algora_org_html",
+    "parse_bidpostloop_opportunities",
     "parse_frantic_issue",
     "parse_immunefi_listing",
     "parse_issuehunt_html",
