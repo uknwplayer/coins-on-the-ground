@@ -40,6 +40,7 @@ from coins_on_the_ground.planning import (
     parse_historical_confidence_policy,
     plan_capability_acquisition,
     plan_capability_gap,
+    summarize_settlement_pool,
 )
 from coins_on_the_ground.scouts import (
     AkashScout,
@@ -257,6 +258,25 @@ async def _scan_sherlock(args: argparse.Namespace) -> int:
 
 async def _scan_taskmarket(args: argparse.Namespace) -> int:
     return await _emit_scan(TaskmarketScout(limit=args.limit), args)
+
+
+async def _settlement_summary(args: argparse.Namespace) -> int:
+    opportunities, discovery_failures = await _discover(args.source, args.limit)
+    summary = summarize_settlement_pool(opportunities)
+
+    print(
+        json.dumps(
+            {
+                "engine": "settlement-summary",
+                "source": args.source,
+                "summary": _json_value(asdict(summary)),
+                "source_failures": discovery_failures,
+                "execution_performed": False,
+            },
+            ensure_ascii=False,
+        )
+    )
+    return 0
 
 
 async def _sources_check(args: argparse.Namespace) -> int:
@@ -890,6 +910,17 @@ def build_parser() -> argparse.ArgumentParser:
     scan = subparsers.add_parser("scan", help="discover read-only opportunity candidates")
     scan_sub = scan.add_subparsers(dest="source", required=True)
 
+    akash = scan_sub.add_parser(
+        "akash",
+        help="scan Akash mainnet open compute orders",
+    )
+    akash.add_argument(
+        "--rest-url",
+        help="optional HTTPS Akash REST endpoint override",
+    )
+    _add_common_scan_args(akash)
+    akash.set_defaults(handler=_scan_akash)
+
     bidpostloop = scan_sub.add_parser(
         "bidpostloop",
         help="scan funded public BidPostLoop microtasks",
@@ -961,6 +992,19 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_common_scan_args(taskmarket)
     taskmarket.set_defaults(handler=_scan_taskmarket)
+
+    settlement_summary = subparsers.add_parser(
+        "settlement-summary",
+        help="summarize whether fixed microtask capacity can cross payout minimums",
+    )
+    settlement_summary.add_argument(
+        "source",
+        choices=("bidpostloop",),
+        default="bidpostloop",
+        nargs="?",
+    )
+    settlement_summary.add_argument("--limit", type=int, default=100)
+    settlement_summary.set_defaults(handler=_settlement_summary)
 
     sources_check = subparsers.add_parser(
         "sources-check",
