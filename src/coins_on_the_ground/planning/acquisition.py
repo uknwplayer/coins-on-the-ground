@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
@@ -21,6 +21,10 @@ from coins_on_the_ground.planning.evidence import (
     assess_evidence,
 )
 from coins_on_the_ground.planning.gaps import plan_capability_gap
+from coins_on_the_ground.planning.historical_confidence import (
+    HistoricalConfidenceAssessment,
+    HistoricalConfidenceStatus,
+)
 from coins_on_the_ground.planning.model import GapType
 
 _CENT = Decimal("0.01")
@@ -79,6 +83,8 @@ class AcquisitionCandidate:
     evidence_source_url: str | None
     evidence_confidence_score: int
     requires_authorization_review: bool
+    historical_confidence_status: HistoricalConfidenceStatus | None
+    historical_confidence_reasons: tuple[str, ...]
     rationale: tuple[str, ...]
 
 
@@ -197,10 +203,31 @@ def _candidate(
     profiles: dict[str, CapabilityProfile],
     amortization_uses: int,
     now: datetime | None,
+    historical_confidence: Mapping[str, HistoricalConfidenceAssessment] | None,
 ) -> AcquisitionCandidate:
     _validate_option(option)
     assessment = assess_evidence(option.evidence, now=now)
     base = _select_base_profile(option, nearest_profile, profiles)
+
+    historical_status: HistoricalConfidenceStatus | None = None
+    historical_reasons: tuple[str, ...] = ()
+    if historical_confidence is not None and option.evidence_required:
+        collector_source_id = (
+            option.evidence.collector_source_id
+            if option.evidence is not None
+            else None
+        )
+        if collector_source_id is None:
+            historical_status = HistoricalConfidenceStatus.REVIEW
+            historical_reasons = ("collector_source_id_missing",)
+        else:
+            historical_assessment = historical_confidence.get(collector_source_id)
+            if historical_assessment is None:
+                historical_status = HistoricalConfidenceStatus.REVIEW
+                historical_reasons = ("historical_summary_missing",)
+            else:
+                historical_status = historical_assessment.status
+                historical_reasons = historical_assessment.reasons
     explicit_target_missing = (
         option.target_profile is not None
         and option.mode is not AcquisitionMode.ADD_PROFILE
@@ -223,6 +250,8 @@ def _candidate(
         capability for capability in required if capability not in effective_resulting
     )
     covers = not remaining and not explicit_target_missing
+    if historical_status is HistoricalConfidenceStatus.FAIL:
+        covers = False
 
     if option.hourly_cost_usd is not None:
         hourly_cost = (
@@ -282,6 +311,13 @@ def _candidate(
     if option.evidence_required and not pricing_evidence_usable:
         rationale.append("pricing_evidence_not_usable")
 
+    if historical_status is not None:
+        rationale.append(f"historical_confidence={historical_status.value}")
+        rationale.extend(
+            f"historical:{reason}"
+            for reason in historical_reasons
+        )
+
     if covers:
         rationale.append("option_covers_all_recognized_requirements")
     else:
@@ -320,8 +356,18 @@ def _candidate(
         ),
         evidence_confidence_score=assessment.confidence_score,
         requires_authorization_review=assessment.requires_authorization_review,
+        historical_confidence_status=historical_status,
+        historical_confidence_reasons=historical_reasons,
         rationale=tuple(rationale),
     )
+
+
+_HISTORICAL_CONFIDENCE_RANK = {
+    HistoricalConfidenceStatus.PASS: 3,
+    HistoricalConfidenceStatus.REVIEW: 2,
+    None: 1,
+    HistoricalConfidenceStatus.FAIL: 0,
+}
 
 
 _PROFITABILITY_RANK = {
@@ -332,13 +378,16 @@ _PROFITABILITY_RANK = {
 }
 
 
-def _candidate_sort_key(candidate: AcquisitionCandidate) -> tuple[int, int, int, Decimal, int]:
+def _candidate_sort_key(
+    candidate: AcquisitionCandidate,
+) -> tuple[int, int, int, int, Decimal, int]:
     cost = candidate.projected_total_cost_usd_high
     sortable_cost = -cost if cost is not None else Decimal(-999999999)
     evidence_rank = int(candidate.evidence_status is EvidenceStatus.FRESH)
     return (
         int(candidate.covers_requirements),
         evidence_rank,
+        _HISTORICAL_CONFIDENCE_RANK[candidate.historical_confidence_status],
         _PROFITABILITY_RANK[candidate.profitability],
         sortable_cost,
         candidate.confidence_score,
@@ -352,6 +401,7 @@ def plan_capability_acquisition(
     *,
     amortization_uses: int = 1,
     now: datetime | None = None,
+    historical_confidence: Mapping[str, HistoricalConfidenceAssessment] | None = None,
 ) -> CapabilityAcquisitionPlan:
     """Plan how a declared local catalog could close capability gaps.
 
@@ -396,6 +446,7 @@ def plan_capability_acquisition(
             profiles=profiles,
             amortization_uses=amortization_uses,
             now=now,
+            historical_confidence=historical_confidence,
         )
         for option in options
         if option.enabled
