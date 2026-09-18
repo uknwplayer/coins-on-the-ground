@@ -138,6 +138,20 @@ cog source-allocation all \
   --limit 100
 ```
 
+Cadência adaptativa de scouting:
+
+```bash
+cog scout-cadence all \
+  --snapshot-ledger ./data/opportunity-snapshots.jsonl \
+  --capability http \
+  --capability text_analysis \
+  --hourly-cost-usd 0.60 \
+  --scan-budget-per-day 24 \
+  --min-scans-per-source-per-day 1 \
+  --max-scans-per-source-per-day 6 \
+  --limit 100
+```
+
 Portfolio econômico de microtarefas:
 
 ```bash
@@ -227,7 +241,8 @@ Veja `docs/scouts.md`, `docs/opportunity-model.md`, `docs/feasibility.md`,
 `docs/capability-acquisition.md`, `docs/capability-evidence.md`,
 `docs/evidence-collectors.md`, `docs/evidence-materialization.md` e
 `docs/evidence-ledger.md`, `docs/historical-confidence.md`,
-`docs/global-discovery.md`, `docs/replenishment.md` e `docs/source-allocation.md`.
+`docs/global-discovery.md`, `docs/replenishment.md`, `docs/source-allocation.md` e
+`docs/scout-cadence.md`.
 
 ## Módulos iniciais
 
@@ -276,6 +291,8 @@ Já estão implementados:
 - métricas de funding positivo/negativo, entrada/saída de oportunidades e taxa normalizada por dia;
 - Source Allocation Planner para distribuir atenção de scouting por qualidade atual, economia, replenishment, settlement e confiança histórica;
 - `attention_share_pct` relativo, com unknown signals reduzindo cobertura em vez de virarem zero silenciosamente;
+- Adaptive Scout Cadence com budget diário, piso de exploração e teto por fonte;
+- recomendação `recommended_scans_per_day + target_interval_minutes` sem aplicar schedule automaticamente;
 - Opportunity Model e deduplicação;
 - `review_score`;
 - Cost & Feasibility Estimator;
@@ -304,5 +321,6 @@ Já estão implementados:
 
 A próxima evolução combina **superfície de descoberta + alocação adaptativa**: novos Scouts globais
 continuam entrando, mas o sistema agora pode usar histórico observado para decidir onde vale gastar
-mais atenção de scouting. Isso prepara uma política futura de cadência por fonte sem transformar
-prioridade de monitoramento em autorização de execução.
+mais atenção de scouting. A cadência adaptativa já consegue converter essa prioridade em budget
+diário e intervalo-alvo por fonte, ainda sem aplicar cron ou execução automática. O próximo passo
+operacional é persistir snapshots entre runs e ligar um scheduler read-only à policy.
