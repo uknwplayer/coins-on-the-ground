@@ -251,3 +251,58 @@ KYC/payout eligibility
 program-specific rules
 responsible disclosure terms
 ```
+
+
+### Keep3r Network
+
+`Keep3rScout` lê o contrato Keep3r v2 no Ethereum mainnet usando somente chamadas RPC
+`eth_call`.
+
+```bash
+cog scan keep3r --limit 25
+```
+
+RPC alternativo:
+
+```bash
+cog scan keep3r \
+  --rpc-url https://seu-rpc.example \
+  --limit 25
+```
+
+O Scout chama somente:
+
+```text
+jobs()
+totalJobCredits(job)
+```
+
+Nenhuma transação é assinada ou transmitida.
+
+Jobs com crédito total igual a zero são ignorados.
+
+O valor normalizado usa:
+
+```text
+currency = KP3R
+reward_semantics = pool_credits
+```
+
+Isso significa que `reward` representa o total de créditos atualmente disponível no job, e não o
+valor que uma única execução receberia.
+
+Antes de qualquer execução futura ainda seria necessário determinar:
+
+- função de trabalho correta do job;
+- condições de keeper;
+- bond/tempo mínimo quando aplicável;
+- gas necessário;
+- payout por execução;
+- concorrência entre keepers;
+- risco operacional do contrato;
+- profitability líquida.
+
+Quando disponível, o Scout consulta a API pública oficial de registry apenas para enriquecer nome e
+repositório do job. Falha nessa API não invalida o estado on-chain.
+
+O contrato on-chain continua sendo a fonte primária de descoberta.
