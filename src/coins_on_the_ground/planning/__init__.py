@@ -31,6 +31,13 @@ from .portfolio import (
     PortfolioStatus,
     plan_microtask_portfolio,
 )
+from .scout_cadence import (
+    ScoutCadencePlan,
+    ScoutCadencePolicy,
+    ScoutCadenceRecommendation,
+    ScoutCadenceStatus,
+    plan_scout_cadence,
+)
 from .settlement import (
     SettlementPoolSummary,
     SettlementStatus,
@@ -63,6 +70,10 @@ __all__ = [
     "PortfolioCandidate",
     "PortfolioSettlementStep",
     "PortfolioStatus",
+    "ScoutCadencePlan",
+    "ScoutCadencePolicy",
+    "ScoutCadenceRecommendation",
+    "ScoutCadenceStatus",
     "SettlementPoolSummary",
     "SettlementStatus",
     "SourceAllocationCandidate",
@@ -77,6 +88,7 @@ __all__ = [
     "plan_capability_acquisition",
     "plan_capability_gap",
     "plan_microtask_portfolio",
+    "plan_scout_cadence",
     "plan_source_allocation",
     "summarize_settlement_pool",
 ]
