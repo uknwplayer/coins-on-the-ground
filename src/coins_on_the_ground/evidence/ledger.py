@@ -196,15 +196,6 @@ def append_evidence_ledger(
     )
 
 
-def _pricing(record: CollectedEvidenceRecord) -> tuple[Decimal | None, Decimal | None, Decimal | None]:
-    descriptor = record.descriptor
-    return (
-        descriptor.setup_cost_usd,
-        descriptor.per_task_cost_usd,
-        descriptor.hourly_cost_usd,
-    )
-
-
 def _string_tuple(values: tuple[object, ...]) -> str:
     return ",".join(str(value) for value in values)
 
@@ -384,7 +375,7 @@ def summarize_evidence_stability(
             )
             if semantic_events:
                 semantic_change_transitions += 1
-            elif previous.record.payload_sha256 == current.record.payload_sha256:
+            else:
                 stable_transitions += 1
 
         prices = [
