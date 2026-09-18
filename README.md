@@ -90,7 +90,8 @@ Sem capacidades declaradas, o estimator não presume que uma máquina seja capaz
 tarefa.
 
 Veja `docs/scouts.md`, `docs/opportunity-model.md`, `docs/feasibility.md`,
-`docs/bridge-integration.md` e `docs/capability-gaps.md`.
+`docs/bridge-integration.md`, `docs/capability-gaps.md` e
+`docs/capability-acquisition.md`.
 
 ## Módulos iniciais
 
@@ -100,6 +101,7 @@ src/coins_on_the_ground/
   opportunity/     # modelo canônico, deduplicação e scoring
   estimation/      # custo, esforço e viabilidade por CapabilityProfile
   classifiers/     # FOUND / EARN / RECOVER e classificação de risco
+  planning/        # gaps e aquisição de capabilities
   policies/        # regras específicas deste projeto
   audit/           # evidências e trilha de decisão
   adapters/        # integração com Machine Bridge / Bridge Mesh
@@ -131,7 +133,11 @@ Já estão implementados:
 - adapters compatíveis com Machine Bridge Worker Registration V1 e Bridge Mesh Node Advertisement V1;
 - inventário por worker/endpoint, sem união artificial de capacidades;
 - Capability Gap Planner;
+- Capability Acquisition Planner baseado em catálogo local explícito;
+- schema versionado para opções de aquisição;
+- amortização explícita de custos de setup;
+- recálculo de custo e valor líquido após aquisição hipotética;
 - testes automatizados e CI.
 
-A próxima evolução é transformar gaps de capacidade em opções de aquisição/roteamento de
-capabilities, ainda mantendo decisões econômicas e políticas dentro do Coins on the Ground.
+A próxima evolução é alimentar esse catálogo com fontes deliberadamente configuradas e evidência
+de custo/confiabilidade, sem transformar repositórios externos em dependências implícitas.
