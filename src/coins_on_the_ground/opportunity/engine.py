@@ -10,6 +10,9 @@ from coins_on_the_ground.policies import evaluate_for_review
 
 _SOURCE_EVIDENCE_SCORE = {
     "frantic": 90,
+    "immunefi": 85,
+    "algora": 80,
+    "issuehunt-oss": 75,
     "github-bounties": 60,
 }
 
