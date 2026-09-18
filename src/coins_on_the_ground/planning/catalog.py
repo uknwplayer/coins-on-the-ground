@@ -74,7 +74,8 @@ def _evidence(item: dict[str, Any]) -> CapabilityEvidence:
 
     observed_at = _datetime(raw.get("observed_at"), "observed_at", required=True)
     expires_at = _datetime(raw.get("expires_at"), "expires_at", required=False)
-    assert observed_at is not None
+    if observed_at is None:
+        raise ValueError("observed_at is required")
 
     max_age_days = raw.get("max_age_days")
     if not isinstance(max_age_days, int) or isinstance(max_age_days, bool):
