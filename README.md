@@ -109,6 +109,12 @@ Revisão:
 cog review all --limit 100
 ```
 
+Capacidade de atravessar payout mínimo em microtarefas:
+
+```bash
+cog settlement-summary bidpostloop --limit 100
+```
+
 Estimativa de custo e viabilidade:
 
 ```bash
@@ -230,6 +236,7 @@ Já estão implementados:
 - descoberta read-only de Akash open compute orders;
 - microtarefas financiadas de centavos via BidPostLoop;
 - regras de custo específicas para microtasks, permitindo filtrar tarefas de US$0,05–0,10 por tempo esperado;
+- Settlement Pool Summary para comparar capacidade bruta disponível com payout mínimo;
 - Opportunity Model e deduplicação;
 - `review_score`;
 - Cost & Feasibility Estimator;
