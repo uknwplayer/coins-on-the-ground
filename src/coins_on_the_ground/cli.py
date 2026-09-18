@@ -22,6 +22,7 @@ from coins_on_the_ground.estimation import (
 )
 from coins_on_the_ground.opportunity import Opportunity, review_and_deduplicate
 from coins_on_the_ground.planning import (
+    assess_evidence,
     parse_acquisition_catalog,
     plan_capability_acquisition,
     plan_capability_gap,
@@ -354,6 +355,51 @@ async def _gaps(args: argparse.Namespace) -> int:
     return 0
 
 
+async def _catalog_check(args: argparse.Namespace) -> int:
+    catalog_value = await asyncio.to_thread(_load_json, Path(args.catalog))
+    options = parse_acquisition_catalog(catalog_value)
+
+    fresh = 0
+    rows: list[dict[str, Any]] = []
+    for option in options:
+        assessment = assess_evidence(option.evidence)
+        if assessment.status.value == "FRESH":
+            fresh += 1
+        rows.append(
+            {
+                "option_id": option.option_id,
+                "mode": option.mode.value,
+                "provides": [capability.value for capability in option.provides],
+                "enabled": option.enabled,
+                "evidence_required": option.evidence_required,
+                "evidence": _json_value(asdict(assessment)),
+                "source_url": (
+                    option.evidence.source_url if option.evidence is not None else None
+                ),
+                "authorization_requirements": (
+                    list(option.evidence.authorization_requirements)
+                    if option.evidence is not None
+                    else []
+                ),
+            }
+        )
+
+    for row in rows:
+        print(json.dumps(row, ensure_ascii=False))
+
+    print(
+        json.dumps(
+            {
+                "engine": "acquisition-catalog-check",
+                "options": len(options),
+                "fresh_evidence_options": fresh,
+                "execution_performed": False,
+            }
+        )
+    )
+    return 0
+
+
 async def _acquisition_plan(args: argparse.Namespace) -> int:
     observations = await _load_observations(args)
     catalog_value = await asyncio.to_thread(_load_json, Path(args.catalog))
@@ -516,6 +562,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="number of expected uses over which reusable setup cost is amortized",
     )
     acquisition.set_defaults(handler=_acquisition_plan)
+
+    catalog_check = subparsers.add_parser(
+        "catalog-check",
+        help="inspect evidence freshness and claims in a local acquisition catalog",
+    )
+    catalog_check.add_argument(
+        "--catalog",
+        required=True,
+        help="path to a local capability acquisition catalog JSON",
+    )
+    catalog_check.set_defaults(handler=_catalog_check)
 
     return parser
 
