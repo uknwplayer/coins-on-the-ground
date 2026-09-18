@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from coins_on_the_ground.opportunity import Opportunity
-from coins_on_the_ground.scouts.github_bounties import GitHubBountyScout
+from coins_on_the_ground.scouts import FranticBountyScout, GitHubBountyScout, Scout
 
 
 def _json_value(value: Any) -> Any:
@@ -38,8 +38,7 @@ def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
-async def _scan_github(args: argparse.Namespace) -> int:
-    scout = GitHubBountyScout(query=args.query, limit=args.limit)
+async def _emit_scan(scout: Scout, args: argparse.Namespace) -> int:
     rows: list[dict[str, Any]] = []
 
     async for opportunity in scout.discover():
@@ -63,6 +62,22 @@ async def _scan_github(args: argparse.Namespace) -> int:
     return 0
 
 
+async def _scan_github(args: argparse.Namespace) -> int:
+    return await _emit_scan(
+        GitHubBountyScout(query=args.query, limit=args.limit),
+        args,
+    )
+
+
+async def _scan_frantic(args: argparse.Namespace) -> int:
+    return await _emit_scan(FranticBountyScout(limit=args.limit), args)
+
+
+def _add_common_scan_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--limit", type=int, default=25)
+    parser.add_argument("--output", help="optional JSONL output path")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="cog", description="Coins on the Ground Value Scout")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -76,9 +91,12 @@ def build_parser() -> argparse.ArgumentParser:
         default="bounty in:title,body is:issue is:open",
         help="GitHub Issues search query",
     )
-    github.add_argument("--limit", type=int, default=25)
-    github.add_argument("--output", help="optional JSONL output path")
+    _add_common_scan_args(github)
     github.set_defaults(handler=_scan_github)
+
+    frantic = scan_sub.add_parser("frantic", help="scan structured Frantic bounty mirrors")
+    _add_common_scan_args(frantic)
+    frantic.set_defaults(handler=_scan_frantic)
 
     return parser
 
