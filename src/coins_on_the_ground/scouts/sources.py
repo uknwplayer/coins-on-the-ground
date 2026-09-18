@@ -78,3 +78,15 @@ SHERLOCK = ScoutSource(
     eligibility_review_required=True,
     authorization_review_required=True,
 )
+
+
+TASKMARKET = ScoutSource(
+    source_id="taskmarket",
+    display_name="Taskmarket",
+    base_url="https://taskmarket.dev",
+    network_surface=NetworkSurface.CLEARNET,
+    country=None,
+    jurisdiction=None,
+    eligibility_review_required=True,
+    authorization_review_required=True,
+)
