@@ -3,6 +3,11 @@
 Scouts são adaptadores de fonte somente leitura. Eles descobrem candidatos públicos e os
 normalizam para o modelo canônico `Opportunity`.
 
+A descoberta é global. País ou jurisdição não são filtros prévios; quando conhecidos, entram como
+metadata e são avaliados posteriormente.
+
+Veja também `docs/global-discovery.md`.
+
 Um Scout não deve:
 
 - reivindicar recompensa;
@@ -31,26 +36,69 @@ cog scan github-bounties --limit 25
 
 ## Frantic Bounties
 
-`FranticBountyScout` é o primeiro Scout específico de uma fonte.
+`FranticBountyScout` lê issues públicas estruturadas em `auscaster/frantic-board` e só emite
+um candidato quando:
 
-Ele lê issues públicas estruturadas em `auscaster/frantic-board` e só emite um candidato quando
-todas estas condições estão visíveis:
-
-- `Worker price` maior que zero;
-- `Status` igual a `Available`;
-- pelo menos um slot ainda disponível;
-- URL HTTPS de claim apontando para `gofrantic.com/bounties/...`.
-
-O próprio mirror informa que o Frantic é a fonte de verdade. Portanto, a página de claim ainda
-precisa ser verificada antes do início do trabalho, e esses candidatos também permanecem como
-`CIVIL_REVIEW` por enquanto.
+- `Worker price` é maior que zero;
+- `Status` é `Available`;
+- existe pelo menos um slot;
+- o claim URL é HTTPS em `gofrantic.com/bounties/...`.
 
 ```bash
 cog scan frantic --limit 25
 ```
 
-Essa fonte é deliberadamente estreita: evidência mais forte é preferida a uma contagem alta de
-candidatos.
+## IssueHunt OSS
+
+`IssueHuntScout` lê a listagem pública global de issues financiadas do IssueHunt OSS.
+
+Ele exige:
+
+- link público da issue;
+- recompensa USD explícita;
+- valor positivo.
+
+```bash
+cog scan issuehunt --limit 25
+```
+
+O candidato permanece `CIVIL_REVIEW` porque regras atuais da issue, aceite do PR, elegibilidade e
+payout ainda precisam ser confirmados.
+
+## Algora
+
+`AlgoraScout` lê páginas públicas de bounties abertas da Algora.
+
+A lista de organizações é explícita:
+
+```bash
+cog scan algora \
+  --org projectdiscovery \
+  --org Dokploy \
+  --limit 25
+```
+
+Sem `--org`, uma seed inicial é usada. Ela não representa whitelist jurídica nem garantia de que
+a organização ainda tenha bounty aberta.
+
+O Scout nunca comenta `/attempt`, abre PR, reclama reward ou autentica.
+
+## Source Registry
+
+Fontes potenciais podem ser registradas como metadata:
+
+```text
+cog-scout-source-registry-v1
+```
+
+```bash
+cog sources-check \
+  --registry ./examples/scout-source-registry.example.json
+```
+
+O registry aceita `clearnet` e `onion`.
+
+Registrar uma URL não faz fetch e não cria automaticamente um Scout.
 
 ## Autenticação
 
@@ -63,13 +111,30 @@ cog scan frantic
 
 Não faça commit do token. Arquivos `.env` são ignorados pelo Git.
 
-## Persistência das observações
+IssueHunt e Algora atuais usam somente páginas públicas.
 
-Qualquer um dos Scouts pode gravar JSONL sem executar ação financeira:
+## Persistência das observações
 
 ```bash
 cog scan frantic --limit 50 --output data/frantic.jsonl
 cog scan github-bounties --limit 50 --output data/github-bounties.jsonl
+cog scan issuehunt --limit 50 --output data/issuehunt.jsonl
+cog scan algora --limit 50 --output data/algora.jsonl
 ```
 
-A CLI imprime ao final um resumo com `execution_performed=false`.
+A CLI imprime ao final `execution_performed=false`.
+
+## Agregação
+
+```bash
+cog review all --limit 100
+```
+
+Atualmente agrega:
+
+- GitHub;
+- Frantic;
+- IssueHunt OSS;
+- Algora.
+
+A deduplicação continua acontecendo depois da descoberta.
