@@ -14,10 +14,13 @@ Fontes públicas --> | Scouts                |
                     | Opportunity Model     |
                     |   |                   |
                     |   v                   |
-                    | Classifiers/Policies  |
+                    | Review Engine         |
                     |   |                   |
                     |   v                   |
-                    | Economics + Audit     |
+                    | Cost & Feasibility    |
+                    |   |                   |
+                    |   v                   |
+                    | Policies + Audit      |
                     +----+-------------+----+
                          |             |
                      adapters      adapters
@@ -43,6 +46,8 @@ Coins on the Ground é responsável por conceitos como:
 - FOUND / EARN / RECOVER;
 - evidência de autorização;
 - estimativa de recompensa e custo;
+- estimativa de viabilidade;
+- perfis de capacidades para avaliação econômica;
 - metadados de risco jurídico;
 - limites de rentabilidade;
 - política de execução;
@@ -58,13 +63,28 @@ SOURCE
   -> NORMALIZE
   -> AUTHORIZATION EVIDENCE
   -> CLASSIFY
-  -> ECONOMIC ESTIMATE
+  -> DEDUPLICATE
+  -> REVIEW SCORE
+  -> COST & FEASIBILITY ESTIMATE
   -> POLICY GATE
   -> HUMAN REVIEW
   -> AUDIT RECORD
 ```
 
 A execução fica deliberadamente fora do primeiro marco.
+
+## Integração futura de capacidades
+
+O estimator recebe um `CapabilityProfile` pertencente ao Coins on the Ground.
+
+No futuro, adapters poderão converter capacidades genéricas expostas pela Machine Bridge ou
+Bridge Mesh nesse perfil. Isso mantém a direção da dependência correta:
+
+```text
+Machine Bridge / Bridge Mesh -> adapter -> CapabilityProfile -> estimator
+```
+
+As Bridges não precisam conhecer bounties, lucro, FOUND/EARN/RECOVER ou regras financeiras.
 
 ## Fronteira futura de execução
 
