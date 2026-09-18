@@ -1,0 +1,27 @@
+{
+  "format": "cog-scout-source-registry-v1",
+  "sources": [
+    {
+      "id": "issuehunt-oss",
+      "display_name": "IssueHunt OSS",
+      "base_url": "https://oss.issuehunt.io",
+      "network_surface": "clearnet",
+      "country": null,
+      "jurisdiction": null,
+      "categories": ["dev_bounty", "open_source"],
+      "enabled": true,
+      "notes": "Public funded open-source tasks; eligibility and payout terms require review."
+    },
+    {
+      "id": "algora",
+      "display_name": "Algora",
+      "base_url": "https://algora.io",
+      "network_surface": "clearnet",
+      "country": null,
+      "jurisdiction": null,
+      "categories": ["dev_bounty", "open_source"],
+      "enabled": true,
+      "notes": "Public organization bounty pages; org set is configured by the Scout."
+    }
+  ]
+}
