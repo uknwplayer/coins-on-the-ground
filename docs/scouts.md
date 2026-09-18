@@ -111,12 +111,15 @@ cog scan frantic
 
 Não faça commit do token. Arquivos `.env` são ignorados pelo Git.
 
-IssueHunt, Algora, Immunefi, Sherlock e Taskmarket atuais usam somente superfícies públicas.
+IssueHunt, Algora, Immunefi, Sherlock, Taskmarket e BidPostLoop atuais usam somente superfícies públicas.
 Keep3r usa chamadas RPC read-only e uma API pública opcional de registry.
+Akash usa a API REST pública da mainnet.
 
 ## Persistência das observações
 
 ```bash
+cog scan akash --limit 50 --output data/akash.jsonl
+cog scan bidpostloop --limit 50 --output data/bidpostloop.jsonl
 cog scan frantic --limit 50 --output data/frantic.jsonl
 cog scan github-bounties --limit 50 --output data/github-bounties.jsonl
 cog scan issuehunt --limit 50 --output data/issuehunt.jsonl
@@ -137,6 +140,8 @@ cog review all --limit 100
 
 Atualmente agrega:
 
+- Akash;
+- BidPostLoop;
 - GitHub;
 - Frantic;
 - IssueHunt OSS;
@@ -184,3 +189,26 @@ auction                     -> maximum
 ```
 
 O Scout não cria wallet, não aceita termos, não faz claim, não envia bid e não submete trabalho.
+
+
+## Compute market
+
+`AkashScout` descobre orders abertas por compute via REST público.
+
+```text
+reward_semantics = maximum_rate
+```
+
+Nenhum bid, lease ou operação de provider é executado.
+
+## Cent-scale microtasks
+
+`BidPostLoopScout` descobre microtarefas públicas financiadas, com reward fixo em Agent Credits
+convertido pela taxa publicada pela própria fonte.
+
+```text
+reward_semantics = fixed
+```
+
+O Scout exige funding, status aberto, slots restantes e reward positivo. Autenticação, proposta,
+entrega e payout ficam fora da descoberta.
