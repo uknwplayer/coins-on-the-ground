@@ -35,7 +35,9 @@ from coins_on_the_ground.evidence import (
 from coins_on_the_ground.opportunity import Opportunity, review_and_deduplicate
 from coins_on_the_ground.planning import (
     assess_evidence,
+    assess_historical_confidence_many,
     parse_acquisition_catalog,
+    parse_historical_confidence_policy,
     plan_capability_acquisition,
     plan_capability_gap,
 )
@@ -543,6 +545,42 @@ async def _evidence_ledger_analyze(args: argparse.Namespace) -> int:
     return 0
 
 
+async def _historical_confidence(args: argparse.Namespace) -> int:
+    entries = await asyncio.to_thread(load_evidence_ledger, Path(args.ledger))
+    summaries = summarize_evidence_stability(entries, source_id=args.source_id)
+    policy_value = await asyncio.to_thread(_load_json, Path(args.policy))
+    policy = parse_historical_confidence_policy(policy_value)
+    assessments = assess_historical_confidence_many(summaries, policy)
+
+    rows = [
+        {
+            "source_id": source_id,
+            "assessment": _json_value(asdict(assessment)),
+        }
+        for source_id, assessment in sorted(assessments.items())
+    ]
+
+    if args.output:
+        await asyncio.to_thread(_write_jsonl, Path(args.output), rows)
+    else:
+        for row in rows:
+            print(json.dumps(row, ensure_ascii=False))
+
+    print(
+        json.dumps(
+            {
+                "engine": "historical-confidence",
+                "ledger_entries": len(entries),
+                "sources": len(assessments),
+                "source_filter": args.source_id,
+                "execution_performed": False,
+            },
+            ensure_ascii=False,
+        )
+    )
+    return 0
+
+
 async def _catalog_check(args: argparse.Namespace) -> int:
     catalog_value = await asyncio.to_thread(_load_json, Path(args.catalog))
     options = parse_acquisition_catalog(catalog_value)
@@ -592,6 +630,26 @@ async def _acquisition_plan(args: argparse.Namespace) -> int:
     observations = await _load_observations(args)
     catalog_value = await asyncio.to_thread(_load_json, Path(args.catalog))
     options = parse_acquisition_catalog(catalog_value)
+
+    if bool(args.ledger) != bool(args.historical_policy):
+        raise ValueError(
+            "--ledger and --historical-policy must be provided together"
+        )
+
+    historical_confidence = None
+    if args.ledger and args.historical_policy:
+        entries = await asyncio.to_thread(load_evidence_ledger, Path(args.ledger))
+        summaries = summarize_evidence_stability(entries)
+        policy_value = await asyncio.to_thread(
+            _load_json,
+            Path(args.historical_policy),
+        )
+        policy = parse_historical_confidence_policy(policy_value)
+        historical_confidence = assess_historical_confidence_many(
+            summaries,
+            policy,
+        )
+
     opportunities = await _discover(args.source, args.limit)
     reviews = review_and_deduplicate(opportunities)
 
@@ -602,6 +660,7 @@ async def _acquisition_plan(args: argparse.Namespace) -> int:
             observations,
             options,
             amortization_uses=args.amortization_uses,
+            historical_confidence=historical_confidence,
         )
         rows.append(
             {
@@ -626,6 +685,11 @@ async def _acquisition_plan(args: argparse.Namespace) -> int:
                 "engine": "capability-acquisition-planner",
                 "profiles": len(observations),
                 "catalog_options": len(options),
+                "historical_confidence_sources": (
+                    len(historical_confidence)
+                    if historical_confidence is not None
+                    else 0
+                ),
                 "amortization_uses": args.amortization_uses,
                 "raw_candidates": len(opportunities),
                 "deduplicated_candidates": len(rows),
@@ -749,7 +813,39 @@ def build_parser() -> argparse.ArgumentParser:
         default=1,
         help="number of expected uses over which reusable setup cost is amortized",
     )
+    acquisition.add_argument(
+        "--ledger",
+        help="optional local evidence ledger used for historical confidence",
+    )
+    acquisition.add_argument(
+        "--historical-policy",
+        help="historical confidence policy; requires --ledger",
+    )
     acquisition.set_defaults(handler=_acquisition_plan)
+
+    historical_confidence = subparsers.add_parser(
+        "historical-confidence",
+        help="evaluate ledger stability against an explicit historical policy",
+    )
+    historical_confidence.add_argument(
+        "--ledger",
+        required=True,
+        help="local evidence ledger JSONL path",
+    )
+    historical_confidence.add_argument(
+        "--policy",
+        required=True,
+        help="path to cog-historical-confidence-policy-v1 JSON",
+    )
+    historical_confidence.add_argument(
+        "--source-id",
+        help="optional source_id filter",
+    )
+    historical_confidence.add_argument(
+        "--output",
+        help="optional JSONL output path",
+    )
+    historical_confidence.set_defaults(handler=_historical_confidence)
 
     catalog_check = subparsers.add_parser(
         "catalog-check",
