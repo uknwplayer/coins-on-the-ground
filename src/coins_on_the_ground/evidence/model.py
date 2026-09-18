@@ -44,3 +44,18 @@ class CollectedEvidenceRecord:
     payload_sha256: str
     payload_bytes: int
     descriptor: ProviderEvidenceDescriptor
+
+
+@dataclass(frozen=True, slots=True)
+class EvidenceCollectionFailure:
+    source_id: str
+    source_kind: EvidenceSourceKind
+    source_ref: str
+    error_type: str
+    message: str
+
+
+@dataclass(frozen=True, slots=True)
+class EvidenceCollectionReport:
+    records: tuple[CollectedEvidenceRecord, ...]
+    failures: tuple[EvidenceCollectionFailure, ...]
