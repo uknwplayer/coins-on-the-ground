@@ -4,7 +4,7 @@ import argparse
 import asyncio
 import json
 from dataclasses import asdict
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -32,7 +32,14 @@ from coins_on_the_ground.evidence import (
     parse_materialization_policy,
     summarize_evidence_stability,
 )
-from coins_on_the_ground.opportunity import Opportunity, review_and_deduplicate
+from coins_on_the_ground.opportunity import (
+    Opportunity,
+    analyze_replenishment,
+    append_opportunity_snapshots,
+    load_opportunity_snapshots,
+    make_opportunity_snapshot,
+    review_and_deduplicate,
+)
 from coins_on_the_ground.planning import (
     assess_evidence,
     assess_historical_confidence_many,
@@ -302,6 +309,90 @@ async def _portfolio(args: argparse.Namespace) -> int:
     else:
         print(json.dumps(row, ensure_ascii=False))
 
+    return 0
+
+
+async def _replenishment_snapshot(args: argparse.Namespace) -> int:
+    scouts = _scouts_for_source(args.source, args.limit)
+    observed_at = datetime.now(UTC)
+    batches = await asyncio.gather(
+        *(_collect(scout) for scout in scouts),
+        return_exceptions=True,
+    )
+
+    snapshots = []
+    failures: list[dict[str, str]] = []
+    for scout, batch in zip(scouts, batches, strict=True):
+        if isinstance(batch, BaseException):
+            failures.append(
+                {
+                    "source": scout.name,
+                    "error_type": type(batch).__name__,
+                    "message": str(batch),
+                }
+            )
+            continue
+        snapshots.append(
+            make_opportunity_snapshot(
+                scout.name,
+                batch,
+                observed_at=observed_at,
+            )
+        )
+
+    report = await asyncio.to_thread(
+        append_opportunity_snapshots,
+        Path(args.ledger),
+        tuple(snapshots),
+    )
+    print(
+        json.dumps(
+            {
+                "engine": "opportunity-replenishment-snapshot",
+                "source": args.source,
+                "observed_at": _json_value(observed_at),
+                "snapshots": [
+                    _json_value(asdict(snapshot))
+                    for snapshot in snapshots
+                ],
+                "append_report": _json_value(asdict(report)),
+                "source_failures": failures,
+                "execution_performed": False,
+            },
+            ensure_ascii=False,
+        )
+    )
+    return 0
+
+
+async def _replenishment_analyze(args: argparse.Namespace) -> int:
+    snapshots = await asyncio.to_thread(
+        load_opportunity_snapshots,
+        Path(args.ledger),
+    )
+    transitions, summaries = analyze_replenishment(
+        snapshots,
+        source=args.source_id,
+    )
+    row = {
+        "engine": "opportunity-replenishment-analysis",
+        "ledger_snapshots": len(snapshots),
+        "source_filter": args.source_id,
+        "transitions": [
+            _json_value(asdict(item))
+            for item in transitions
+        ],
+        "summaries": [
+            _json_value(asdict(item))
+            for item in summaries
+        ],
+        "execution_performed": False,
+    }
+
+    if args.output:
+        await asyncio.to_thread(_write_json, Path(args.output), row)
+    else:
+        print(json.dumps(row, ensure_ascii=False))
     return 0
 
 
@@ -1051,6 +1142,38 @@ def build_parser() -> argparse.ArgumentParser:
         help="known current funded balance expressed in USD-equivalent units",
     )
     portfolio.set_defaults(handler=_portfolio)
+
+    replenishment_snapshot = subparsers.add_parser(
+        "replenishment-snapshot",
+        help="append read-only opportunity snapshots for replenishment analysis",
+    )
+    _add_source_argument(replenishment_snapshot)
+    replenishment_snapshot.add_argument("--limit", type=int, default=100)
+    replenishment_snapshot.add_argument(
+        "--ledger",
+        required=True,
+        help="append-only opportunity snapshot JSONL ledger",
+    )
+    replenishment_snapshot.set_defaults(handler=_replenishment_snapshot)
+
+    replenishment_analyze = subparsers.add_parser(
+        "replenishment-analyze",
+        help="analyze observed funding and opportunity replenishment over time",
+    )
+    replenishment_analyze.add_argument(
+        "--ledger",
+        required=True,
+        help="opportunity snapshot JSONL ledger",
+    )
+    replenishment_analyze.add_argument(
+        "--source-id",
+        help="optional exact Scout source id filter",
+    )
+    replenishment_analyze.add_argument(
+        "--output",
+        help="optional JSON output path",
+    )
+    replenishment_analyze.set_defaults(handler=_replenishment_analyze)
 
     sources_check = subparsers.add_parser(
         "sources-check",
