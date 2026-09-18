@@ -273,7 +273,7 @@ _PROFITABILITY_RANK = {
 
 def _candidate_sort_key(candidate: AcquisitionCandidate) -> tuple[int, int, Decimal, int]:
     cost = candidate.projected_total_cost_usd_high
-    sortable_cost = -cost if cost is not None else Decimal("-999999999")
+    sortable_cost = -cost if cost is not None else Decimal(-999999999)
     return (
         int(candidate.covers_requirements),
         _PROFITABILITY_RANK[candidate.profitability],
