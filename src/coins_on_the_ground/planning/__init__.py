@@ -15,6 +15,14 @@ from .evidence import (
     assess_evidence,
 )
 from .gaps import plan_capability_gap
+from .historical_confidence import (
+    HistoricalConfidenceAssessment,
+    HistoricalConfidencePolicy,
+    HistoricalConfidenceStatus,
+    assess_historical_confidence,
+    assess_historical_confidence_many,
+    parse_historical_confidence_policy,
+)
 from .model import CapabilityGapPlan, GapType
 
 __all__ = [
@@ -29,8 +37,14 @@ __all__ = [
     "EvidenceClaim",
     "EvidenceStatus",
     "GapType",
+    "HistoricalConfidenceAssessment",
+    "HistoricalConfidencePolicy",
+    "HistoricalConfidenceStatus",
     "assess_evidence",
+    "assess_historical_confidence",
+    "assess_historical_confidence_many",
     "parse_acquisition_catalog",
+    "parse_historical_confidence_policy",
     "plan_capability_acquisition",
     "plan_capability_gap",
 ]
