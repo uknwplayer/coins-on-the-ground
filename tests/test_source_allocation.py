@@ -233,3 +233,21 @@ def test_empty_inputs_have_no_sources() -> None:
 
     assert plan.status is SourceAllocationStatus.NO_SOURCES
     assert plan.candidates == ()
+
+
+def test_explicit_source_universe_preserves_failed_source() -> None:
+    plan = plan_source_allocation(
+        (),
+        (),
+        (),
+        source_universe=("failed-source",),
+        now=_NOW,
+    )
+
+    assert plan.status is SourceAllocationStatus.READY
+    assert len(plan.candidates) == 1
+    candidate = plan.candidates[0]
+    assert candidate.source == "failed-source"
+    assert candidate.current_candidates == 0
+    assert candidate.history_snapshots == 0
+    assert candidate.attention_share_pct == Decimal("100.00")
