@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -15,7 +16,7 @@ class ScoutScheduleEntry:
     source: str
     recommended_scans_per_day: int
     target_interval_minutes: int
-    last_scanned_at: datetime
+    last_scanned_at: datetime | None
     next_due_at: datetime
 
 
@@ -48,19 +49,30 @@ def build_adaptive_scout_state(
     *,
     observed_at: datetime,
     refresh_interval_hours: int = 24,
+    successful_sources: Iterable[str] | None = None,
 ) -> AdaptiveScoutState:
     if refresh_interval_hours < 1:
         raise ValueError("refresh_interval_hours must be positive")
 
     current = observed_at.astimezone(UTC)
+    successful = (
+        None if successful_sources is None else set(successful_sources)
+    )
     entries = tuple(
         ScoutScheduleEntry(
             source=item.source,
             recommended_scans_per_day=item.recommended_scans_per_day,
             target_interval_minutes=item.target_interval_minutes,
-            last_scanned_at=current,
-            next_due_at=current
-            + timedelta(minutes=item.target_interval_minutes),
+            last_scanned_at=(
+                current
+                if successful is None or item.source in successful
+                else None
+            ),
+            next_due_at=(
+                current + timedelta(minutes=item.target_interval_minutes)
+                if successful is None or item.source in successful
+                else current
+            ),
         )
         for item in cadence.recommendations
     )
@@ -142,7 +154,11 @@ def serialize_adaptive_scout_state(
         "entries": [
             {
                 **asdict(entry),
-                "last_scanned_at": _iso(entry.last_scanned_at),
+                "last_scanned_at": (
+                    _iso(entry.last_scanned_at)
+                    if entry.last_scanned_at is not None
+                    else None
+                ),
                 "next_due_at": _iso(entry.next_due_at),
             }
             for entry in state.entries
@@ -192,9 +208,13 @@ def parse_adaptive_scout_state(value: object) -> AdaptiveScoutState:
                 source=source,
                 recommended_scans_per_day=scans,
                 target_interval_minutes=interval,
-                last_scanned_at=_parse_datetime(
-                    raw.get("last_scanned_at"),
-                    "last_scanned_at",
+                last_scanned_at=(
+                    _parse_datetime(
+                        raw.get("last_scanned_at"),
+                        "last_scanned_at",
+                    )
+                    if raw.get("last_scanned_at") is not None
+                    else None
                 ),
                 next_due_at=_parse_datetime(
                     raw.get("next_due_at"),
