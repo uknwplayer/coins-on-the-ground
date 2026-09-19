@@ -42,16 +42,24 @@ from coins_on_the_ground.opportunity import (
 )
 from coins_on_the_ground.planning import (
     ScoutCadencePolicy,
+    ScoutCadenceStatus,
+    AdaptiveScoutState,
     assess_evidence,
     assess_historical_confidence_many,
     parse_acquisition_catalog,
+    build_adaptive_scout_state,
+    due_sources,
+    full_refresh_due,
+    load_adaptive_scout_state,
     parse_historical_confidence_policy,
     plan_capability_acquisition,
     plan_capability_gap,
     plan_microtask_portfolio,
     plan_scout_cadence,
     plan_source_allocation,
+    record_source_scans,
     summarize_settlement_pool,
+    write_adaptive_scout_state,
 )
 from coins_on_the_ground.scouts import (
     AkashScout,
@@ -407,10 +415,15 @@ async def _source_allocation(args: argparse.Namespace) -> int:
         Path(args.snapshot_ledger),
     )
     _, summaries = analyze_replenishment(snapshots)
+    source_universe = tuple(
+        scout.name
+        for scout in _scouts_for_source(args.source, args.limit)
+    )
     plan = plan_source_allocation(
         opportunities,
         observations,
         summaries,
+        source_universe=source_universe,
     )
     row = {
         "engine": "source-allocation-planner",
@@ -437,10 +450,15 @@ async def _scout_cadence(args: argparse.Namespace) -> int:
         Path(args.snapshot_ledger),
     )
     _, summaries = analyze_replenishment(snapshots)
+    source_universe = tuple(
+        scout.name
+        for scout in _scouts_for_source(args.source, args.limit)
+    )
     allocation = plan_source_allocation(
         opportunities,
         observations,
         summaries,
+        source_universe=source_universe,
     )
     cadence = plan_scout_cadence(
         allocation.candidates,
@@ -464,6 +482,187 @@ async def _scout_cadence(args: argparse.Namespace) -> int:
         "source_failures": discovery_failures,
         "execution_performed": False,
         "schedule_applied": False,
+    }
+
+    if args.output:
+        await asyncio.to_thread(_write_json, Path(args.output), row)
+    else:
+        print(json.dumps(row, ensure_ascii=False))
+    return 0
+
+
+async def _scout_cycle(args: argparse.Namespace) -> int:
+    now = datetime.now(UTC)
+    observations = await _load_observations(args)
+    state_path = Path(args.state)
+    ledger_path = Path(args.snapshot_ledger)
+    state = await asyncio.to_thread(
+        load_adaptive_scout_state,
+        state_path,
+    )
+
+    all_scouts = _scouts_for_source("all", args.limit)
+    source_universe = tuple(scout.name for scout in all_scouts)
+    state_sources = (
+        {entry.source for entry in state.entries}
+        if state is not None
+        else set()
+    )
+    universe_changed = state_sources != set(source_universe)
+
+    refresh = (
+        universe_changed
+        or full_refresh_due(state, now=now)
+    )
+
+    if refresh:
+        scouts = all_scouts
+        due = source_universe
+        mode = "full_refresh"
+    else:
+        assert state is not None
+        due = due_sources(state, now=now)
+        scouts = [
+            _scouts_for_source(source, args.limit)[0]
+            for source in due
+        ]
+        mode = "due_only"
+
+    batches = await asyncio.gather(
+        *(_collect(scout) for scout in scouts),
+        return_exceptions=True,
+    )
+
+    opportunities: list[Opportunity] = []
+    snapshots_to_append = []
+    successful_sources: list[str] = []
+    failures: list[dict[str, str]] = []
+
+    for scout, batch in zip(scouts, batches, strict=True):
+        if isinstance(batch, BaseException):
+            failures.append(
+                {
+                    "source": scout.name,
+                    "error_type": type(batch).__name__,
+                    "message": str(batch),
+                }
+            )
+            continue
+
+        opportunities.extend(batch)
+        successful_sources.append(scout.name)
+        snapshots_to_append.append(
+            make_opportunity_snapshot(
+                scout.name,
+                batch,
+                observed_at=now,
+            )
+        )
+
+    append_report = await asyncio.to_thread(
+        append_opportunity_snapshots,
+        ledger_path,
+        tuple(snapshots_to_append),
+    )
+
+    allocation = None
+    cadence = None
+    next_state: AdaptiveScoutState | None = state
+
+    if refresh:
+        all_snapshots = await asyncio.to_thread(
+            load_opportunity_snapshots,
+            ledger_path,
+        )
+        _, summaries = analyze_replenishment(all_snapshots)
+        allocation = plan_source_allocation(
+            opportunities,
+            observations,
+            summaries,
+            source_universe=source_universe,
+            now=now,
+        )
+        cadence = plan_scout_cadence(
+            allocation.candidates,
+            policy=ScoutCadencePolicy(
+                scan_budget_per_day=args.scan_budget_per_day,
+                min_scans_per_source_per_day=(
+                    args.min_scans_per_source_per_day
+                ),
+                max_scans_per_source_per_day=(
+                    args.max_scans_per_source_per_day
+                ),
+            ),
+        )
+        if cadence.status is not ScoutCadenceStatus.READY:
+            row = {
+                "engine": "adaptive-scout-cycle",
+                "mode": mode,
+                "observed_at": _json_value(now),
+                "due_sources": list(due),
+                "successful_sources": successful_sources,
+                "source_failures": failures,
+                "append_report": _json_value(asdict(append_report)),
+                "allocation": _json_value(asdict(allocation)),
+                "cadence": _json_value(asdict(cadence)),
+                "state_written": False,
+                "execution_performed": False,
+            }
+            if args.output:
+                await asyncio.to_thread(
+                    _write_json,
+                    Path(args.output),
+                    row,
+                )
+            else:
+                print(json.dumps(row, ensure_ascii=False))
+            return 1
+
+        next_state = build_adaptive_scout_state(
+            cadence,
+            observed_at=now,
+            refresh_interval_hours=args.refresh_interval_hours,
+            successful_sources=tuple(successful_sources),
+        )
+    elif state is not None and successful_sources:
+        next_state = record_source_scans(
+            state,
+            tuple(successful_sources),
+            observed_at=now,
+        )
+
+    if next_state is not None:
+        await asyncio.to_thread(
+            write_adaptive_scout_state,
+            state_path,
+            next_state,
+        )
+
+    row = {
+        "engine": "adaptive-scout-cycle",
+        "mode": mode,
+        "observed_at": _json_value(now),
+        "due_sources": list(due),
+        "successful_sources": successful_sources,
+        "source_failures": failures,
+        "append_report": _json_value(asdict(append_report)),
+        "allocation": (
+            _json_value(asdict(allocation))
+            if allocation is not None
+            else None
+        ),
+        "cadence": (
+            _json_value(asdict(cadence))
+            if cadence is not None
+            else None
+        ),
+        "state": (
+            _json_value(asdict(next_state))
+            if next_state is not None
+            else None
+        ),
+        "state_written": next_state is not None,
+        "execution_performed": False,
     }
 
     if args.output:
@@ -1301,6 +1500,49 @@ def build_parser() -> argparse.ArgumentParser:
         help="maximum daily scans any single source may receive",
     )
     scout_cadence.set_defaults(handler=_scout_cadence)
+
+    scout_cycle = subparsers.add_parser(
+        "scout-cycle",
+        help="run one persistent adaptive read-only Scout scheduler cycle",
+    )
+    scout_cycle.add_argument(
+        "--snapshot-ledger",
+        required=True,
+        help="append-only opportunity snapshot JSONL ledger",
+    )
+    scout_cycle.add_argument(
+        "--state",
+        required=True,
+        help="persistent adaptive Scout state JSON path",
+    )
+    scout_cycle.add_argument("--limit", type=int, default=100)
+    scout_cycle.add_argument(
+        "--output",
+        help="optional JSON cycle report path",
+    )
+    _add_capability_profile_args(scout_cycle)
+    scout_cycle.add_argument(
+        "--scan-budget-per-day",
+        type=int,
+        default=24,
+    )
+    scout_cycle.add_argument(
+        "--min-scans-per-source-per-day",
+        type=int,
+        default=1,
+    )
+    scout_cycle.add_argument(
+        "--max-scans-per-source-per-day",
+        type=int,
+        default=6,
+    )
+    scout_cycle.add_argument(
+        "--refresh-interval-hours",
+        type=int,
+        default=24,
+        help="hours between full allocation/cadence refreshes",
+    )
+    scout_cycle.set_defaults(handler=_scout_cycle)
 
     sources_check = subparsers.add_parser(
         "sources-check",
