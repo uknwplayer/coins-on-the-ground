@@ -41,16 +41,16 @@ from coins_on_the_ground.opportunity import (
     review_and_deduplicate,
 )
 from coins_on_the_ground.planning import (
+    AdaptiveScoutState,
     ScoutCadencePolicy,
     ScoutCadenceStatus,
-    AdaptiveScoutState,
     assess_evidence,
     assess_historical_confidence_many,
-    parse_acquisition_catalog,
     build_adaptive_scout_state,
     due_sources,
     full_refresh_due,
     load_adaptive_scout_state,
+    parse_acquisition_catalog,
     parse_historical_confidence_policy,
     plan_capability_acquisition,
     plan_capability_gap,
