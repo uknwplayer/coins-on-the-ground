@@ -60,6 +60,7 @@ jobs:
           key: ${{ runner.os }}-cog-adaptive-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Upload adaptive Scout report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: adaptive-scout-cycle
