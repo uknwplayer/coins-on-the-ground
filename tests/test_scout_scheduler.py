@@ -2,7 +2,6 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 
-from coins_on_the_ground.opportunity.history import ReplenishmentSignal
 from coins_on_the_ground.planning.scout_cadence import (
     ScoutCadencePlan,
     ScoutCadencePolicy,
