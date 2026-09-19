@@ -146,3 +146,31 @@ def test_scout_cadence_cli_is_registered() -> None:
     assert args.min_scans_per_source_per_day == 1
     assert args.max_scans_per_source_per_day == 6
     assert args.handler.__name__ == "_scout_cadence"
+
+
+def test_scout_cycle_cli_is_registered() -> None:
+    args = build_parser().parse_args(
+        [
+            "scout-cycle",
+            "--snapshot-ledger",
+            "data/opportunity-snapshots.jsonl",
+            "--state",
+            "data/adaptive-scout-state.json",
+            "--scan-budget-per-day",
+            "24",
+            "--min-scans-per-source-per-day",
+            "1",
+            "--max-scans-per-source-per-day",
+            "6",
+            "--refresh-interval-hours",
+            "24",
+            "--limit",
+            "100",
+        ]
+    )
+
+    assert args.snapshot_ledger == "data/opportunity-snapshots.jsonl"
+    assert args.state == "data/adaptive-scout-state.json"
+    assert args.scan_budget_per_day == 24
+    assert args.refresh_interval_hours == 24
+    assert args.handler.__name__ == "_scout_cycle"
