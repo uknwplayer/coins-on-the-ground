@@ -272,6 +272,7 @@ def plan_source_allocation(
     observations: Iterable[CapabilityObservation],
     replenishment: Iterable[ReplenishmentSummary],
     *,
+    source_universe: Iterable[str] = (),
     policy: SourceAllocationPolicy | None = None,
     now: datetime | None = None,
 ) -> SourceAllocationPlan:
@@ -288,7 +289,14 @@ def plan_source_allocation(
     for opportunity in opportunities:
         grouped.setdefault(opportunity.source, []).append(opportunity)
 
-    all_sources = sorted(set(grouped) | set(replenishment_by_source))
+    explicit_sources = {
+        source
+        for source in source_universe
+        if isinstance(source, str) and source.strip()
+    }
+    all_sources = sorted(
+        set(grouped) | set(replenishment_by_source) | explicit_sources
+    )
     if not all_sources:
         return SourceAllocationPlan(
             status=SourceAllocationStatus.NO_SOURCES,
