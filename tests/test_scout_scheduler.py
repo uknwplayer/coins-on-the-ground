@@ -120,3 +120,17 @@ def test_state_round_trip(tmp_path: Path) -> None:
     write_adaptive_scout_state(path, state)
 
     assert load_adaptive_scout_state(path) == state
+
+
+def test_failed_source_remains_immediately_due() -> None:
+    state = build_adaptive_scout_state(
+        _cadence(),
+        observed_at=_NOW,
+        successful_sources=("hot",),
+    )
+    by_source = {entry.source: entry for entry in state.entries}
+
+    assert by_source["hot"].last_scanned_at == _NOW
+    assert by_source["cool"].last_scanned_at is None
+    assert by_source["cool"].next_due_at == _NOW
+    assert due_sources(state, now=_NOW) == ("cool",)
