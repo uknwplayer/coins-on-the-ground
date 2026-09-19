@@ -152,6 +152,19 @@ cog scout-cadence all \
   --limit 100
 ```
 
+Ciclo persistente adaptativo:
+
+```bash
+cog scout-cycle \
+  --snapshot-ledger ./data/opportunity-snapshots.jsonl \
+  --state ./data/adaptive-scout-state.json \
+  --scan-budget-per-day 24 \
+  --min-scans-per-source-per-day 1 \
+  --max-scans-per-source-per-day 6 \
+  --refresh-interval-hours 24 \
+  --limit 100
+```
+
 Portfolio econômico de microtarefas:
 
 ```bash
@@ -292,7 +305,11 @@ Já estão implementados:
 - Source Allocation Planner para distribuir atenção de scouting por qualidade atual, economia, replenishment, settlement e confiança histórica;
 - `attention_share_pct` relativo, com unknown signals reduzindo cobertura em vez de virarem zero silenciosamente;
 - Adaptive Scout Cadence com budget diário, piso de exploração e teto por fonte;
-- recomendação `recommended_scans_per_day + target_interval_minutes` sem aplicar schedule automaticamente;
+- recomendação `recommended_scans_per_day + target_interval_minutes`;
+- `AdaptiveScoutState` persistente com `last_scanned_at`, `next_due_at` e refresh completo separado;
+- `cog scout-cycle` com modos `full_refresh` e `due_only`, consultando apenas Scouts vencidos entre refreshes completos;
+- workflow `.github/workflows/adaptive-scout.yml` agendado de hora em hora, com cache de ledger/state e artifact por ciclo;
+- perda de cache provoca cold start seguro com nova varredura completa;
 - Opportunity Model e deduplicação;
 - `review_score`;
 - Cost & Feasibility Estimator;
@@ -319,8 +336,8 @@ Já estão implementados:
 - claims `CAPABILITY / PRICING / AVAILABILITY / AUTHORIZATION`;
 - testes automatizados e CI.
 
-A próxima evolução combina **superfície de descoberta + alocação adaptativa**: novos Scouts globais
-continuam entrando, mas o sistema agora pode usar histórico observado para decidir onde vale gastar
-mais atenção de scouting. A cadência adaptativa já consegue converter essa prioridade em budget
-diário e intervalo-alvo por fonte, ainda sem aplicar cron ou execução automática. O próximo passo
-operacional é persistir snapshots entre runs e ligar um scheduler read-only à policy.
+A descoberta adaptativa já está operacionalmente ligada a um scheduler read-only no GitHub Actions.
+O workflow roda em cadência horária, persiste ledger/state por cache e faz refresh global completo a
+cada 24 horas por padrão. Entre refreshes, apenas Scouts cujo `next_due_at` venceu são consultados.
+O próximo avanço passa a ser aumentar a superfície de descoberta e aprender políticas melhores de
+retry/backoff e observabilidade sem aproximar o scheduler de execução financeira.
