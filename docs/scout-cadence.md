@@ -81,7 +81,7 @@ Exemplos:
 6 scans/dia ->  240 min
 ```
 
-Esse intervalo é advisory. O planner não cria cron, GitHub schedule, automation ou daemon.
+Esse intervalo continua sendo advisory no planner. A aplicação operacional fica em uma camada separada: `cog scout-cycle` + workflow `adaptive-scout.yml`.
 
 ## Budget insuficiente
 
@@ -158,8 +158,77 @@ Adaptive Scout Cadence
         ↓
 recommended scans/day
         ↓
-future scheduler / runner
+AdaptiveScoutState
+        ↓
+cog scout-cycle
+        ↓
+GitHub Actions scheduler read-only
 ```
 
-O futuro scheduler deve continuar separado do planner e preservar as mesmas garantias de
-read-only discovery.
+O scheduler permanece separado do planner e preserva as mesmas garantias de read-only discovery.
+
+## Ciclo persistente
+
+O comando operacional é:
+
+```bash
+cog scout-cycle \
+  --snapshot-ledger ./data/opportunity-snapshots.jsonl \
+  --state ./data/adaptive-scout-state.json \
+  --scan-budget-per-day 24 \
+  --min-scans-per-source-per-day 1 \
+  --max-scans-per-source-per-day 6 \
+  --refresh-interval-hours 24 \
+  --limit 100
+```
+
+O estado usa o formato interno `cog-adaptive-scout-state-v1` e mantém, por fonte:
+
+```text
+recommended_scans_per_day
+target_interval_minutes
+last_scanned_at
+next_due_at
+```
+
+Existem dois modos de ciclo:
+
+```text
+full_refresh
+due_only
+```
+
+`full_refresh` ocorre quando não existe estado, quando o universo de Scouts mudou ou quando chegou
+`next_full_refresh_at`. A varredura global acontece uma única vez; os mesmos resultados alimentam
+snapshots, replenishment, Source Allocation e nova Cadence Policy.
+
+`due_only` carrega o estado persistido e consulta somente fontes cujo `next_due_at` já venceu.
+Uma fonte que falha não tem seu relógio avançado; ela continua due para retry.
+
+## Persistência entre GitHub Actions
+
+O workflow `.github/workflows/adaptive-scout.yml` roda a cada hora e também aceita
+`workflow_dispatch`.
+
+Persistidos entre runs:
+
+```text
+data/opportunity-snapshots.jsonl
+data/adaptive-scout-state.json
+```
+
+A persistência usa GitHub Actions cache com chave única por run e restore por prefixo. O workflow
+não recebe `contents: write` e não grava estado no branch.
+
+O cache não contém credenciais, wallets, chaves privadas ou tokens externos.
+
+Se o cache desaparecer ou for evictado, `scout-cycle` detecta ausência de estado e executa um
+`full_refresh`. Isso é tratado como cold start seguro.
+
+Cada ciclo também publica `data/adaptive-scout-cycle.json` como artifact temporário para
+observabilidade.
+
+## Concorrência
+
+O workflow usa um único `concurrency.group` e `cancel-in-progress: false`, evitando dois ciclos
+simultâneos disputando o mesmo estado lógico.
