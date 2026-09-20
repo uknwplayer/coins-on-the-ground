@@ -114,3 +114,15 @@ BIDPOSTLOOP = ScoutSource(
     eligibility_review_required=True,
     authorization_review_required=True,
 )
+
+
+AGENT_BOUNTIES = ScoutSource(
+    source_id="agent-bounties",
+    display_name="Agent Bounties",
+    base_url="https://agentbounties.app",
+    network_surface=NetworkSurface.CLEARNET,
+    country=None,
+    jurisdiction=None,
+    eligibility_review_required=True,
+    authorization_review_required=True,
+)
