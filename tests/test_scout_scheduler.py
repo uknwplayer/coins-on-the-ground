@@ -20,6 +20,7 @@ from coins_on_the_ground.planning.scout_scheduler import (
     summarize_scout_health,
     write_adaptive_scout_state,
 )
+
 _NOW = datetime(2026, 9, 19, 12, tzinfo=UTC)
 
 
