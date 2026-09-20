@@ -126,3 +126,15 @@ AGENT_BOUNTIES = ScoutSource(
     eligibility_review_required=True,
     authorization_review_required=True,
 )
+
+
+CLAWLANCER = ScoutSource(
+    source_id="clawlancer",
+    display_name="Clawlancer",
+    base_url="https://clawlancer.ai",
+    network_surface=NetworkSurface.CLEARNET,
+    country=None,
+    jurisdiction=None,
+    eligibility_review_required=True,
+    authorization_review_required=True,
+)
