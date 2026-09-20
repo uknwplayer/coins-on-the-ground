@@ -9,10 +9,10 @@ from coins_on_the_ground.planning.scout_cadence import (
     ScoutCadenceStatus,
 )
 from coins_on_the_ground.planning.scout_scheduler import (
+    ScoutHealthStatus,
     build_adaptive_scout_state,
     due_sources,
     full_refresh_due,
-    ScoutHealthStatus,
     load_adaptive_scout_state,
     parse_adaptive_scout_state,
     record_source_outcomes,
@@ -20,7 +20,6 @@ from coins_on_the_ground.planning.scout_scheduler import (
     summarize_scout_health,
     write_adaptive_scout_state,
 )
-
 _NOW = datetime(2026, 9, 19, 12, tzinfo=UTC)
 
 
