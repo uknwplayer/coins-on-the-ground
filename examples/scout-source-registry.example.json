@@ -114,6 +114,22 @@
       ],
       "enabled": true,
       "notes": "Public funded microtasks denominated in Agent Credits. Discovery is read-only; authentication is required later to propose or deliver work, and external payout has an accumulation threshold."
+    },
+    {
+      "id": "agent-bounties",
+      "display_name": "Agent Bounties",
+      "base_url": "https://agentbounties.app",
+      "network_surface": "clearnet",
+      "country": null,
+      "jurisdiction": null,
+      "categories": [
+        "agent_bounty",
+        "onchain_reward",
+        "base",
+        "usdc"
+      ],
+      "enabled": true,
+      "notes": "Canonical claimable Base mainnet bounties. Scout requires complete funding, valid terms and verification readiness; wallet claims and settlement remain outside discovery."
     }
   ]
 }
