@@ -143,6 +143,7 @@ Atualmente agrega:
 - Agent Bounties;
 - Akash;
 - BidPostLoop;
+- Clawlancer;
 - GitHub;
 - Frantic;
 - IssueHunt OSS;
@@ -227,3 +228,17 @@ reward_asset = USDC
 
 O solver reward é separado do claim bond. Discovery nunca conecta wallet, assina claim, envia
 transação, submete trabalho ou trata `SubmissionAdded` como prova de pagamento.
+
+
+## Prefunded agent bounties
+
+`ClawlancerScout` lê active `BOUNTY` listings via API pública e normaliza o reward após a taxa
+de 1% do escrow V2.
+
+```text
+reward_semantics = fixed
+reward_asset = USDC
+```
+
+O Scout preserva buyer reputation e exige nova checagem de funding no claim. Nenhuma identidade,
+API key, claim, entrega ou transação é criada pela descoberta.
