@@ -58,7 +58,6 @@ from coins_on_the_ground.planning import (
     plan_scout_cadence,
     plan_source_allocation,
     record_source_outcomes,
-    record_source_scans,
     summarize_scout_health,
     summarize_settlement_pool,
     write_adaptive_scout_state,
