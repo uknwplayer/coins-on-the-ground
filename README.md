@@ -78,6 +78,7 @@ Descoberta:
 cog scan agent-bounties --limit 25
 cog scan akash --limit 25
 cog scan bidpostloop --limit 25
+cog scan clawlancer --limit 25
 cog scan frantic --limit 25
 cog scan github-bounties --limit 25
 cog scan issuehunt --limit 25
@@ -293,7 +294,7 @@ Já estão implementados:
 
 - Scouts públicos somente leitura;
 - descoberta global sem filtro geográfico prévio;
-- Agent Bounties, Akash, BidPostLoop, GitHub, Frantic, IssueHunt OSS, Algora, Immunefi, Keep3r, Sherlock e Taskmarket;
+- Agent Bounties, Akash, BidPostLoop, Clawlancer, GitHub, Frantic, IssueHunt OSS, Algora, Immunefi, Keep3r, Sherlock e Taskmarket;
 - Source Registry `clearnet/onion` sem crawling automático;
 - isolamento de falhas por Scout em agregações globais;
 - reward semantics explícita para diferenciar payout exato, maximum bounty, maximum_rate, gross_escrow e pool_credits;
@@ -301,6 +302,7 @@ Já estão implementados:
 - descoberta read-only de Akash open compute orders;
 - bounties canônicos claimable na Base via Agent Bounties, exigindo funding completo, termos válidos e verifier ready;
 - microtarefas financiadas de centavos via BidPostLoop;
+- bounties USDC ativos do Clawlancer com payout pós-fee do escrow V2;
 - regras de custo específicas para microtasks, permitindo filtrar tarefas de US$0,05–0,10 por tempo esperado;
 - Settlement Pool Summary que respeita budget financiado compartilhado em vez de somar slots de templates como cofres independentes;
 - Microtask Portfolio Planner com prioridade por net conservador/minuto e rota de menor número de ações até payout;
