@@ -12,8 +12,12 @@ from coins_on_the_ground.planning.scout_scheduler import (
     build_adaptive_scout_state,
     due_sources,
     full_refresh_due,
+    ScoutHealthStatus,
     load_adaptive_scout_state,
+    parse_adaptive_scout_state,
+    record_source_outcomes,
     record_source_scans,
+    summarize_scout_health,
     write_adaptive_scout_state,
 )
 
@@ -133,3 +137,113 @@ def test_failed_source_remains_immediately_due() -> None:
     assert by_source["cool"].last_scanned_at is None
     assert by_source["cool"].next_due_at == _NOW
     assert due_sources(state, now=_NOW) == ("cool",)
+
+
+def test_failures_use_exponential_backoff_and_recovery_resets_streak() -> None:
+    state = build_adaptive_scout_state(_cadence(), observed_at=_NOW)
+
+    first = record_source_outcomes(
+        state,
+        failure_types={"hot": "TimeoutError"},
+        observed_at=_NOW + timedelta(hours=8),
+        retry_base_minutes=60,
+        retry_max_minutes=1440,
+    )
+    hot = {entry.source: entry for entry in first.entries}["hot"]
+    assert hot.consecutive_failures == 1
+    assert hot.backoff_minutes == 60
+    assert hot.next_due_at == _NOW + timedelta(hours=9)
+
+    second = record_source_outcomes(
+        first,
+        failure_types={"hot": "TimeoutError"},
+        observed_at=_NOW + timedelta(hours=9),
+        retry_base_minutes=60,
+        retry_max_minutes=1440,
+    )
+    hot = {entry.source: entry for entry in second.entries}["hot"]
+    assert hot.consecutive_failures == 2
+    assert hot.backoff_minutes == 120
+    assert hot.next_due_at == _NOW + timedelta(hours=11)
+
+    recovered = record_source_outcomes(
+        second,
+        successful_sources=("hot",),
+        observed_at=_NOW + timedelta(hours=11),
+    )
+    hot = {entry.source: entry for entry in recovered.entries}["hot"]
+    assert hot.consecutive_failures == 0
+    assert hot.backoff_minutes == 0
+    assert hot.next_due_at == _NOW + timedelta(hours=19)
+
+
+def test_backoff_is_capped() -> None:
+    state = build_adaptive_scout_state(_cadence(), observed_at=_NOW)
+
+    current = state
+    for index in range(8):
+        current = record_source_outcomes(
+            current,
+            failure_types={"hot": "HTTPError"},
+            observed_at=_NOW + timedelta(hours=index + 8),
+            retry_base_minutes=60,
+            retry_max_minutes=240,
+        )
+
+    hot = {entry.source: entry for entry in current.entries}["hot"]
+    assert hot.backoff_minutes == 240
+    assert hot.consecutive_failures == 8
+
+
+def test_health_distinguishes_backoff_degraded_and_healthy() -> None:
+    state = build_adaptive_scout_state(_cadence(), observed_at=_NOW)
+    failed = record_source_outcomes(
+        state,
+        failure_types={"hot": "TimeoutError"},
+        observed_at=_NOW + timedelta(hours=8),
+        retry_base_minutes=60,
+        retry_max_minutes=1440,
+    )
+
+    health = {
+        item.source: item
+        for item in summarize_scout_health(
+            failed,
+            now=_NOW + timedelta(hours=8, minutes=30),
+        )
+    }
+    assert health["hot"].status is ScoutHealthStatus.BACKING_OFF
+    assert health["cool"].status is ScoutHealthStatus.HEALTHY
+
+    health = {
+        item.source: item
+        for item in summarize_scout_health(
+            failed,
+            now=_NOW + timedelta(hours=9),
+        )
+    }
+    assert health["hot"].status is ScoutHealthStatus.DEGRADED
+
+
+def test_v1_state_is_upgraded_with_zero_failure_streak() -> None:
+    raw = {
+        "format": "cog-adaptive-scout-state-v1",
+        "generated_at": "2026-09-19T12:00:00Z",
+        "next_full_refresh_at": "2026-09-20T12:00:00Z",
+        "refresh_interval_hours": 24,
+        "entries": [
+            {
+                "source": "hot",
+                "recommended_scans_per_day": 3,
+                "target_interval_minutes": 480,
+                "last_scanned_at": "2026-09-19T12:00:00Z",
+                "next_due_at": "2026-09-19T20:00:00Z"
+            }
+        ]
+    }
+
+    state = parse_adaptive_scout_state(raw)
+
+    assert state.entries[0].consecutive_failures == 0
+    assert state.entries[0].backoff_minutes == 0
+    assert state.entries[0].last_failure_at is None
