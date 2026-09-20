@@ -69,6 +69,7 @@ from coins_on_the_ground.planning import (
     write_adaptive_scout_state,
 )
 from coins_on_the_ground.scouts import (
+    AgentBountiesScout,
     AkashScout,
     AlgoraScout,
     BidPostLoopScout,
@@ -221,6 +222,8 @@ async def _collect(scout: Scout) -> list[Opportunity]:
 
 
 def _scouts_for_source(source: str, limit: int) -> list[Scout]:
+    if source == "agent-bounties":
+        return [AgentBountiesScout(limit=limit)]
     if source == "akash":
         return [AkashScout(limit=limit)]
     if source == "bidpostloop":
@@ -242,6 +245,7 @@ def _scouts_for_source(source: str, limit: int) -> list[Scout]:
     if source == "taskmarket":
         return [TaskmarketScout(limit=limit)]
     return [
+        AgentBountiesScout(limit=limit),
         AkashScout(limit=limit),
         BidPostLoopScout(limit=limit),
         FranticBountyScout(limit=limit),
@@ -303,6 +307,10 @@ async def _emit_scan(scout: Scout, args: argparse.Namespace) -> int:
         )
     )
     return 0
+
+
+async def _scan_agent_bounties(args: argparse.Namespace) -> int:
+    return await _emit_scan(AgentBountiesScout(limit=args.limit), args)
 
 
 async def _scan_akash(args: argparse.Namespace) -> int:
@@ -1354,7 +1362,7 @@ def _add_common_scan_args(parser: argparse.ArgumentParser) -> None:
 def _add_source_argument(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "source",
-        choices=("all", "akash", "bidpostloop", "frantic", "github-bounties", "issuehunt", "algora", "immunefi", "keep3r", "sherlock", "taskmarket"),
+        choices=("all", "agent-bounties", "akash", "bidpostloop", "frantic", "github-bounties", "issuehunt", "algora", "immunefi", "keep3r", "sherlock", "taskmarket"),
         default="all",
         nargs="?",
     )
@@ -1394,6 +1402,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     scan = subparsers.add_parser("scan", help="discover read-only opportunity candidates")
     scan_sub = scan.add_subparsers(dest="source", required=True)
+
+    agent_bounties = scan_sub.add_parser(
+        "agent-bounties",
+        help="scan canonical claimable Agent Bounties on Base mainnet",
+    )
+    _add_common_scan_args(agent_bounties)
+    agent_bounties.set_defaults(handler=_scan_agent_bounties)
 
     akash = scan_sub.add_parser(
         "akash",
