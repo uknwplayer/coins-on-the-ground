@@ -40,6 +40,8 @@ from .scout_cadence import (
 )
 from .scout_scheduler import (
     AdaptiveScoutState,
+    ScoutFailure,
+    ScoutFailureKind,
     ScoutHealthStatus,
     ScoutHealthSummary,
     ScoutScheduleEntry,
@@ -89,6 +91,8 @@ __all__ = [
     "ScoutCadencePolicy",
     "ScoutCadenceRecommendation",
     "ScoutCadenceStatus",
+    "ScoutFailure",
+    "ScoutFailureKind",
     "ScoutHealthStatus",
     "ScoutHealthSummary",
     "ScoutScheduleEntry",
