@@ -22,6 +22,16 @@ def test_akash_scan_subcommand_is_registered() -> None:
     assert args.handler.__name__ == "_scan_akash"
 
 
+def test_clawlancer_scan_subcommand_is_registered() -> None:
+    args = build_parser().parse_args(
+        ["scan", "clawlancer", "--limit", "10"]
+    )
+
+    assert args.source == "clawlancer"
+    assert args.limit == 10
+    assert args.handler.__name__ == "_scan_clawlancer"
+
+
 def test_bidpostloop_scan_subcommand_is_registered() -> None:
     args = build_parser().parse_args(
         ["scan", "bidpostloop", "--limit", "10"]
