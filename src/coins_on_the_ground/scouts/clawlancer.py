@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from decimal import Decimal, InvalidOperation
+
 import httpx
 
 from coins_on_the_ground.opportunity import Opportunity, OpportunityClass, RiskClass
