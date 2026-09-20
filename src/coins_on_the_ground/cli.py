@@ -57,7 +57,9 @@ from coins_on_the_ground.planning import (
     plan_microtask_portfolio,
     plan_scout_cadence,
     plan_source_allocation,
+    record_source_outcomes,
     record_source_scans,
+    summarize_scout_health,
     summarize_settlement_pool,
     write_adaptive_scout_state,
 )
@@ -618,17 +620,32 @@ async def _scout_cycle(args: argparse.Namespace) -> int:
                 print(json.dumps(row, ensure_ascii=False))
             return 1
 
+        failure_types = {
+            failure["source"]: failure["error_type"]
+            for failure in failures
+        }
         next_state = build_adaptive_scout_state(
             cadence,
             observed_at=now,
             refresh_interval_hours=args.refresh_interval_hours,
             successful_sources=tuple(successful_sources),
+            failure_types=failure_types,
+            previous_state=state,
+            retry_base_minutes=args.retry_base_minutes,
+            retry_max_minutes=args.retry_max_minutes,
         )
-    elif state is not None and successful_sources:
-        next_state = record_source_scans(
+    elif state is not None and (successful_sources or failures):
+        failure_types = {
+            failure["source"]: failure["error_type"]
+            for failure in failures
+        }
+        next_state = record_source_outcomes(
             state,
-            tuple(successful_sources),
+            successful_sources=tuple(successful_sources),
+            failure_types=failure_types,
             observed_at=now,
+            retry_base_minutes=args.retry_base_minutes,
+            retry_max_minutes=args.retry_max_minutes,
         )
 
     if next_state is not None:
@@ -660,6 +677,14 @@ async def _scout_cycle(args: argparse.Namespace) -> int:
             _json_value(asdict(next_state))
             if next_state is not None
             else None
+        ),
+        "health": (
+            [
+                _json_value(asdict(item))
+                for item in summarize_scout_health(next_state, now=now)
+            ]
+            if next_state is not None
+            else []
         ),
         "state_written": next_state is not None,
         "execution_performed": False,
@@ -1541,6 +1566,18 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=24,
         help="hours between full allocation/cadence refreshes",
+    )
+    scout_cycle.add_argument(
+        "--retry-base-minutes",
+        type=int,
+        default=60,
+        help="base retry delay after the first consecutive Scout failure",
+    )
+    scout_cycle.add_argument(
+        "--retry-max-minutes",
+        type=int,
+        default=1440,
+        help="maximum exponential retry delay for an unhealthy Scout",
     )
     scout_cycle.set_defaults(handler=_scout_cycle)
 
