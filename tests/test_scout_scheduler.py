@@ -9,6 +9,8 @@ from coins_on_the_ground.planning.scout_cadence import (
     ScoutCadenceStatus,
 )
 from coins_on_the_ground.planning.scout_scheduler import (
+    ScoutFailure,
+    ScoutFailureKind,
     ScoutHealthStatus,
     build_adaptive_scout_state,
     due_sources,
@@ -247,3 +249,53 @@ def test_v1_state_is_upgraded_with_zero_failure_streak() -> None:
     assert state.entries[0].consecutive_failures == 0
     assert state.entries[0].backoff_minutes == 0
     assert state.entries[0].last_failure_at is None
+
+
+def test_retry_after_can_extend_beyond_exponential_cap() -> None:
+    state = build_adaptive_scout_state(_cadence(), observed_at=_NOW)
+
+    updated = record_source_outcomes(
+        state,
+        failure_details={
+            "hot": ScoutFailure(
+                error_type="HTTPStatusError",
+                kind=ScoutFailureKind.RATE_LIMIT,
+                retry_after_minutes=360,
+            )
+        },
+        observed_at=_NOW + timedelta(hours=8),
+        retry_base_minutes=60,
+        retry_max_minutes=240,
+    )
+
+    hot = {entry.source: entry for entry in updated.entries}["hot"]
+    assert hot.backoff_minutes == 360
+    assert hot.last_failure_kind is ScoutFailureKind.RATE_LIMIT
+    assert hot.next_due_at == _NOW + timedelta(hours=14)
+
+
+def test_v2_state_is_upgraded_without_failure_kind() -> None:
+    raw = {
+        "format": "cog-adaptive-scout-state-v2",
+        "generated_at": "2026-09-19T12:00:00Z",
+        "next_full_refresh_at": "2026-09-20T12:00:00Z",
+        "refresh_interval_hours": 24,
+        "entries": [
+            {
+                "source": "hot",
+                "recommended_scans_per_day": 3,
+                "target_interval_minutes": 480,
+                "last_scanned_at": None,
+                "next_due_at": "2026-09-19T13:00:00Z",
+                "consecutive_failures": 1,
+                "backoff_minutes": 60,
+                "last_failure_at": "2026-09-19T12:00:00Z",
+                "last_error_type": "HTTPStatusError"
+            }
+        ]
+    }
+
+    state = parse_adaptive_scout_state(raw)
+
+    assert state.entries[0].consecutive_failures == 1
+    assert state.entries[0].last_failure_kind is None
