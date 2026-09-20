@@ -667,3 +667,68 @@ template slots != independent funded pools
 
 O planner usa `source_available_funded_usd` como teto agregado quando esse campo existe. Isso evita
 contar a mesma moeda várias vezes.
+
+### Agent Bounties
+
+`AgentBountiesScout` consulta somente o feed público canônico de Base mainnet:
+
+```text
+GET https://api.agentbounties.app/v1/base/autonomous-bounties/feed
+network=base-mainnet
+claimable_only=true
+```
+
+Uso:
+
+```bash
+cog scan agent-bounties --limit 25
+```
+
+O parser é fail-closed. Um item só entra quando:
+
+```text
+status = claimable
+terms_valid = true
+verification_ready = true
+validation_errors = []
+funded_amount >= target_amount
+solver_reward > 0
+```
+
+`solver_reward`, `claim_bond`, `funded_amount` e `target_amount` são publicados em base
+units de USDC e normalizados usando 6 decimais.
+
+O reward do solver entra como:
+
+```text
+reward_semantics = fixed
+currency = USDC
+```
+
+Isso significa reward bruto comprometido para uma solução que conclua corretamente o fluxo
+canônico. Não significa payout já ganho. A própria fonte exige claim válido, trabalho, verificação e
+evidência canônica de settlement.
+
+O `claim_bond` é preservado separadamente:
+
+```text
+claim_bond_usdc
+claim_bond_required
+```
+
+Ele representa capital/requisito de claim e risco operacional. O Scout não o transforma
+silenciosamente em custo perdido nem o subtrai do reward.
+
+O Scout não:
+
+- conecta wallet;
+- pede private key ou recovery phrase;
+- assina claim;
+- envia transação;
+- inicia trabalho;
+- submete resultado;
+- verifica;
+- faz settlement.
+
+Antes de qualquer participação futura ainda precisam ser revisados termos imutáveis, critérios de
+aceite, verifier, deadlines, bond, política legal e estado atual da chain.
