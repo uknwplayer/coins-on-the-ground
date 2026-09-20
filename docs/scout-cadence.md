@@ -182,7 +182,7 @@ cog scout-cycle \
   --limit 100
 ```
 
-O estado usa o formato interno `cog-adaptive-scout-state-v1` e mantém, por fonte:
+O estado atual usa o formato interno `cog-adaptive-scout-state-v2` e continua aceitando caches `cog-adaptive-scout-state-v1` para upgrade transparente. Ele mantém, por fonte:
 
 ```text
 recommended_scans_per_day
