@@ -182,7 +182,7 @@ cog scout-cycle \
   --limit 100
 ```
 
-O estado atual usa o formato interno `cog-adaptive-scout-state-v2` e continua aceitando caches `cog-adaptive-scout-state-v1` para upgrade transparente. Ele mantém, por fonte:
+O estado atual usa o formato interno `cog-adaptive-scout-state-v3` e continua aceitando caches `cog-adaptive-scout-state-v1` para upgrade transparente. Ele mantém, por fonte:
 
 ```text
 recommended_scans_per_day
@@ -240,8 +240,8 @@ simultâneos disputando o mesmo estado lógico.
 
 ## Health e exponential backoff
 
-O estado persistente atual é `cog-adaptive-scout-state-v2`. O parser continua aceitando
-`cog-adaptive-scout-state-v1`, promovendo entradas antigas com streak de falha zero.
+O estado persistente atual é `cog-adaptive-scout-state-v3`. O parser continua aceitando
+`cog-adaptive-scout-state-v1` e `cog-adaptive-scout-state-v2`, promovendo entradas antigas sem inventar classificação de falha.
 
 A policy operacional padrão é:
 
@@ -298,3 +298,47 @@ O relatório `adaptive-scout-cycle.json` inclui um bloco `health` por fonte.
 O refresh global de 24h continua sendo uma observação deliberada de todas as fontes, mesmo quando
 uma fonte estava em backoff. Se ela falhar novamente, o streak histórico é preservado e o próximo
 backoff cresce; se recuperar, o streak zera.
+
+
+## Classificação técnica de falhas
+
+Falhas observadas pelo runtime são classificadas separadamente da prioridade econômica:
+
+```text
+RATE_LIMIT
+TIMEOUT
+SERVER_ERROR
+CLIENT_ERROR
+NETWORK_ERROR
+OTHER
+```
+
+O estado v3 preserva `last_failure_kind` além de `last_error_type`.
+
+Para respostas HTTP com `Retry-After`, o runtime converte o hint para minutos e usa:
+
+```text
+effective_backoff = max(exponential_backoff, retry_after)
+```
+
+O teto `retry_max_minutes` limita o backoff exponencial calculado localmente, mas não reduz um
+`Retry-After` maior publicado pelo servidor.
+
+Isso evita insistir cedo demais em fontes que explicitamente pediram desaceleração.
+
+### Evidência operacional observada
+
+Nos primeiros runs reais do workflow, Keep3r retornou HTTP 429 em um `full_refresh`.
+Um ciclo posterior `due_only` conseguiu consultar Keep3r com sucesso e avançou somente o relógio
+dessa fonte.
+
+Esse comportamento confirmou:
+
+```text
+cache persistido
+due_only seletivo
+falha isolada por Scout
+recuperação sem reset global
+```
+
+A classificação v3 transforma esse tipo de evento em `RATE_LIMIT` no health report.
