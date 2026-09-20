@@ -189,6 +189,10 @@ recommended_scans_per_day
 target_interval_minutes
 last_scanned_at
 next_due_at
+consecutive_failures
+backoff_minutes
+last_failure_at
+last_error_type
 ```
 
 Existem dois modos de ciclo:
@@ -203,7 +207,7 @@ due_only
 snapshots, replenishment, Source Allocation e nova Cadence Policy.
 
 `due_only` carrega o estado persistido e consulta somente fontes cujo `next_due_at` já venceu.
-Uma fonte que falha não tem seu relógio avançado; ela continua due para retry.
+Uma fonte que falha entra em backoff técnico separado da cadência econômica. Sucesso zera o streak de falhas e restaura o intervalo normal da cadence policy.
 
 ## Persistência entre GitHub Actions
 
@@ -232,3 +236,65 @@ observabilidade.
 
 O workflow usa um único `concurrency.group` e `cancel-in-progress: false`, evitando dois ciclos
 simultâneos disputando o mesmo estado lógico.
+
+
+## Health e exponential backoff
+
+O estado persistente atual é `cog-adaptive-scout-state-v2`. O parser continua aceitando
+`cog-adaptive-scout-state-v1`, promovendo entradas antigas com streak de falha zero.
+
+A policy operacional padrão é:
+
+```text
+retry_base_minutes = 60
+retry_max_minutes = 1440
+```
+
+Falhas consecutivas produzem:
+
+```text
+1ª falha -> 60 min
+2ª falha -> 120 min
+3ª falha -> 240 min
+4ª falha -> 480 min
+5ª falha -> 960 min
+6ª+     -> 1440 min
+```
+
+O backoff afeta somente retry técnico. Ele não reduz `attention_share_pct`, não altera
+`review_score` e não transforma indisponibilidade em julgamento econômico.
+
+Estados de health:
+
+```text
+HEALTHY
+BACKING_OFF
+DEGRADED
+UNKNOWN
+```
+
+- `HEALTHY`: último ciclo relevante teve sucesso e não há streak de falha.
+- `BACKING_OFF`: existe falha consecutiva e o próximo retry ainda não venceu.
+- `DEGRADED`: existe falha consecutiva e o retry já está due.
+- `UNKNOWN`: a fonte ainda não possui sucesso observado no estado atual.
+
+Em sucesso:
+
+```text
+consecutive_failures = 0
+backoff_minutes = 0
+next_due_at = observed_at + target_interval_minutes
+```
+
+Em falha:
+
+```text
+consecutive_failures += 1
+next_due_at = observed_at + exponential_backoff
+```
+
+O relatório `adaptive-scout-cycle.json` inclui um bloco `health` por fonte.
+
+O refresh global de 24h continua sendo uma observação deliberada de todas as fontes, mesmo quando
+uma fonte estava em backoff. Se ela falhar novamente, o streak histórico é preservado e o próximo
+backoff cresce; se recuperar, o streak zera.
