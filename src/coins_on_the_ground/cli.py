@@ -266,18 +266,17 @@ async def _discover(
     )
 
     opportunities: list[Opportunity] = []
-    failures: list[dict[str, str | int | None]] = []
-    failure_details: dict[str, ScoutFailure] = {}
+    failures: list[dict[str, str]] = []
 
     for scout, batch in zip(scouts, batches, strict=True):
         if isinstance(batch, BaseException):
-            failure_row, failure = _describe_scout_failure(
-                scout.name,
-                batch,
-                now=now,
+            failures.append(
+                {
+                    "source": scout.name,
+                    "error_type": type(batch).__name__,
+                    "message": str(batch),
+                }
             )
-            failures.append(failure_row)
-            failure_details[scout.name] = failure
             continue
         opportunities.extend(batch)
 
@@ -613,17 +612,18 @@ async def _scout_cycle(args: argparse.Namespace) -> int:
     opportunities: list[Opportunity] = []
     snapshots_to_append = []
     successful_sources: list[str] = []
-    failures: list[dict[str, str]] = []
+    failures: list[dict[str, str | int | None]] = []
+    failure_details: dict[str, ScoutFailure] = {}
 
     for scout, batch in zip(scouts, batches, strict=True):
         if isinstance(batch, BaseException):
-            failures.append(
-                {
-                    "source": scout.name,
-                    "error_type": type(batch).__name__,
-                    "message": str(batch),
-                }
+            failure_row, failure = _describe_scout_failure(
+                scout.name,
+                batch,
+                now=now,
             )
+            failures.append(failure_row)
+            failure_details[scout.name] = failure
             continue
 
         opportunities.extend(batch)
