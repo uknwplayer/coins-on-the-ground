@@ -314,7 +314,9 @@ Já estão implementados:
 - perda de cache provoca cold start seguro com nova varredura completa;
 - health por Scout com `HEALTHY / BACKING_OFF / DEGRADED / UNKNOWN`;
 - exponential retry backoff técnico de 60 min até 24h, separado da prioridade econômica;
-- estado v2 backward-compatible com caches v1;
+- classificação técnica `RATE_LIMIT / TIMEOUT / SERVER_ERROR / CLIENT_ERROR / NETWORK_ERROR / OTHER`;
+- suporte a `Retry-After` como piso de retry quando a fonte publica um hint maior;
+- estado v3 backward-compatible com caches v1/v2;
 - Opportunity Model e deduplicação;
 - `review_score`;
 - Cost & Feasibility Estimator;
