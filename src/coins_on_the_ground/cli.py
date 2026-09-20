@@ -3,11 +3,15 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import math
 from dataclasses import asdict
 from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
+
+import httpx
 
 from coins_on_the_ground.adapters import (
     CapabilityObservation,
@@ -44,6 +48,8 @@ from coins_on_the_ground.planning import (
     AdaptiveScoutState,
     ScoutCadencePolicy,
     ScoutCadenceStatus,
+    ScoutFailure,
+    ScoutFailureKind,
     assess_evidence,
     assess_historical_confidence_many,
     build_adaptive_scout_state,
@@ -138,6 +144,75 @@ def _collection_records_from_rows(rows: list[object]) -> list[Any]:
     return records
 
 
+def _retry_after_minutes(
+    response: httpx.Response,
+    *,
+    now: datetime,
+) -> int | None:
+    raw = response.headers.get("Retry-After")
+    if raw is None:
+        return None
+
+    try:
+        seconds = int(raw)
+    except ValueError:
+        try:
+            retry_at = parsedate_to_datetime(raw)
+        except (TypeError, ValueError, OverflowError):
+            return None
+        if retry_at.tzinfo is None:
+            retry_at = retry_at.replace(tzinfo=UTC)
+        seconds = math.ceil(
+            (retry_at.astimezone(UTC) - now.astimezone(UTC)).total_seconds()
+        )
+
+    if seconds <= 0:
+        return None
+    return max(1, math.ceil(seconds / 60))
+
+
+def _describe_scout_failure(
+    source: str,
+    error: BaseException,
+    *,
+    now: datetime,
+) -> tuple[dict[str, str | int | None], ScoutFailure]:
+    kind = ScoutFailureKind.OTHER
+    retry_after = None
+    status_code: int | None = None
+
+    if isinstance(error, httpx.HTTPStatusError):
+        status_code = error.response.status_code
+        retry_after = _retry_after_minutes(error.response, now=now)
+        if status_code == 429:
+            kind = ScoutFailureKind.RATE_LIMIT
+        elif 500 <= status_code < 600:
+            kind = ScoutFailureKind.SERVER_ERROR
+        elif 400 <= status_code < 500:
+            kind = ScoutFailureKind.CLIENT_ERROR
+    elif isinstance(error, httpx.TimeoutException):
+        kind = ScoutFailureKind.TIMEOUT
+    elif isinstance(error, httpx.NetworkError):
+        kind = ScoutFailureKind.NETWORK_ERROR
+
+    failure = ScoutFailure(
+        error_type=type(error).__name__,
+        kind=kind,
+        retry_after_minutes=retry_after,
+    )
+    return (
+        {
+            "source": source,
+            "error_type": failure.error_type,
+            "failure_kind": failure.kind.value,
+            "status_code": status_code,
+            "retry_after_minutes": retry_after,
+            "message": str(error),
+        },
+        failure,
+    )
+
+
 async def _collect(scout: Scout) -> list[Opportunity]:
     opportunities: list[Opportunity] = []
     async for opportunity in scout.discover():
@@ -191,17 +266,18 @@ async def _discover(
     )
 
     opportunities: list[Opportunity] = []
-    failures: list[dict[str, str]] = []
+    failures: list[dict[str, str | int | None]] = []
+    failure_details: dict[str, ScoutFailure] = {}
 
     for scout, batch in zip(scouts, batches, strict=True):
         if isinstance(batch, BaseException):
-            failures.append(
-                {
-                    "source": scout.name,
-                    "error_type": type(batch).__name__,
-                    "message": str(batch),
-                }
+            failure_row, failure = _describe_scout_failure(
+                scout.name,
+                batch,
+                now=now,
             )
+            failures.append(failure_row)
+            failure_details[scout.name] = failure
             continue
         opportunities.extend(batch)
 
@@ -619,29 +695,21 @@ async def _scout_cycle(args: argparse.Namespace) -> int:
                 print(json.dumps(row, ensure_ascii=False))
             return 1
 
-        failure_types = {
-            failure["source"]: failure["error_type"]
-            for failure in failures
-        }
         next_state = build_adaptive_scout_state(
             cadence,
             observed_at=now,
             refresh_interval_hours=args.refresh_interval_hours,
             successful_sources=tuple(successful_sources),
-            failure_types=failure_types,
+            failure_details=failure_details,
             previous_state=state,
             retry_base_minutes=args.retry_base_minutes,
             retry_max_minutes=args.retry_max_minutes,
         )
     elif state is not None and (successful_sources or failures):
-        failure_types = {
-            failure["source"]: failure["error_type"]
-            for failure in failures
-        }
         next_state = record_source_outcomes(
             state,
             successful_sources=tuple(successful_sources),
-            failure_types=failure_types,
+            failure_details=failure_details,
             observed_at=now,
             retry_base_minutes=args.retry_base_minutes,
             retry_max_minutes=args.retry_max_minutes,
