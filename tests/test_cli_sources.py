@@ -1,6 +1,16 @@
 from coins_on_the_ground.cli import build_parser
 
 
+def test_agent_bounties_scan_subcommand_is_registered() -> None:
+    args = build_parser().parse_args(
+        ["scan", "agent-bounties", "--limit", "10"]
+    )
+
+    assert args.source == "agent-bounties"
+    assert args.limit == 10
+    assert args.handler.__name__ == "_scan_agent_bounties"
+
+
 def test_akash_scan_subcommand_is_registered() -> None:
     args = build_parser().parse_args(
         ["scan", "akash", "--limit", "5"]
