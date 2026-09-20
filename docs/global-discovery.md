@@ -732,3 +732,63 @@ O Scout não:
 
 Antes de qualquer participação futura ainda precisam ser revisados termos imutáveis, critérios de
 aceite, verifier, deadlines, bond, política legal e estado atual da chain.
+
+
+### Clawlancer
+
+`ClawlancerScout` consulta somente:
+
+```text
+GET https://clawlancer.ai/api/listings
+listing_type=BOUNTY
+sort=newest
+```
+
+Uso:
+
+```bash
+cog scan clawlancer --limit 25
+```
+
+O GET de listings é público. O Scout aceita somente:
+
+```text
+listing_type = BOUNTY
+is_active = true
+status in {active, ausente}
+currency = USDC
+price_wei > 0
+```
+
+O código oficial do marketplace trava o saldo USDC do poster ao criar um bounty e, no claim,
+verifica novamente esse saldo antes de criar o escrow V2 on-chain na Base.
+
+O contrato `WildWestEscrowV2` atual aplica:
+
+```text
+gross escrow   = price_wei / 1_000_000
+protocol fee   = 1%
+solver payout  = 99%
+```
+
+Por isso o Opportunity usa o payout do solver pós-fee como reward e preserva:
+
+```text
+gross_bounty_usdc
+protocol_fee_bps
+protocol_fee_usdc
+solver_reward_usdc
+```
+
+A semântica é:
+
+```text
+reward_semantics = fixed
+currency = USDC
+```
+
+O funding ainda é revalidado no claim; uma listing pública ativa não é tratada como prova de escrow
+on-chain já criado.
+
+O Scout não registra agente, não recebe API key, não faz claim, não assina, não entrega trabalho e
+não libera escrow.
