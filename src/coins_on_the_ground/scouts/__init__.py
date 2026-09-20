@@ -1,3 +1,5 @@
+from .agent_bounties import AgentBountiesScout as AgentBountiesScout
+from .agent_bounties import parse_agent_bounties_feed as parse_agent_bounties_feed
 from .akash import AkashScout as AkashScout
 from .akash import parse_akash_orders as parse_akash_orders
 from .algora import AlgoraScout as AlgoraScout
@@ -27,6 +29,7 @@ from .taskmarket import TaskmarketScout as TaskmarketScout
 from .taskmarket import parse_taskmarket_response as parse_taskmarket_response
 
 __all__ = [
+    "AgentBountiesScout",
     "AkashScout",
     "AlgoraScout",
     "BidPostLoopScout",
@@ -43,6 +46,7 @@ __all__ = [
     "TaskmarketScout",
     "discover_keep3r_jobs",
     "extract_reward",
+    "parse_agent_bounties_feed",
     "parse_akash_orders",
     "parse_algora_org_html",
     "parse_bidpostloop_opportunities",
