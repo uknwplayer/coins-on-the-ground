@@ -40,12 +40,16 @@ from .scout_cadence import (
 )
 from .scout_scheduler import (
     AdaptiveScoutState,
+    ScoutHealthStatus,
+    ScoutHealthSummary,
     ScoutScheduleEntry,
     build_adaptive_scout_state,
     due_sources,
     full_refresh_due,
     load_adaptive_scout_state,
+    record_source_outcomes,
     record_source_scans,
+    summarize_scout_health,
     write_adaptive_scout_state,
 )
 from .settlement import (
@@ -85,6 +89,8 @@ __all__ = [
     "ScoutCadencePolicy",
     "ScoutCadenceRecommendation",
     "ScoutCadenceStatus",
+    "ScoutHealthStatus",
+    "ScoutHealthSummary",
     "ScoutScheduleEntry",
     "SettlementPoolSummary",
     "SettlementStatus",
@@ -106,7 +112,9 @@ __all__ = [
     "plan_microtask_portfolio",
     "plan_scout_cadence",
     "plan_source_allocation",
+    "record_source_outcomes",
     "record_source_scans",
+    "summarize_scout_health",
     "summarize_settlement_pool",
     "write_adaptive_scout_state",
 ]
