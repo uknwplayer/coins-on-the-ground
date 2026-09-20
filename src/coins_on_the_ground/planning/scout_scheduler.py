@@ -1,14 +1,23 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime, timedelta
+from enum import StrEnum
 from pathlib import Path
 
 from coins_on_the_ground.planning.scout_cadence import ScoutCadencePlan
 
-_STATE_FORMAT = "cog-adaptive-scout-state-v1"
+_STATE_FORMAT_V1 = "cog-adaptive-scout-state-v1"
+_STATE_FORMAT_V2 = "cog-adaptive-scout-state-v2"
+
+
+class ScoutHealthStatus(StrEnum):
+    HEALTHY = "HEALTHY"
+    BACKING_OFF = "BACKING_OFF"
+    DEGRADED = "DEGRADED"
+    UNKNOWN = "UNKNOWN"
 
 
 @dataclass(frozen=True, slots=True)
@@ -18,6 +27,10 @@ class ScoutScheduleEntry:
     target_interval_minutes: int
     last_scanned_at: datetime | None
     next_due_at: datetime
+    consecutive_failures: int = 0
+    backoff_minutes: int = 0
+    last_failure_at: datetime | None = None
+    last_error_type: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,6 +39,18 @@ class AdaptiveScoutState:
     next_full_refresh_at: datetime
     refresh_interval_hours: int
     entries: tuple[ScoutScheduleEntry, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ScoutHealthSummary:
+    source: str
+    status: ScoutHealthStatus
+    consecutive_failures: int
+    backoff_minutes: int
+    last_success_at: datetime | None
+    last_failure_at: datetime | None
+    last_error_type: str | None
+    next_due_at: datetime
 
 
 def _iso(value: datetime) -> str:
@@ -44,44 +69,152 @@ def _parse_datetime(value: object, label: str) -> datetime:
     return parsed.astimezone(UTC)
 
 
+def _optional_datetime(value: object, label: str) -> datetime | None:
+    if value is None:
+        return None
+    return _parse_datetime(value, label)
+
+
+def _validate_retry_policy(
+    retry_base_minutes: int,
+    retry_max_minutes: int,
+) -> None:
+    if retry_base_minutes < 1:
+        raise ValueError("retry_base_minutes must be positive")
+    if retry_max_minutes < retry_base_minutes:
+        raise ValueError("retry_max_minutes cannot be below retry_base_minutes")
+
+
+def _backoff_minutes(
+    consecutive_failures: int,
+    *,
+    retry_base_minutes: int,
+    retry_max_minutes: int,
+) -> int:
+    if consecutive_failures < 1:
+        return 0
+    exponent = min(consecutive_failures - 1, 30)
+    return min(retry_max_minutes, retry_base_minutes * (2**exponent))
+
+
+def _previous_entries(
+    state: AdaptiveScoutState | None,
+) -> dict[str, ScoutScheduleEntry]:
+    if state is None:
+        return {}
+    return {entry.source: entry for entry in state.entries}
+
+
 def build_adaptive_scout_state(
     cadence: ScoutCadencePlan,
     *,
     observed_at: datetime,
     refresh_interval_hours: int = 24,
     successful_sources: Iterable[str] | None = None,
+    failure_types: Mapping[str, str] | None = None,
+    previous_state: AdaptiveScoutState | None = None,
+    retry_base_minutes: int = 60,
+    retry_max_minutes: int = 1440,
 ) -> AdaptiveScoutState:
     if refresh_interval_hours < 1:
         raise ValueError("refresh_interval_hours must be positive")
+    _validate_retry_policy(retry_base_minutes, retry_max_minutes)
 
     current = observed_at.astimezone(UTC)
+    failures = dict(failure_types or {})
     successful = (
         None if successful_sources is None else set(successful_sources)
     )
-    entries = tuple(
-        ScoutScheduleEntry(
-            source=item.source,
-            recommended_scans_per_day=item.recommended_scans_per_day,
-            target_interval_minutes=item.target_interval_minutes,
-            last_scanned_at=(
-                current
-                if successful is None or item.source in successful
-                else None
-            ),
-            next_due_at=(
-                current + timedelta(minutes=item.target_interval_minutes)
-                if successful is None or item.source in successful
-                else current
-            ),
+    previous = _previous_entries(previous_state)
+
+    entries: list[ScoutScheduleEntry] = []
+    for item in cadence.recommendations:
+        prior = previous.get(item.source)
+        assumed_success = successful is None and item.source not in failures
+        is_success = assumed_success or (
+            successful is not None and item.source in successful
         )
-        for item in cadence.recommendations
-    )
+        is_failure = item.source in failures
+
+        if is_success:
+            entries.append(
+                ScoutScheduleEntry(
+                    source=item.source,
+                    recommended_scans_per_day=item.recommended_scans_per_day,
+                    target_interval_minutes=item.target_interval_minutes,
+                    last_scanned_at=current,
+                    next_due_at=current
+                    + timedelta(minutes=item.target_interval_minutes),
+                    consecutive_failures=0,
+                    backoff_minutes=0,
+                    last_failure_at=(
+                        prior.last_failure_at if prior is not None else None
+                    ),
+                    last_error_type=(
+                        prior.last_error_type if prior is not None else None
+                    ),
+                )
+            )
+            continue
+
+        if is_failure:
+            failure_streak = (
+                prior.consecutive_failures + 1 if prior is not None else 1
+            )
+            backoff = _backoff_minutes(
+                failure_streak,
+                retry_base_minutes=retry_base_minutes,
+                retry_max_minutes=retry_max_minutes,
+            )
+            entries.append(
+                ScoutScheduleEntry(
+                    source=item.source,
+                    recommended_scans_per_day=item.recommended_scans_per_day,
+                    target_interval_minutes=item.target_interval_minutes,
+                    last_scanned_at=(
+                        prior.last_scanned_at if prior is not None else None
+                    ),
+                    next_due_at=current + timedelta(minutes=backoff),
+                    consecutive_failures=failure_streak,
+                    backoff_minutes=backoff,
+                    last_failure_at=current,
+                    last_error_type=failures[item.source],
+                )
+            )
+            continue
+
+        entries.append(
+            ScoutScheduleEntry(
+                source=item.source,
+                recommended_scans_per_day=item.recommended_scans_per_day,
+                target_interval_minutes=item.target_interval_minutes,
+                last_scanned_at=(
+                    prior.last_scanned_at if prior is not None else None
+                ),
+                next_due_at=(
+                    prior.next_due_at if prior is not None else current
+                ),
+                consecutive_failures=(
+                    prior.consecutive_failures if prior is not None else 0
+                ),
+                backoff_minutes=(
+                    prior.backoff_minutes if prior is not None else 0
+                ),
+                last_failure_at=(
+                    prior.last_failure_at if prior is not None else None
+                ),
+                last_error_type=(
+                    prior.last_error_type if prior is not None else None
+                ),
+            )
+        )
+
     return AdaptiveScoutState(
         generated_at=current,
         next_full_refresh_at=current
         + timedelta(hours=refresh_interval_hours),
         refresh_interval_hours=refresh_interval_hours,
-        entries=entries,
+        entries=tuple(entries),
     )
 
 
@@ -111,35 +244,126 @@ def due_sources(
     )
 
 
+def record_source_outcomes(
+    state: AdaptiveScoutState,
+    *,
+    successful_sources: Iterable[str] = (),
+    failure_types: Mapping[str, str] | None = None,
+    observed_at: datetime,
+    retry_base_minutes: int = 60,
+    retry_max_minutes: int = 1440,
+) -> AdaptiveScoutState:
+    _validate_retry_policy(retry_base_minutes, retry_max_minutes)
+
+    current = observed_at.astimezone(UTC)
+    successful = set(successful_sources)
+    failures = dict(failure_types or {})
+    entries: list[ScoutScheduleEntry] = []
+
+    for entry in state.entries:
+        if entry.source in successful:
+            entries.append(
+                ScoutScheduleEntry(
+                    source=entry.source,
+                    recommended_scans_per_day=entry.recommended_scans_per_day,
+                    target_interval_minutes=entry.target_interval_minutes,
+                    last_scanned_at=current,
+                    next_due_at=current
+                    + timedelta(minutes=entry.target_interval_minutes),
+                    consecutive_failures=0,
+                    backoff_minutes=0,
+                    last_failure_at=entry.last_failure_at,
+                    last_error_type=entry.last_error_type,
+                )
+            )
+            continue
+
+        if entry.source in failures:
+            failure_streak = entry.consecutive_failures + 1
+            backoff = _backoff_minutes(
+                failure_streak,
+                retry_base_minutes=retry_base_minutes,
+                retry_max_minutes=retry_max_minutes,
+            )
+            entries.append(
+                ScoutScheduleEntry(
+                    source=entry.source,
+                    recommended_scans_per_day=entry.recommended_scans_per_day,
+                    target_interval_minutes=entry.target_interval_minutes,
+                    last_scanned_at=entry.last_scanned_at,
+                    next_due_at=current + timedelta(minutes=backoff),
+                    consecutive_failures=failure_streak,
+                    backoff_minutes=backoff,
+                    last_failure_at=current,
+                    last_error_type=failures[entry.source],
+                )
+            )
+            continue
+
+        entries.append(entry)
+
+    return AdaptiveScoutState(
+        generated_at=state.generated_at,
+        next_full_refresh_at=state.next_full_refresh_at,
+        refresh_interval_hours=state.refresh_interval_hours,
+        entries=tuple(entries),
+    )
+
+
 def record_source_scans(
     state: AdaptiveScoutState,
     scanned_sources: tuple[str, ...],
     *,
     observed_at: datetime,
 ) -> AdaptiveScoutState:
-    current = observed_at.astimezone(UTC)
-    scanned = set(scanned_sources)
-    entries = tuple(
-        ScoutScheduleEntry(
-            source=entry.source,
-            recommended_scans_per_day=entry.recommended_scans_per_day,
-            target_interval_minutes=entry.target_interval_minutes,
-            last_scanned_at=(
-                current if entry.source in scanned else entry.last_scanned_at
-            ),
-            next_due_at=(
-                current + timedelta(minutes=entry.target_interval_minutes)
-                if entry.source in scanned
-                else entry.next_due_at
+    return record_source_outcomes(
+        state,
+        successful_sources=scanned_sources,
+        observed_at=observed_at,
+    )
+
+
+def summarize_scout_health(
+    state: AdaptiveScoutState,
+    *,
+    now: datetime,
+) -> tuple[ScoutHealthSummary, ...]:
+    current = now.astimezone(UTC)
+    summaries: list[ScoutHealthSummary] = []
+
+    for entry in state.entries:
+        if entry.consecutive_failures == 0:
+            status = (
+                ScoutHealthStatus.HEALTHY
+                if entry.last_scanned_at is not None
+                else ScoutHealthStatus.UNKNOWN
+            )
+        elif current < entry.next_due_at:
+            status = ScoutHealthStatus.BACKING_OFF
+        else:
+            status = ScoutHealthStatus.DEGRADED
+
+        summaries.append(
+            ScoutHealthSummary(
+                source=entry.source,
+                status=status,
+                consecutive_failures=entry.consecutive_failures,
+                backoff_minutes=entry.backoff_minutes,
+                last_success_at=entry.last_scanned_at,
+                last_failure_at=entry.last_failure_at,
+                last_error_type=entry.last_error_type,
+                next_due_at=entry.next_due_at,
+            )
+        )
+
+    return tuple(
+        sorted(
+            summaries,
+            key=lambda item: (
+                item.status.value,
+                item.source,
             ),
         )
-        for entry in state.entries
-    )
-    return AdaptiveScoutState(
-        generated_at=state.generated_at,
-        next_full_refresh_at=state.next_full_refresh_at,
-        refresh_interval_hours=state.refresh_interval_hours,
-        entries=entries,
     )
 
 
@@ -147,7 +371,7 @@ def serialize_adaptive_scout_state(
     state: AdaptiveScoutState,
 ) -> dict[str, object]:
     return {
-        "format": _STATE_FORMAT,
+        "format": _STATE_FORMAT_V2,
         "generated_at": _iso(state.generated_at),
         "next_full_refresh_at": _iso(state.next_full_refresh_at),
         "refresh_interval_hours": state.refresh_interval_hours,
@@ -160,6 +384,11 @@ def serialize_adaptive_scout_state(
                     else None
                 ),
                 "next_due_at": _iso(entry.next_due_at),
+                "last_failure_at": (
+                    _iso(entry.last_failure_at)
+                    if entry.last_failure_at is not None
+                    else None
+                ),
             }
             for entry in state.entries
         ],
@@ -169,7 +398,9 @@ def serialize_adaptive_scout_state(
 def parse_adaptive_scout_state(value: object) -> AdaptiveScoutState:
     if not isinstance(value, dict):
         raise TypeError("adaptive Scout state must be an object")
-    if value.get("format") != _STATE_FORMAT:
+
+    state_format = value.get("format")
+    if state_format not in {_STATE_FORMAT_V1, _STATE_FORMAT_V2}:
         raise ValueError("unsupported adaptive Scout state format")
 
     refresh_interval_hours = value.get("refresh_interval_hours")
@@ -203,23 +434,44 @@ def parse_adaptive_scout_state(value: object) -> AdaptiveScoutState:
         ):
             raise ValueError("target_interval_minutes must be positive")
 
+        consecutive_failures = raw.get("consecutive_failures", 0)
+        backoff_minutes = raw.get("backoff_minutes", 0)
+        last_error_type = raw.get("last_error_type")
+        if (
+            not isinstance(consecutive_failures, int)
+            or isinstance(consecutive_failures, bool)
+            or consecutive_failures < 0
+        ):
+            raise ValueError("consecutive_failures must be non-negative")
+        if (
+            not isinstance(backoff_minutes, int)
+            or isinstance(backoff_minutes, bool)
+            or backoff_minutes < 0
+        ):
+            raise ValueError("backoff_minutes must be non-negative")
+        if last_error_type is not None and not isinstance(last_error_type, str):
+            raise TypeError("last_error_type must be a string or null")
+
         entries.append(
             ScoutScheduleEntry(
                 source=source,
                 recommended_scans_per_day=scans,
                 target_interval_minutes=interval,
-                last_scanned_at=(
-                    _parse_datetime(
-                        raw.get("last_scanned_at"),
-                        "last_scanned_at",
-                    )
-                    if raw.get("last_scanned_at") is not None
-                    else None
+                last_scanned_at=_optional_datetime(
+                    raw.get("last_scanned_at"),
+                    "last_scanned_at",
                 ),
                 next_due_at=_parse_datetime(
                     raw.get("next_due_at"),
                     "next_due_at",
                 ),
+                consecutive_failures=consecutive_failures,
+                backoff_minutes=backoff_minutes,
+                last_failure_at=_optional_datetime(
+                    raw.get("last_failure_at"),
+                    "last_failure_at",
+                ),
+                last_error_type=last_error_type,
             )
         )
         seen.add(source)
