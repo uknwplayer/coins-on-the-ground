@@ -162,6 +162,8 @@ cog scout-cycle \
   --min-scans-per-source-per-day 1 \
   --max-scans-per-source-per-day 6 \
   --refresh-interval-hours 24 \
+  --retry-base-minutes 60 \
+  --retry-max-minutes 1440 \
   --limit 100
 ```
 
@@ -310,6 +312,9 @@ Já estão implementados:
 - `cog scout-cycle` com modos `full_refresh` e `due_only`, consultando apenas Scouts vencidos entre refreshes completos;
 - workflow `.github/workflows/adaptive-scout.yml` agendado de hora em hora, com cache de ledger/state e artifact por ciclo;
 - perda de cache provoca cold start seguro com nova varredura completa;
+- health por Scout com `HEALTHY / BACKING_OFF / DEGRADED / UNKNOWN`;
+- exponential retry backoff técnico de 60 min até 24h, separado da prioridade econômica;
+- estado v2 backward-compatible com caches v1;
 - Opportunity Model e deduplicação;
 - `review_score`;
 - Cost & Feasibility Estimator;
