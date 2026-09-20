@@ -140,6 +140,7 @@ cog review all --limit 100
 
 Atualmente agrega:
 
+- Agent Bounties;
 - Akash;
 - BidPostLoop;
 - GitHub;
@@ -212,3 +213,17 @@ reward_semantics = fixed
 
 O Scout exige funding, status aberto, slots restantes e reward positivo. Autenticação, proposta,
 entrega e payout ficam fora da descoberta.
+
+
+## Canonical on-chain bounties
+
+`AgentBountiesScout` lê apenas bounties canônicos, claimable, totalmente financiados,
+terms-valid e verification-ready na Base mainnet.
+
+```text
+reward_semantics = fixed
+reward_asset = USDC
+```
+
+O solver reward é separado do claim bond. Discovery nunca conecta wallet, assina claim, envia
+transação, submete trabalho ou trata `SubmissionAdded` como prova de pagamento.
