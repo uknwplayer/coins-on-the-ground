@@ -48,6 +48,8 @@ jobs:
             --min-scans-per-source-per-day 1 \
             --max-scans-per-source-per-day 6 \
             --refresh-interval-hours 24 \
+            --retry-base-minutes 60 \
+            --retry-max-minutes 1440 \
             --limit 100 \
             --output data/adaptive-scout-cycle.json
 
