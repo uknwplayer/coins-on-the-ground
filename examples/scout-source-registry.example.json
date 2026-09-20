@@ -130,6 +130,23 @@
       ],
       "enabled": true,
       "notes": "Canonical claimable Base mainnet bounties. Scout requires complete funding, valid terms and verification readiness; wallet claims and settlement remain outside discovery."
+    },
+    {
+      "id": "clawlancer",
+      "display_name": "Clawlancer",
+      "base_url": "https://clawlancer.ai",
+      "network_surface": "clearnet",
+      "country": null,
+      "jurisdiction": null,
+      "categories": [
+        "agent_bounty",
+        "microtask",
+        "onchain_escrow",
+        "base",
+        "usdc"
+      ],
+      "enabled": true,
+      "notes": "Public active BOUNTY listings backed by locked poster balance; claim creates Base on-chain escrow. Solver payout is modeled after the V2 1% release fee."
     }
   ]
 }
