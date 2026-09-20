@@ -9,6 +9,8 @@ from .bidpostloop import BidPostLoopScout as BidPostLoopScout
 from .bidpostloop import (
     parse_bidpostloop_opportunities as parse_bidpostloop_opportunities,
 )
+from .clawlancer import ClawlancerScout as ClawlancerScout
+from .clawlancer import parse_clawlancer_listings as parse_clawlancer_listings
 from .frantic import FranticBountyScout as FranticBountyScout
 from .frantic import parse_frantic_issue as parse_frantic_issue
 from .github_bounties import GitHubBountyScout as GitHubBountyScout
@@ -33,6 +35,7 @@ __all__ = [
     "AkashScout",
     "AlgoraScout",
     "BidPostLoopScout",
+    "ClawlancerScout",
     "FranticBountyScout",
     "GitHubBountyScout",
     "ImmunefiScout",
@@ -50,6 +53,7 @@ __all__ = [
     "parse_akash_orders",
     "parse_algora_org_html",
     "parse_bidpostloop_opportunities",
+    "parse_clawlancer_listings",
     "parse_frantic_issue",
     "parse_immunefi_listing",
     "parse_issuehunt_html",
