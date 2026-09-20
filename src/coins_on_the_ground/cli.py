@@ -73,6 +73,7 @@ from coins_on_the_ground.scouts import (
     AkashScout,
     AlgoraScout,
     BidPostLoopScout,
+    ClawlancerScout,
     FranticBountyScout,
     GitHubBountyScout,
     ImmunefiScout,
@@ -228,6 +229,8 @@ def _scouts_for_source(source: str, limit: int) -> list[Scout]:
         return [AkashScout(limit=limit)]
     if source == "bidpostloop":
         return [BidPostLoopScout(limit=limit)]
+    if source == "clawlancer":
+        return [ClawlancerScout(limit=limit)]
     if source == "frantic":
         return [FranticBountyScout(limit=limit)]
     if source == "github-bounties":
@@ -248,6 +251,7 @@ def _scouts_for_source(source: str, limit: int) -> list[Scout]:
         AgentBountiesScout(limit=limit),
         AkashScout(limit=limit),
         BidPostLoopScout(limit=limit),
+        ClawlancerScout(limit=limit),
         FranticBountyScout(limit=limit),
         GitHubBountyScout(limit=limit),
         IssueHuntScout(limit=limit),
@@ -322,6 +326,10 @@ async def _scan_akash(args: argparse.Namespace) -> int:
 
 async def _scan_bidpostloop(args: argparse.Namespace) -> int:
     return await _emit_scan(BidPostLoopScout(limit=args.limit), args)
+
+
+async def _scan_clawlancer(args: argparse.Namespace) -> int:
+    return await _emit_scan(ClawlancerScout(limit=args.limit), args)
 
 
 async def _scan_github(args: argparse.Namespace) -> int:
@@ -1362,7 +1370,7 @@ def _add_common_scan_args(parser: argparse.ArgumentParser) -> None:
 def _add_source_argument(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "source",
-        choices=("all", "agent-bounties", "akash", "bidpostloop", "frantic", "github-bounties", "issuehunt", "algora", "immunefi", "keep3r", "sherlock", "taskmarket"),
+        choices=("all", "agent-bounties", "akash", "bidpostloop", "clawlancer", "frantic", "github-bounties", "issuehunt", "algora", "immunefi", "keep3r", "sherlock", "taskmarket"),
         default="all",
         nargs="?",
     )
@@ -1427,6 +1435,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_common_scan_args(bidpostloop)
     bidpostloop.set_defaults(handler=_scan_bidpostloop)
+
+    clawlancer = scan_sub.add_parser(
+        "clawlancer",
+        help="scan active public prefunded Clawlancer USDC bounties",
+    )
+    _add_common_scan_args(clawlancer)
+    clawlancer.set_defaults(handler=_scan_clawlancer)
 
     github = scan_sub.add_parser("github-bounties", help="scan public GitHub bounty issues")
     github.add_argument(
