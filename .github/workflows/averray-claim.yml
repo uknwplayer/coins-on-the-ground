@@ -1,0 +1,269 @@
+name: Averray Guarded Claim
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: "Allowlisted Averray job to claim"
+        required: true
+        type: choice
+        options:
+          - pr-openledger-foundation-kora-frontend-779
+          - pr-openledger-foundation-kora-frontend-778
+        default: pr-openledger-foundation-kora-frontend-779
+
+permissions:
+  contents: read
+
+concurrency:
+  group: averray-guarded-claim-${{ inputs.job_id }}
+  cancel-in-progress: false
+
+jobs:
+  claim:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      AVERRAY_WALLET_PRIVATE_KEY: ${{ secrets.AVERRAY_WALLET_PRIVATE_KEY }}
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Require dedicated wallet secret
+        run: |
+          if [ -z "$AVERRAY_WALLET_PRIVATE_KEY" ]; then
+            echo "::error::Missing Actions secret AVERRAY_WALLET_PRIVATE_KEY"
+            exit 1
+          fi
+
+      - name: Install wallet support
+        run: python -m pip install -e ".[wallet]"
+
+      - name: Revalidate zero-upfront conditions and claim
+        env:
+          TARGET_JOB_ID: ${{ inputs.job_id }}
+        run: |
+          mkdir -p data
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          import httpx
+          from eth_account import Account
+          from eth_account.messages import encode_defunct
+
+          API = "https://api.averray.com"
+
+          ALLOWLIST = {
+              "pr-openledger-foundation-kora-frontend-779": {
+                  "repo": "OpenLedger-Foundation/Kora-Frontend",
+                  "issue": 779,
+              },
+              "pr-openledger-foundation-kora-frontend-778": {
+                  "repo": "OpenLedger-Foundation/Kora-Frontend",
+                  "issue": 778,
+              },
+          }
+
+          job_id = os.environ["TARGET_JOB_ID"]
+          if job_id not in ALLOWLIST:
+              raise RuntimeError("job is not allowlisted")
+
+          private_key = os.environ.get("AVERRAY_WALLET_PRIVATE_KEY", "").strip()
+          if not private_key:
+              raise RuntimeError("wallet secret is missing")
+          if not private_key.startswith("0x"):
+              private_key = f"0x{private_key}"
+
+          account = Account.from_key(private_key)
+          target = ALLOWLIST[job_id]
+
+          github_headers = {
+              "Accept": "application/vnd.github+json",
+              "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+              "X-GitHub-Api-Version": "2022-11-28",
+              "User-Agent": "coins-on-the-ground/0.1",
+          }
+
+          with httpx.Client(timeout=25.0, follow_redirects=False) as client:
+              issue = client.get(
+                  f"https://api.github.com/repos/{target['repo']}/issues/{target['issue']}",
+                  headers=github_headers,
+              )
+              issue.raise_for_status()
+              issue_payload = issue.json()
+
+              if issue_payload.get("state") != "open":
+                  raise RuntimeError("upstream issue is no longer open")
+              if issue_payload.get("assignee") is not None:
+                  raise RuntimeError("upstream issue now has an assignee")
+              if issue_payload.get("assignees"):
+                  raise RuntimeError("upstream issue now has assignees")
+              if issue_payload.get("pull_request") is not None:
+                  raise RuntimeError("target resolved to a pull request, not an issue")
+
+              nonce = client.post(
+                  f"{API}/auth/nonce",
+                  json={"wallet": account.address},
+              )
+              nonce.raise_for_status()
+              nonce_payload = nonce.json()
+              message = nonce_payload.get("message")
+              if not isinstance(message, str) or not message:
+                  raise RuntimeError("Averray nonce response missing SIWE message")
+
+              signature = account.sign_message(
+                  encode_defunct(text=message)
+              ).signature.hex()
+              if not signature.startswith("0x"):
+                  signature = f"0x{signature}"
+
+              verify = client.post(
+                  f"{API}/auth/verify",
+                  json={"message": message, "signature": signature},
+              )
+              verify.raise_for_status()
+              token = verify.json().get("token")
+              if not isinstance(token, str) or not token:
+                  raise RuntimeError("Averray verify response missing bearer token")
+
+              auth_headers = {
+                  "Authorization": f"Bearer {token}",
+                  "User-Agent": "coins-on-the-ground/0.1",
+              }
+
+              definition = client.get(
+                  f"{API}/jobs/definition",
+                  params={"jobId": job_id},
+                  headers=auth_headers,
+              )
+              definition.raise_for_status()
+              definition_payload = definition.json()
+
+              preflight = client.get(
+                  f"{API}/jobs/preflight",
+                  params={"jobId": job_id},
+                  headers=auth_headers,
+              )
+              preflight.raise_for_status()
+              pf = preflight.json()
+
+              required = {
+                  "eligible": True,
+                  "claimable": True,
+                  "currentWalletCanClaim": True,
+                  "claimEconomicsWaived": True,
+                  "claimStake": 0,
+                  "claimFee": 0,
+                  "totalClaimLock": 0,
+                  "gasRetentionSupported": True,
+              }
+              mismatches = {
+                  key: {"expected": expected, "actual": pf.get(key)}
+                  for key, expected in required.items()
+                  if pf.get(key) != expected
+              }
+              if mismatches:
+                  raise RuntimeError(
+                      "claim guard rejected changed economics: "
+                      + json.dumps(mismatches, sort_keys=True)
+                  )
+
+              source = definition_payload.get("source") or {}
+              source_repo = (
+                  source.get("repo")
+                  or source.get("repository")
+                  or source.get("repositoryFullName")
+              )
+              source_issue = (
+                  source.get("issueNumber")
+                  or source.get("issue")
+                  or source.get("number")
+              )
+              if source_repo and str(source_repo).casefold() != target["repo"].casefold():
+                  raise RuntimeError("Averray job source repo no longer matches allowlist")
+              if source_issue is not None and int(source_issue) != target["issue"]:
+                  raise RuntimeError("Averray job source issue no longer matches allowlist")
+
+              idem = f"cog:{job_id}:{account.address.lower()}"
+              claim = client.post(
+                  f"{API}/jobs/claim",
+                  headers={
+                      **auth_headers,
+                      "Content-Type": "application/json",
+                  },
+                  json={
+                      "jobId": job_id,
+                      "idempotencyKey": idem,
+                  },
+                  timeout=60.0,
+              )
+
+              try:
+                  claim_payload = claim.json()
+              except ValueError:
+                  claim_payload = {"raw": claim.text[:500]}
+
+              if not claim.is_success:
+                  safe_error = {
+                      "status": claim.status_code,
+                      "error": claim_payload.get("error"),
+                      "code": claim_payload.get("code"),
+                      "message": claim_payload.get("message"),
+                  }
+                  raise RuntimeError(
+                      "Averray claim failed safely: "
+                      + json.dumps(safe_error, ensure_ascii=False)
+                  )
+
+          report = {
+              "format": "cog-averray-guarded-claim-v1",
+              "wallet": account.address,
+              "job_id": job_id,
+              "upstream_issue": issue_payload.get("html_url"),
+              "upstream_issue_state": issue_payload.get("state"),
+              "upstream_assignee_count": len(issue_payload.get("assignees") or []),
+              "preflight": {
+                  "eligible": pf.get("eligible"),
+                  "claimable": pf.get("claimable"),
+                  "current_wallet_can_claim": pf.get("currentWalletCanClaim"),
+                  "claim_economics_waived": pf.get("claimEconomicsWaived"),
+                  "claim_stake": pf.get("claimStake"),
+                  "claim_fee": pf.get("claimFee"),
+                  "total_claim_lock": pf.get("totalClaimLock"),
+                  "gas_retention_supported": pf.get("gasRetentionSupported"),
+                  "verifier_mode": pf.get("verifierMode"),
+              },
+              "claim": {
+                  "status": claim_payload.get("status"),
+                  "session_id": claim_payload.get("sessionId")
+                  or (claim_payload.get("session") or {}).get("sessionId"),
+                  "claim_expires_at": claim_payload.get("claimExpiresAt")
+                  or (claim_payload.get("session") or {}).get("claimExpiresAt"),
+              },
+              "private_key_printed": False,
+              "auth_token_printed": False,
+              "user_funds_spent": False,
+          }
+
+          Path("data/averray-guarded-claim.json").write_text(
+              json.dumps(report, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(report, indent=2))
+          PY
+
+      - name: Upload sanitized claim receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: averray-guarded-claim
+          path: data/averray-guarded-claim.json
+          if-no-files-found: ignore
+          retention-days: 7
