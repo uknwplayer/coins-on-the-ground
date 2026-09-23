@@ -131,10 +131,11 @@ def score_opportunity(
 
 
 def _normalized_identifiers(opportunity: Opportunity) -> set[str]:
-    identifiers = {url.rstrip("/") for url in opportunity.evidence_urls if url.strip()}
     claim_url = opportunity.metadata.get("claim_url", "").strip()
     if claim_url:
-        identifiers.add(claim_url.rstrip("/"))
+        return {claim_url.rstrip("/")}
+
+    identifiers = {url.rstrip("/") for url in opportunity.evidence_urls if url.strip()}
     if not identifiers:
         identifiers.add(f"{opportunity.source}:{opportunity.title.strip().casefold()}")
     return identifiers
