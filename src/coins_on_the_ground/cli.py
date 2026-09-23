@@ -68,6 +68,7 @@ from coins_on_the_ground.planning import (
     summarize_settlement_pool,
     write_adaptive_scout_state,
 )
+from coins_on_the_ground.runtime import run_scout_daemon
 from coins_on_the_ground.scouts import (
     AgentBountiesScout,
     AkashScout,
@@ -778,6 +779,38 @@ async def _scout_cycle(args: argparse.Namespace) -> int:
     else:
         print(json.dumps(row, ensure_ascii=False))
     return 0
+
+
+async def _scout_daemon(args: argparse.Namespace) -> int:
+    report_dir = Path(args.report_dir)
+    report_dir.mkdir(parents=True, exist_ok=True)
+
+    async def _cycle(cycle_number: int) -> int:
+        cycle_args = argparse.Namespace(**vars(args))
+        timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+        cycle_args.output = str(
+            report_dir
+            / f"adaptive-scout-cycle-{timestamp}-{cycle_number:06d}.json"
+        )
+        return await _scout_cycle(cycle_args)
+
+    max_cycles = args.max_cycles if args.max_cycles > 0 else None
+    summary = await run_scout_daemon(
+        _cycle,
+        tick_seconds=float(args.tick_minutes * 60),
+        max_cycles=max_cycles,
+    )
+    print(
+        json.dumps(
+            {
+                "engine": "adaptive-scout-daemon",
+                "summary": _json_value(asdict(summary)),
+                "execution_performed": False,
+            },
+            ensure_ascii=False,
+        )
+    )
+    return 0 if summary.successful_cycles > 0 else summary.last_exit_code
 
 
 async def _sources_check(args: argparse.Namespace) -> int:
@@ -1677,6 +1710,67 @@ def build_parser() -> argparse.ArgumentParser:
         help="maximum exponential retry delay for an unhealthy Scout",
     )
     scout_cycle.set_defaults(handler=_scout_cycle)
+
+    scout_daemon = subparsers.add_parser(
+        "scout-daemon",
+        help="run the adaptive read-only Scout cycle continuously on a local host",
+    )
+    scout_daemon.add_argument(
+        "--snapshot-ledger",
+        required=True,
+        help="append-only opportunity snapshot JSONL ledger",
+    )
+    scout_daemon.add_argument(
+        "--state",
+        required=True,
+        help="persistent adaptive Scout state JSON path",
+    )
+    scout_daemon.add_argument(
+        "--report-dir",
+        default="data/scout-reports",
+        help="directory for one JSON report per cycle",
+    )
+    scout_daemon.add_argument(
+        "--tick-minutes",
+        type=int,
+        default=60,
+        help="wall-clock interval between scheduler ticks",
+    )
+    scout_daemon.add_argument(
+        "--max-cycles",
+        type=int,
+        default=0,
+        help="optional finite cycle count for smoke tests; 0 runs continuously",
+    )
+    scout_daemon.add_argument("--limit", type=int, default=100)
+    _add_capability_profile_args(scout_daemon)
+    scout_daemon.add_argument("--scan-budget-per-day", type=int, default=24)
+    scout_daemon.add_argument(
+        "--min-scans-per-source-per-day",
+        type=int,
+        default=1,
+    )
+    scout_daemon.add_argument(
+        "--max-scans-per-source-per-day",
+        type=int,
+        default=6,
+    )
+    scout_daemon.add_argument(
+        "--refresh-interval-hours",
+        type=int,
+        default=24,
+    )
+    scout_daemon.add_argument(
+        "--retry-base-minutes",
+        type=int,
+        default=60,
+    )
+    scout_daemon.add_argument(
+        "--retry-max-minutes",
+        type=int,
+        default=1440,
+    )
+    scout_daemon.set_defaults(handler=_scout_daemon)
 
     sources_check = subparsers.add_parser(
         "sources-check",
