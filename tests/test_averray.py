@@ -91,7 +91,9 @@ def test_jobs_array_response_is_supported() -> None:
 
 @pytest.mark.asyncio
 async def test_live_github_job_validation_rejects_assigned_issue() -> None:
-    opportunity = parse_averray_jobs({"jobs": [_job()]})[0]
+    raw = _job()
+    raw["sourceType"] = "github_issue"
+    opportunity = parse_averray_jobs({"jobs": [raw]})[0]
 
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.host == "api.averray.com":
@@ -124,7 +126,9 @@ async def test_live_github_job_validation_rejects_assigned_issue() -> None:
 
 @pytest.mark.asyncio
 async def test_live_github_job_validation_confirms_unassigned_issue() -> None:
-    opportunity = parse_averray_jobs({"jobs": [_job()]})[0]
+    raw = _job()
+    raw["sourceType"] = "github_issue"
+    opportunity = parse_averray_jobs({"jobs": [raw]})[0]
 
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.host == "api.averray.com":
