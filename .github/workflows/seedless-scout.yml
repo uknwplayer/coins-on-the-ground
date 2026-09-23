@@ -10,6 +10,7 @@ on:
       - "src/coins_on_the_ground/opportunity/model.py"
       - "src/coins_on_the_ground/opportunity/engine.py"
       - "src/coins_on_the_ground/scouts/github_bounties.py"
+      - "src/coins_on_the_ground/scouts/averray.py"
       - "src/coins_on_the_ground/scouts/clawlancer.py"
       - "src/coins_on_the_ground/scouts/taskbounty.py"
       - ".github/workflows/seedless-scout.yml"
@@ -44,6 +45,7 @@ jobs:
           TASKBOUNTY_API_KEY: ${{ secrets.TASKBOUNTY_API_KEY }}
         run: |
           mkdir -p data
+          cog review averray --limit 100 --output data/averray-zero-upfront.jsonl
           cog review github-bounties --limit 75 --output data/github-zero-upfront.jsonl
           cog review clawlancer --limit 100 --output data/clawlancer-sponsored-gas.jsonl
           if [ -n "$TASKBOUNTY_API_KEY" ]; then
@@ -61,6 +63,7 @@ jobs:
           from pathlib import Path
 
           source_paths = (
+              Path("data/averray-zero-upfront.jsonl"),
               Path("data/github-zero-upfront.jsonl"),
               Path("data/taskbounty-zero-upfront.jsonl"),
               Path("data/clawlancer-sponsored-gas.jsonl"),
@@ -183,6 +186,7 @@ jobs:
           path: |
             data/seedless-opportunities.jsonl
             data/seedless-summary.json
+            data/averray-zero-upfront.jsonl
             data/github-zero-upfront.jsonl
             data/taskbounty-zero-upfront.jsonl
             data/clawlancer-sponsored-gas.jsonl
