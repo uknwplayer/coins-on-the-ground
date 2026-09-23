@@ -39,6 +39,48 @@ def _to_decimal(raw: str, currency: str) -> Decimal | None:
     return amount if amount > 0 else None
 
 
+def _bounty_metadata_flags(title: str, body: str) -> dict[str, str]:
+    text = f"{title}\n{body}".casefold()
+    engagement_terms = (
+        " star ",
+        "stars ",
+        "leave a review",
+        "write a review",
+        "follow ",
+        "like ",
+        "retweet",
+        "upvote",
+        "subscribe",
+    )
+    platform_terms = ("opire", "algora", "issuehunt", "taskbounty", "gitcoin")
+    wallet_terms = (
+        "wallet address",
+        "wallet:",
+        "wallet ",
+        "usdc",
+        " eth ",
+        "btc",
+        "bitcoin",
+        "lightning",
+        "sats",
+    )
+
+    engagement = any(term in f" {text} " for term in engagement_terms)
+    platform = next((term for term in platform_terms if term in text), "")
+    wallet_direct = any(term in text for term in wallet_terms)
+
+    return {
+        "upfront_capital_required": "false",
+        "upfront_gas_required": "false",
+        "external_account_required": "unknown" if platform else "false",
+        "wallet_required": "true" if wallet_direct else "unknown",
+        "bootstrap_candidate": "false" if engagement else "primary",
+        "engagement_bounty": "true" if engagement else "false",
+        "payout_platform_hint": platform,
+        "direct_wallet_hint": "true" if wallet_direct else "false",
+    }
+
+
 def extract_reward(text: str) -> tuple[Decimal, str] | None:
     """Return the first explicit fiat-denominated reward found in text.
 
@@ -130,6 +172,7 @@ class GitHubBountyScout:
                 risk_class=RiskClass.CIVIL_REVIEW,
                 evidence_urls=tuple(url for url in (html_url, repo_url) if url),
                 metadata={
+                    **_bounty_metadata_flags(title, body),
                     "github_issue_number": str(item.get("number") or ""),
                     "github_labels": ",".join(labels),
                     "github_state": str(item.get("state") or ""),
