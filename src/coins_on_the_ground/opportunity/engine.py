@@ -9,6 +9,7 @@ from coins_on_the_ground.opportunity.model import Opportunity, RiskClass
 from coins_on_the_ground.policies import evaluate_for_review
 
 _SOURCE_EVIDENCE_SCORE = {
+    "averray": 99,
     "agent-bounties": 98,
     "bidpostloop": 96,
     "clawlancer": 97,
