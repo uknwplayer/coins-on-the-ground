@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import getpass
 import json
 import math
 from dataclasses import asdict
@@ -388,6 +389,82 @@ async def _scan_taskbounty(args: argparse.Namespace) -> int:
 
 async def _scan_taskmarket(args: argparse.Namespace) -> int:
     return await _emit_scan(TaskmarketScout(limit=args.limit), args)
+
+
+async def _averray_wallet_create(args: argparse.Namespace) -> int:
+    from coins_on_the_ground.averray_wallet import (
+        create_encrypted_wallet,
+        default_wallet_path,
+    )
+
+    path = (
+        Path(args.path).expanduser()
+        if args.path
+        else default_wallet_path()
+    )
+    password = getpass.getpass("New Averray wallet password: ")
+    confirm = getpass.getpass("Confirm wallet password: ")
+    if password != confirm:
+        raise ValueError("wallet passwords do not match")
+
+    address = await asyncio.to_thread(
+        create_encrypted_wallet,
+        path,
+        password,
+    )
+    print(
+        json.dumps(
+            {
+                "engine": "averray-wallet-create",
+                "wallet": address,
+                "wallet_file": str(path),
+                "encrypted_keystore": True,
+                "private_key_printed": False,
+                "execution_performed": False,
+            },
+            ensure_ascii=False,
+        )
+    )
+    return 0
+
+
+async def _averray_preflight(args: argparse.Namespace) -> int:
+    from coins_on_the_ground.averray_wallet import (
+        default_wallet_path,
+        preflight_averray_jobs,
+    )
+
+    path = (
+        Path(args.path).expanduser()
+        if args.path
+        else default_wallet_path()
+    )
+    password = getpass.getpass("Averray wallet password: ")
+    rows = await preflight_averray_jobs(
+        path,
+        password,
+        tuple(args.job_id),
+        api_base=args.api_base,
+    )
+
+    for row in rows:
+        print(json.dumps(row, ensure_ascii=False))
+
+    print(
+        json.dumps(
+            {
+                "engine": "averray-preflight",
+                "jobs": len(rows),
+                "wallet_file": str(path),
+                "authenticated_read_only": True,
+                "claim_performed": False,
+                "submit_performed": False,
+                "execution_performed": False,
+            },
+            ensure_ascii=False,
+        )
+    )
+    return 0
 
 
 async def _settlement_summary(args: argparse.Namespace) -> int:
@@ -1572,6 +1649,36 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_common_scan_args(taskmarket)
     taskmarket.set_defaults(handler=_scan_taskmarket)
+
+    averray_wallet_create = subparsers.add_parser(
+        "averray-wallet-create",
+        help="create an encrypted local EVM keystore for Averray",
+    )
+    averray_wallet_create.add_argument(
+        "--path",
+        help="encrypted keystore path; defaults outside the repository under ~/.config",
+    )
+    averray_wallet_create.set_defaults(handler=_averray_wallet_create)
+
+    averray_preflight = subparsers.add_parser(
+        "averray-preflight",
+        help="authenticate with the local wallet and read Averray job preflight state",
+    )
+    averray_preflight.add_argument(
+        "job_id",
+        nargs="+",
+        help="one or more Averray job ids to preflight",
+    )
+    averray_preflight.add_argument(
+        "--path",
+        help="encrypted keystore path; defaults outside the repository under ~/.config",
+    )
+    averray_preflight.add_argument(
+        "--api-base",
+        default="https://api.averray.com",
+        help="Averray API base URL",
+    )
+    averray_preflight.set_defaults(handler=_averray_preflight)
 
     settlement_summary = subparsers.add_parser(
         "settlement-summary",
