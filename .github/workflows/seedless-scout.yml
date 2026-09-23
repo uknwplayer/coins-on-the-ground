@@ -40,10 +40,16 @@ jobs:
       - name: Discover zero-upfront bounty candidates
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          TASKBOUNTY_API_KEY: ${{ secrets.TASKBOUNTY_API_KEY }}
         run: |
           mkdir -p data
           cog review github-bounties --limit 75 --output data/github-zero-upfront.jsonl
-          cog review taskbounty --limit 75 --output data/taskbounty-zero-upfront.jsonl
+          if [ -n "$TASKBOUNTY_API_KEY" ]; then
+            cog review taskbounty --limit 75 --output data/taskbounty-zero-upfront.jsonl
+          else
+            : > data/taskbounty-zero-upfront.jsonl
+            echo "TaskBounty skipped: no API key configured."
+          fi
 
       - name: Build strict seedless shortlist
         run: |
