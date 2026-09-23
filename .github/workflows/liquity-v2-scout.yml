@@ -10,7 +10,7 @@ on:
       - "tests/test_liquity_v2.py"
       - ".github/workflows/liquity-v2-scout.yml"
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "*/5 * * * *"
 
 permissions:
   contents: read
