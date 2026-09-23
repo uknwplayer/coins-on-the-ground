@@ -90,8 +90,8 @@ async def test_scan_finds_liquidatable_weth_trove_conservatively() -> None:
         elif method == "eth_call":
             tx = payload["params"][0]
             data = tx["data"]
-            if data == "0x0490be83":
-                result = "0x" + _word(price)
+            if data == "0x0fdb11cf":
+                result = "0x" + _word(price) + _word(0)
             elif tx["to"].casefold() == _MULTI:
                 coll_index = int(data[10:74], 16)
                 if coll_index == 0:
@@ -129,6 +129,7 @@ async def test_scan_finds_liquidatable_weth_trove_conservatively() -> None:
     assert opportunity.metadata["collateral"] == "WETH"
     assert opportunity.metadata["trove_id"] == "123"
     assert opportunity.metadata["variable_reward_counted_in_net"] == "false"
+    assert opportunity.metadata["price_source"] == "simulated_fetchPrice_eth_call"
     assert opportunity.metadata["execution_disabled"] == "true"
 
 
