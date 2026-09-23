@@ -55,6 +55,7 @@ jobs:
         run: |
           python - <<'PY'
           import json
+          from datetime import UTC, datetime
           from pathlib import Path
 
           source_paths = (
@@ -76,11 +77,31 @@ jobs:
                       continue
                   if opportunity.get("upfront_funding_class") != "ZERO_UPFRONT":
                       continue
-                  if metadata.get("bootstrap_candidate") == "false":
+                  if metadata.get("bootstrap_candidate") != "primary":
+                      continue
+                  if int(metadata.get("github_assignee_count", "0") or 0) > 0:
                       continue
 
+                  created_at = metadata.get("github_created_at", "")
+                  if created_at:
+                      try:
+                          created = datetime.fromisoformat(
+                              created_at.replace("Z", "+00:00")
+                          ).astimezone(UTC)
+                      except ValueError:
+                          continue
+                      age_days = (datetime.now(UTC) - created).total_seconds() / 86400
+                      if age_days > 180:
+                          continue
+
                   account = metadata.get("external_account_required", "unknown")
-                  lane = "secondary_account_required" if account == "true" else "primary"
+                  platform = metadata.get("payout_platform_hint", "")
+                  if account == "true":
+                      lane = "secondary_account_required"
+                  elif account == "unknown" or platform:
+                      lane = "secondary_payout_review"
+                  else:
+                      lane = "primary"
                   candidates.append(
                       {
                           "lane": lane,
@@ -119,6 +140,10 @@ jobs:
               "primary": sum(item["lane"] == "primary" for item in candidates),
               "secondary_account_required": sum(
                   item["lane"] == "secondary_account_required"
+                  for item in candidates
+              ),
+              "secondary_payout_review": sum(
+                  item["lane"] == "secondary_payout_review"
                   for item in candidates
               ),
               "top_candidates": candidates[:10],
