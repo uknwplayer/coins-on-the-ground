@@ -85,6 +85,8 @@ async def authenticate_averray(
 
         signed = account.sign_message(encode_defunct(text=message))
         signature = signed.signature.hex()
+        if not signature.startswith("0x"):
+            signature = f"0x{signature}"
 
         verify_response = await client.post(
             f"{api_base.rstrip('/')}/auth/verify",
