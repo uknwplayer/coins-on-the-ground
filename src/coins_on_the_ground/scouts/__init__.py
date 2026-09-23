@@ -4,6 +4,8 @@ from .akash import AkashScout as AkashScout
 from .akash import parse_akash_orders as parse_akash_orders
 from .algora import AlgoraScout as AlgoraScout
 from .algora import parse_algora_org_html as parse_algora_org_html
+from .averray import AverrayScout as AverrayScout
+from .averray import parse_averray_jobs as parse_averray_jobs
 from .base import Scout as Scout
 from .bidpostloop import BidPostLoopScout as BidPostLoopScout
 from .bidpostloop import (
@@ -42,6 +44,7 @@ __all__ = [
     "AgentBountiesScout",
     "AkashScout",
     "AlgoraScout",
+    "AverrayScout",
     "BidPostLoopScout",
     "ClawlancerScout",
     "FranticBountyScout",
@@ -64,6 +67,7 @@ __all__ = [
     "parse_agent_bounties_feed",
     "parse_akash_orders",
     "parse_algora_org_html",
+    "parse_averray_jobs",
     "parse_bidpostloop_opportunities",
     "parse_clawlancer_listings",
     "parse_frantic_issue",
