@@ -10,6 +10,7 @@ on:
       - "src/coins_on_the_ground/opportunity/model.py"
       - "src/coins_on_the_ground/opportunity/engine.py"
       - "src/coins_on_the_ground/scouts/github_bounties.py"
+      - "src/coins_on_the_ground/scouts/clawlancer.py"
       - "src/coins_on_the_ground/scouts/taskbounty.py"
       - ".github/workflows/seedless-scout.yml"
   schedule:
