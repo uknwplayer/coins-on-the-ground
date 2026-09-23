@@ -75,6 +75,8 @@ class GravitaCollateralStats:
     mcr_wei: int
     scanned_vessels: int
     liquidatable_vessels: int
+    scan_status: str = "ok"
+    scan_error: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -317,15 +319,46 @@ async def _scan_collateral(
         asset=asset,
         block_tag=block_tag,
     )
-    price_wei = _decode_uint256(
-        await _eth_call(
-            client,
-            rpc_url,
-            to=_PRICE_FEED,
-            data=_address_arg_call(_FETCH_PRICE_SELECTOR, asset),
-            block_tag=block_tag,
+    if not active:
+        return (
+            GravitaCollateralStats(
+                asset=asset,
+                active=False,
+                decimals=decimals,
+                price_wei=0,
+                mcr_wei=mcr_wei,
+                scanned_vessels=0,
+                liquidatable_vessels=0,
+                scan_status="inactive",
+            ),
+            (),
         )
-    )
+
+    try:
+        price_wei = _decode_uint256(
+            await _eth_call(
+                client,
+                rpc_url,
+                to=_PRICE_FEED,
+                data=_address_arg_call(_FETCH_PRICE_SELECTOR, asset),
+                block_tag=block_tag,
+            )
+        )
+    except (httpx.HTTPError, TypeError, ValueError) as exc:
+        return (
+            GravitaCollateralStats(
+                asset=asset,
+                active=True,
+                decimals=decimals,
+                price_wei=0,
+                mcr_wei=mcr_wei,
+                scanned_vessels=0,
+                liquidatable_vessels=0,
+                scan_status="oracle_unavailable",
+                scan_error=str(exc)[:240],
+            ),
+            (),
+        )
 
     current = _decode_address(
         await _eth_call(
@@ -643,6 +676,8 @@ def _serialize_report(report: GravitaScanReport, rpc_url: str) -> dict[str, Any]
                 "mcr": _format_ratio(item.mcr_wei),
                 "scanned_vessels": item.scanned_vessels,
                 "liquidatable_vessels": item.liquidatable_vessels,
+                "scan_status": item.scan_status,
+                "scan_error": item.scan_error,
             }
             for item in report.collateral_stats
         ],
