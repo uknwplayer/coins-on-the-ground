@@ -31,6 +31,9 @@ def test_parse_open_taskbounty_task() -> None:
     assert opportunity.metadata["solver_reward_usd"] == "40.00"
     assert opportunity.metadata["solver_share_pct"] == "80"
     assert opportunity.metadata["post_first_payout_threshold_usd"] == "50"
+    assert opportunity.metadata["external_account_required"] == "true"
+    assert opportunity.upfront_funding_class == "ZERO_UPFRONT"
+    assert opportunity.zero_balance_executable is True
     assert opportunity.expected_net_value is None
 
 
