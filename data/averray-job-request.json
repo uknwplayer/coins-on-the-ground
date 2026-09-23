@@ -1,5 +1,5 @@
 {
-  "action": "submit",
-  "job_id": "pr-openledger-foundation-kora-frontend-778",
-  "pr_url": "https://github.com/OpenLedger-Foundation/Kora-Frontend/pull/834"
+  "action": "preflight",
+  "job_id": "pr-saidur-droid-mergeearn-69",
+  "pr_url": ""
 }
