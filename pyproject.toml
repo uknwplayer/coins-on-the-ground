@@ -19,6 +19,9 @@ dev = [
   "pytest-asyncio>=0.23",
   "ruff>=0.6",
 ]
+wallet = [
+  "eth-account>=0.13,<1",
+]
 
 [project.scripts]
 cog = "coins_on_the_ground.cli:main"
