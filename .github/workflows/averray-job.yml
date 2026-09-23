@@ -313,6 +313,17 @@ jobs:
               elif ACTION == "preflight":
                   issue = revalidate_issue(client, repo, issue_number)
                   preflight = get_preflight(client, auth)
+                  explanation_response = client.get(
+                      f"{API}/jobs/explain-eligibility",
+                      params={"jobId": JOB_ID},
+                      headers=auth,
+                      timeout=30.0,
+                  )
+                  explanation = (
+                      safe_json(explanation_response)
+                      if explanation_response.is_success
+                      else {}
+                  )
                   report["upstream_issue"] = issue.get("html_url")
                   report["preflight"] = {
                       "eligible": preflight.get("eligible"),
@@ -320,6 +331,8 @@ jobs:
                       "current_wallet_can_claim": preflight.get(
                           "currentWalletCanClaim"
                       ),
+                      "reason": preflight.get("reason"),
+                      "message": preflight.get("message"),
                       "claim_economics_waived": preflight.get(
                           "claimEconomicsWaived"
                       ),
@@ -330,6 +343,20 @@ jobs:
                           "gasRetentionSupported"
                       ),
                       "verifier_mode": preflight.get("verifierMode"),
+                  }
+                  report["eligibility"] = {
+                      "eligible": explanation.get("eligible"),
+                      "reason": explanation.get("reason"),
+                      "message": explanation.get("message"),
+                      "current_tier": explanation.get("currentTier"),
+                      "required_tier": explanation.get("requiredTier"),
+                      "claim_funding_sufficient": explanation.get(
+                          "claimFundingSufficient"
+                      ),
+                      "claim_funding_shortfall": explanation.get(
+                          "claimFundingShortfall"
+                      ),
+                      "progression": explanation.get("progression"),
                   }
 
               elif ACTION == "claim":
