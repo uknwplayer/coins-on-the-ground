@@ -71,9 +71,9 @@ from coins_on_the_ground.planning import (
 from coins_on_the_ground.runtime import run_scout_daemon
 from coins_on_the_ground.scouts import (
     AgentBountiesScout,
-    AverrayScout,
     AkashScout,
     AlgoraScout,
+    AverrayScout,
     BidPostLoopScout,
     ClawlancerScout,
     FranticBountyScout,
