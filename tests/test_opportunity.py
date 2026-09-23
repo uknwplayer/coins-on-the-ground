@@ -55,3 +55,51 @@ def test_penal_review_is_blocked() -> None:
 
     assert allowed is False
     assert "PENAL_REVIEW" in reason
+
+
+def test_upfront_funding_classification() -> None:
+    zero = Opportunity(
+        source="example",
+        title="Zero upfront",
+        opportunity_class=OpportunityClass.EARN,
+        reward=Decimal(10),
+        currency="USD",
+        authorization_basis="Published bounty.",
+        required_action="Do work.",
+        metadata={
+            "upfront_capital_required": "false",
+            "upfront_gas_required": "false",
+        },
+    )
+    gas = Opportunity(
+        source="example",
+        title="Gas only",
+        opportunity_class=OpportunityClass.EARN,
+        reward=Decimal(10),
+        currency="USD",
+        authorization_basis="Permissionless rule.",
+        required_action="Send transaction.",
+        metadata={
+            "upfront_capital_required": "false",
+            "upfront_gas_required": "true",
+        },
+    )
+    capital = Opportunity(
+        source="example",
+        title="Capital",
+        opportunity_class=OpportunityClass.EARN,
+        reward=Decimal(10),
+        currency="USD",
+        authorization_basis="Published rule.",
+        required_action="Fund position.",
+        metadata={
+            "upfront_capital_required": "true",
+            "upfront_gas_required": "true",
+        },
+    )
+
+    assert zero.upfront_funding_class == "ZERO_UPFRONT"
+    assert zero.zero_balance_executable is True
+    assert gas.upfront_funding_class == "GAS_ONLY"
+    assert gas.zero_balance_executable is False
+    assert capital.upfront_funding_class == "CAPITAL_REQUIRED"
