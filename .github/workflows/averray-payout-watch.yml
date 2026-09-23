@@ -1,0 +1,253 @@
+name: Averray Payout Watch
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/averray-payout-watch.yml"
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: averray-payout-watch
+  cancel-in-progress: true
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      AVERRAY_WALLET_PRIVATE_KEY: ${{ secrets.AVERRAY_WALLET_PRIVATE_KEY }}
+      GITHUB_TOKEN: ${{ github.token }}
+      GH_REPOSITORY: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Require dedicated wallet secret
+        run: |
+          if [ -z "$AVERRAY_WALLET_PRIVATE_KEY" ]; then
+            echo "::error::Missing Actions secret AVERRAY_WALLET_PRIVATE_KEY"
+            exit 1
+          fi
+
+      - name: Install wallet support
+        run: python -m pip install -e ".[wallet]"
+
+      - name: Check submitted sessions and notify on approval or payout
+        run: |
+          mkdir -p data
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          import httpx
+          from eth_account import Account
+          from eth_account.messages import encode_defunct
+
+          API = "https://api.averray.com"
+          account_key = os.environ["AVERRAY_WALLET_PRIVATE_KEY"].strip()
+          if not account_key.startswith("0x"):
+              account_key = "0x" + account_key
+          account = Account.from_key(account_key)
+
+          def safe_json(response):
+              try:
+                  value = response.json()
+              except ValueError:
+                  return {}
+              return value
+
+          def authenticate(client):
+              nonce = client.post(
+                  f"{API}/auth/nonce",
+                  json={"wallet": account.address},
+                  timeout=30.0,
+              )
+              nonce.raise_for_status()
+              message = safe_json(nonce).get("message")
+              if not isinstance(message, str) or not message:
+                  raise RuntimeError("Averray nonce response missing SIWE message")
+              signature = account.sign_message(
+                  encode_defunct(text=message)
+              ).signature.hex()
+              if not signature.startswith("0x"):
+                  signature = "0x" + signature
+              verify = client.post(
+                  f"{API}/auth/verify",
+                  json={"message": message, "signature": signature},
+                  timeout=30.0,
+              )
+              verify.raise_for_status()
+              token = safe_json(verify).get("token")
+              if not isinstance(token, str) or not token:
+                  raise RuntimeError("Averray verify response missing bearer token")
+              return {
+                  "Authorization": f"Bearer {token}",
+                  "User-Agent": "coins-on-the-ground/0.1",
+              }
+
+          def session_rows(payload):
+              if isinstance(payload, list):
+                  return payload
+              if isinstance(payload, dict):
+                  for key in ("sessions", "items", "results"):
+                      value = payload.get(key)
+                      if isinstance(value, list):
+                          return value
+              return []
+
+          events = []
+          github_headers = {
+              "Accept": "application/vnd.github+json",
+              "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+              "X-GitHub-Api-Version": "2022-11-28",
+              "User-Agent": "coins-on-the-ground/0.1",
+          }
+
+          with httpx.Client(
+              timeout=30.0,
+              follow_redirects=False,
+              headers={"User-Agent": "coins-on-the-ground/0.1"},
+          ) as client:
+              auth = authenticate(client)
+              sessions_response = client.get(
+                  f"{API}/sessions",
+                  headers=auth,
+                  timeout=30.0,
+              )
+              sessions_response.raise_for_status()
+              rows = session_rows(safe_json(sessions_response))
+
+              for row in rows:
+                  if not isinstance(row, dict):
+                      continue
+                  session_id = row.get("sessionId") or row.get("id")
+                  job_id = row.get("jobId")
+                  status = row.get("status") or row.get("state")
+                  if not isinstance(session_id, str) or not session_id:
+                      continue
+                  if status not in {
+                      "submitted",
+                      "verified",
+                      "approved",
+                      "resolved",
+                      "settled",
+                  }:
+                      continue
+
+                  verifier = client.get(
+                      f"{API}/verifier/result",
+                      params={"sessionId": session_id},
+                      headers=auth,
+                      timeout=30.0,
+                  )
+                  verifier_payload = (
+                      safe_json(verifier) if verifier.is_success else {}
+                  )
+                  outcome = verifier_payload.get("outcome")
+                  payout_tx = verifier_payload.get("payoutTx")
+                  approved = outcome == "approved" or status in {
+                      "approved",
+                      "resolved",
+                      "settled",
+                  }
+                  paid = bool(payout_tx)
+                  if not approved and not paid:
+                      continue
+
+                  event = {
+                      "job_id": job_id,
+                      "session_id": session_id,
+                      "status": status,
+                      "outcome": outcome,
+                      "score": verifier_payload.get("score"),
+                      "payout_tx": payout_tx,
+                  }
+                  events.append(event)
+
+                  marker = f"<!-- averray-session:{session_id} -->"
+                  title = f"[Averray Watch] {job_id or session_id}"
+                  repo = os.environ["GH_REPOSITORY"]
+                  issues = client.get(
+                      f"https://api.github.com/repos/{repo}/issues",
+                      headers=github_headers,
+                      params={"state": "all", "per_page": 100},
+                      timeout=30.0,
+                  )
+                  issues.raise_for_status()
+                  existing = None
+                  for issue in safe_json(issues):
+                      if not isinstance(issue, dict):
+                          continue
+                      if marker in (issue.get("body") or ""):
+                          existing = issue
+                          break
+
+                  body = "\n".join(
+                      [
+                          marker,
+                          "## Averray payout watch",
+                          "",
+                          f"- Job: `{job_id}`",
+                          f"- Session: `{session_id}`",
+                          f"- Status: **{status}**",
+                          f"- Verifier outcome: **{outcome or 'pending'}**",
+                          f"- Score: {verifier_payload.get('score')}",
+                          f"- Payout tx: `{payout_tx or 'not available yet'}`",
+                          "",
+                          "This issue is maintained automatically by the "
+                          "Coins on the Ground payout watcher.",
+                      ]
+                  )
+                  payload = {"title": title, "body": body}
+                  if existing:
+                      number = existing.get("number")
+                      response = client.patch(
+                          f"https://api.github.com/repos/{repo}/issues/{number}",
+                          headers={**github_headers, "Content-Type": "application/json"},
+                          json=payload,
+                          timeout=30.0,
+                      )
+                  else:
+                      response = client.post(
+                          f"https://api.github.com/repos/{repo}/issues",
+                          headers={**github_headers, "Content-Type": "application/json"},
+                          json=payload,
+                          timeout=30.0,
+                      )
+                  response.raise_for_status()
+
+          report = {
+              "format": "cog-averray-payout-watch-v1",
+              "wallet": account.address,
+              "events": events,
+              "private_key_printed": False,
+              "auth_token_printed": False,
+              "transaction_broadcast": False,
+          }
+          Path("data/averray-payout-watch.json").write_text(
+              json.dumps(report, indent=2, ensure_ascii=False) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(report, indent=2, ensure_ascii=False))
+          PY
+
+      - name: Upload sanitized watch report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: averray-payout-watch
+          path: data/averray-payout-watch.json
+          if-no-files-found: ignore
+          retention-days: 7
