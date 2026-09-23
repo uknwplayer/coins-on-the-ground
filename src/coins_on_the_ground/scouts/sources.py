@@ -186,3 +186,15 @@ GRAVITA = ScoutSource(
     eligibility_review_required=False,
     authorization_review_required=False,
 )
+
+
+AVERRAY = ScoutSource(
+    source_id="averray",
+    display_name="Averray",
+    base_url="https://averray.com",
+    network_surface=NetworkSurface.CLEARNET,
+    country=None,
+    jurisdiction=None,
+    eligibility_review_required=True,
+    authorization_review_required=True,
+)
