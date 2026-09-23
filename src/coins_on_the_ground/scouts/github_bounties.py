@@ -76,6 +76,20 @@ def _bounty_metadata_flags(title: str, body: str) -> dict[str, str]:
     speculative = bool(
         re.search(r"(?i)\b(?:bounty proposal|proposal for bounty|radar|bounty discovery)\b", text)
     )
+    explicitly_unfunded = bool(
+        re.search(
+            r"(?i)\b(?:not a bounty|no bounty|unfunded|not funded|"
+            r"funding not confirmed|no paid reward)\b",
+            text,
+        )
+    )
+    special_hardware = bool(
+        re.search(
+            r"(?i)\b(?:wormhole|tenstorrent|fpga|hardware regression|"
+            r"hardware configuration|physical device|required hardware)\b",
+            text,
+        )
+    )
     platform = next((term for term in platform_terms if term in text), "")
     wallet_direct = any(term in text for term in wallet_terms)
 
@@ -85,10 +99,14 @@ def _bounty_metadata_flags(title: str, body: str) -> dict[str, str]:
         "external_account_required": "unknown" if platform else "false",
         "wallet_required": "true" if wallet_direct else "unknown",
         "bootstrap_candidate": (
-            "false" if engagement or speculative else "primary"
+            "false"
+            if engagement or speculative or explicitly_unfunded
+            else ("capability_review" if special_hardware else "primary")
         ),
         "engagement_bounty": "true" if engagement else "false",
         "speculative_bounty": "true" if speculative else "false",
+        "explicitly_unfunded": "true" if explicitly_unfunded else "false",
+        "special_hardware_required": "true" if special_hardware else "false",
         "payout_platform_hint": platform,
         "direct_wallet_hint": "true" if wallet_direct else "false",
     }
@@ -125,7 +143,7 @@ class GitHubBountyScout:
 
     def __init__(
         self,
-        query: str = "bounty in:title,body is:issue is:open",
+        query: str = "bounty in:title,body is:issue is:open no:assignee",
         limit: int = 25,
         token: str | None = None,
     ) -> None:
@@ -198,6 +216,8 @@ class GitHubBountyScout:
                     "github_issue_number": str(item.get("number") or ""),
                     "github_labels": ",".join(labels),
                     "github_state": str(item.get("state") or ""),
+                    "github_created_at": str(item.get("created_at") or ""),
                     "github_updated_at": str(item.get("updated_at") or ""),
+                    "github_assignee_count": str(len(item.get("assignees") or [])),
                 },
             )
