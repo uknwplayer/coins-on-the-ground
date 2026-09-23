@@ -138,3 +138,15 @@ CLAWLANCER = ScoutSource(
     eligibility_review_required=True,
     authorization_review_required=True,
 )
+
+
+LIQUITY_V2 = ScoutSource(
+    source_id="liquity-v2",
+    display_name="Liquity V2",
+    base_url="https://www.liquity.org",
+    network_surface=NetworkSurface.CLEARNET,
+    country=None,
+    jurisdiction=None,
+    eligibility_review_required=False,
+    authorization_review_required=False,
+)
