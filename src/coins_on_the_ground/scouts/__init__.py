@@ -21,6 +21,8 @@ from .issuehunt import IssueHuntScout as IssueHuntScout
 from .issuehunt import parse_issuehunt_html as parse_issuehunt_html
 from .keep3r import Keep3rScout as Keep3rScout
 from .keep3r import discover_keep3r_jobs as discover_keep3r_jobs
+from .liquity_v2 import LiquityV2Scout as LiquityV2Scout
+from .liquity_v2 import scan_liquity_v2 as scan_liquity_v2
 from .registry import RegisteredScoutSource as RegisteredScoutSource
 from .registry import parse_scout_source_registry as parse_scout_source_registry
 from .sherlock import SherlockScout as SherlockScout
@@ -41,6 +43,7 @@ __all__ = [
     "ImmunefiScout",
     "IssueHuntScout",
     "Keep3rScout",
+    "LiquityV2Scout",
     "NetworkSurface",
     "RegisteredScoutSource",
     "Scout",
@@ -60,4 +63,5 @@ __all__ = [
     "parse_scout_source_registry",
     "parse_sherlock_bounties",
     "parse_taskmarket_response",
+    "scan_liquity_v2",
 ]
