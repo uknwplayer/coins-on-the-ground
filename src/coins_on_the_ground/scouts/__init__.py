@@ -13,6 +13,7 @@ from .bidpostloop import (
 )
 from .clawlancer import ClawlancerScout as ClawlancerScout
 from .clawlancer import parse_clawlancer_listings as parse_clawlancer_listings
+from .convex_earmark import ConvexEarmarkScout as ConvexEarmarkScout
 from .frantic import FranticBountyScout as FranticBountyScout
 from .frantic import parse_frantic_issue as parse_frantic_issue
 from .github_bounties import GitHubBountyScout as GitHubBountyScout
@@ -47,6 +48,7 @@ __all__ = [
     "AverrayScout",
     "BidPostLoopScout",
     "ClawlancerScout",
+    "ConvexEarmarkScout",
     "FranticBountyScout",
     "GitHubBountyScout",
     "GravitaScout",
