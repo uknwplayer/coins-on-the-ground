@@ -77,6 +77,7 @@ from coins_on_the_ground.scouts import (
     AverrayScout,
     BidPostLoopScout,
     ClawlancerScout,
+    ConvexEarmarkScout,
     FranticBountyScout,
     GitHubBountyScout,
     ImmunefiScout,
@@ -239,6 +240,8 @@ def _scouts_for_source(source: str, limit: int) -> list[Scout]:
         return [BidPostLoopScout(limit=limit)]
     if source == "clawlancer":
         return [ClawlancerScout(limit=limit)]
+    if source == "convex-earmark":
+        return [ConvexEarmarkScout(limit=limit)]
     if source == "frantic":
         return [FranticBountyScout(limit=limit)]
     if source == "github-bounties":
@@ -263,6 +266,7 @@ def _scouts_for_source(source: str, limit: int) -> list[Scout]:
         AkashScout(limit=limit),
         BidPostLoopScout(limit=limit),
         ClawlancerScout(limit=limit),
+        ConvexEarmarkScout(limit=limit),
         FranticBountyScout(limit=limit),
         GitHubBountyScout(limit=limit),
         IssueHuntScout(limit=limit),
