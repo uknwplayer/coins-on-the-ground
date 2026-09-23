@@ -126,19 +126,6 @@ jobs:
                   "merged": False,
               }
 
-              validation = client.post(
-                  f"{API}/jobs/validate-submission",
-                  json={"jobId": JOB_ID, "submission": submission},
-                  timeout=30.0,
-              )
-              validation.raise_for_status()
-              validation_data = validation.json()
-              if validation_data.get("valid") is not True:
-                  raise RuntimeError(
-                      "Averray rejected the draft schema: "
-                      + json.dumps(validation_data, ensure_ascii=False)[:1200]
-                  )
-
               nonce = client.post(
                   f"{API}/auth/nonce",
                   json={"wallet": account.address},
@@ -169,6 +156,20 @@ jobs:
                   "Authorization": f"Bearer {token}",
                   "User-Agent": "coins-on-the-ground/0.1",
               }
+
+              validation = client.post(
+                  f"{API}/jobs/validate-submission",
+                  headers={**auth, "Content-Type": "application/json"},
+                  json={"jobId": JOB_ID, "submission": submission},
+                  timeout=30.0,
+              )
+              validation.raise_for_status()
+              validation_data = validation.json()
+              if validation_data.get("valid") is not True:
+                  raise RuntimeError(
+                      "Averray rejected the draft schema: "
+                      + json.dumps(validation_data, ensure_ascii=False)[:1200]
+                  )
 
               session = client.get(
                   f"{API}/session",
