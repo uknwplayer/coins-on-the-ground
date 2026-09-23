@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import os
+import re
 from collections.abc import AsyncIterator
+from dataclasses import replace
 from decimal import Decimal, InvalidOperation
 from urllib.parse import quote
 
@@ -11,8 +14,14 @@ from coins_on_the_ground.scouts.sources import AVERRAY
 
 _API_BASE = "https://api.averray.com"
 _JOBS_URL = f"{_API_BASE}/jobs"
+_JOB_DEFINITION_URL = f"{_API_BASE}/jobs/definition"
 _MANIFEST_URL = "https://averray.com/.well-known/agent-tools.json"
 _AGENTS_URL = "https://averray.com/agents/"
+
+_ENGAGEMENT_RE = re.compile(
+    r"(?i)\\b(?:star (?:our|the) repo|leave (?:a )?review|follow (?:our|the)|"
+    r"retweet|upvote|subscribe)\\b"
+)
 
 _REAL_WAIVER_SOURCES = frozenset(
     {
@@ -197,6 +206,101 @@ def parse_averray_jobs(
     return tuple(opportunities)
 
 
+async def _validate_public_github_job(
+    client: httpx.AsyncClient,
+    opportunity: Opportunity,
+    *,
+    github_token: str | None,
+) -> Opportunity | None:
+    """Fail closed when a GitHub-backed Averray job is stale or already assigned."""
+
+    if opportunity.metadata.get("source_type") != "github_issue":
+        return opportunity
+
+    job_id = opportunity.metadata.get("job_id", "")
+    if not job_id:
+        return None
+
+    try:
+        definition_response = await client.get(
+            _JOB_DEFINITION_URL,
+            params={"jobId": job_id},
+        )
+        definition_response.raise_for_status()
+        definition = definition_response.json()
+    except (httpx.HTTPError, ValueError, TypeError):
+        return None
+
+    if not isinstance(definition, dict):
+        return None
+    source = definition.get("source")
+    if not isinstance(source, dict):
+        return None
+
+    repo = _text(source.get("repo"))
+    issue_number = source.get("issueNumber")
+    if (
+        not repo
+        or isinstance(issue_number, bool)
+        or not isinstance(issue_number, int)
+        or issue_number < 1
+    ):
+        return None
+
+    headers: dict[str, str] = {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "coins-on-the-ground/0.1",
+    }
+    if github_token:
+        headers["Authorization"] = f"Bearer {github_token}"
+
+    try:
+        issue_response = await client.get(
+            f"https://api.github.com/repos/{repo}/issues/{issue_number}",
+            headers=headers,
+        )
+        issue_response.raise_for_status()
+        issue = issue_response.json()
+    except (httpx.HTTPError, ValueError, TypeError):
+        return None
+
+    if not isinstance(issue, dict):
+        return None
+    if _text(issue.get("state")).casefold() != "open":
+        return None
+
+    assignees = issue.get("assignees")
+    if isinstance(assignees, list) and assignees:
+        return None
+
+    issue_body = _text(issue.get("body"))
+    if _ENGAGEMENT_RE.search(issue_body):
+        return None
+
+    issue_url = _text(issue.get("html_url"))
+    metadata = dict(opportunity.metadata)
+    metadata.update(
+        {
+            "upstream_repo": repo,
+            "upstream_issue_number": str(issue_number),
+            "upstream_issue_url": issue_url,
+            "upstream_issue_state": "open",
+            "upstream_assignee_count": "0",
+            "upstream_updated_at": _text(issue.get("updated_at")),
+            "upstream_availability_confirmed": "true",
+        }
+    )
+    evidence = opportunity.evidence_urls
+    if issue_url and issue_url not in evidence:
+        evidence = (issue_url, *evidence)
+
+    return replace(
+        opportunity,
+        evidence_urls=evidence,
+        metadata=metadata,
+    )
+
+
 class AverrayScout:
     """Read-only Scout for publicly listed zero-upfront Averray starter work."""
 
@@ -225,5 +329,12 @@ class AverrayScout:
             response.raise_for_status()
             payload = response.json()
 
+        github_token = os.getenv("GITHUB_TOKEN")
         for opportunity in parse_averray_jobs(payload, limit=self.limit):
-            yield opportunity
+            validated = await _validate_public_github_job(
+                client,
+                opportunity,
+                github_token=github_token,
+            )
+            if validated is not None:
+                yield validated
