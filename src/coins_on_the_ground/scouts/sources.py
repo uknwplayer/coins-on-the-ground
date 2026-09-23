@@ -174,3 +174,15 @@ LIQUITY_V1 = ScoutSource(
     eligibility_review_required=False,
     authorization_review_required=False,
 )
+
+
+GRAVITA = ScoutSource(
+    source_id="gravita",
+    display_name="Gravita Protocol",
+    base_url="https://gravitaprotocol.com",
+    network_surface=NetworkSurface.CLEARNET,
+    country=None,
+    jurisdiction=None,
+    eligibility_review_required=False,
+    authorization_review_required=False,
+)
