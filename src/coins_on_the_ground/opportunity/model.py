@@ -43,6 +43,24 @@ class Opportunity:
     metadata: Mapping[str, str] = field(default_factory=dict)
 
     @property
+    def upfront_funding_class(self) -> str:
+        """Classify money required before the opportunity can begin."""
+
+        capital = self.metadata.get("upfront_capital_required", "").casefold()
+        gas = self.metadata.get("upfront_gas_required", "").casefold()
+        if capital == "true":
+            return "CAPITAL_REQUIRED"
+        if gas == "true":
+            return "GAS_ONLY"
+        if capital == "false" and gas == "false":
+            return "ZERO_UPFRONT"
+        return "UNKNOWN"
+
+    @property
+    def zero_balance_executable(self) -> bool:
+        return self.upfront_funding_class == "ZERO_UPFRONT"
+
+    @property
     def expected_net_value(self) -> Decimal | None:
         reward_semantics = self.metadata.get("reward_semantics", "exact").casefold()
         if reward_semantics not in {"exact", "fixed"}:
