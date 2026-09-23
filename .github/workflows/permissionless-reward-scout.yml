@@ -1,0 +1,104 @@
+name: Permissionless Reward Scout
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/coins_on_the_ground/scouts/convex_earmark.py"
+      - "src/coins_on_the_ground/scouts/__init__.py"
+      - "src/coins_on_the_ground/cli.py"
+      - "pyproject.toml"
+      - ".github/workflows/permissionless-reward-scout.yml"
+  schedule:
+    - cron: "3,33 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: permissionless-reward-scout
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install
+        run: python -m pip install .
+
+      - name: Scan explicit caller rewards
+        env:
+          CONVEX_ETH_RPC_URL: ${{ secrets.CONVEX_ETH_RPC_URL }}
+        run: |
+          mkdir -p data
+          cog review convex-earmark --limit 50 --output data/convex-earmark.jsonl
+
+      - name: Build permissionless reward summary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          rows = []
+          path = Path("data/convex-earmark.jsonl")
+          if path.exists():
+              for line in path.read_text(encoding="utf-8").splitlines():
+                  if not line.strip():
+                      continue
+                  row = json.loads(line)
+                  opportunity = row.get("opportunity", {})
+                  metadata = opportunity.get("metadata", {})
+                  rows.append({
+                      "source": opportunity.get("source"),
+                      "title": opportunity.get("title"),
+                      "reward": opportunity.get("reward"),
+                      "currency": opportunity.get("currency"),
+                      "risk_class": opportunity.get("risk_class"),
+                      "review_allowed": row.get("review_allowed"),
+                      "upfront_funding_class": opportunity.get("upfront_funding_class"),
+                      "pool_id": metadata.get("pool_id"),
+                      "gauge": metadata.get("gauge"),
+                      "caller_incentive_bps": metadata.get("caller_incentive_bps"),
+                      "gauge_claimable_crv": metadata.get("gauge_claimable_crv"),
+                      "caller_reward_crv": metadata.get("caller_reward_crv"),
+                      "execution_surface": metadata.get("execution_surface"),
+                      "evidence_urls": opportunity.get("evidence_urls", []),
+                  })
+
+          rows.sort(
+              key=lambda x: float(x.get("reward") or 0),
+              reverse=True,
+          )
+          summary = {
+              "format": "cog-permissionless-reward-scout-v1",
+              "execution_performed": False,
+              "authorization_model": "explicit_protocol_caller_reward",
+              "candidates": len(rows),
+              "top_candidates": rows[:20],
+          }
+          Path("data/permissionless-reward-summary.json").write_text(
+              json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(summary, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Upload permissionless reward report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: permissionless-reward-scout
+          path: |
+            data/convex-earmark.jsonl
+            data/permissionless-reward-summary.json
+          if-no-files-found: error
+          retention-days: 7
