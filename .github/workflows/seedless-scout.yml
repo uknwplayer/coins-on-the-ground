@@ -1,0 +1,138 @@
+name: Seedless Scout
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "src/coins_on_the_ground/cli.py"
+      - "src/coins_on_the_ground/opportunity/model.py"
+      - "src/coins_on_the_ground/opportunity/engine.py"
+      - "src/coins_on_the_ground/scouts/github_bounties.py"
+      - "src/coins_on_the_ground/scouts/taskbounty.py"
+      - ".github/workflows/seedless-scout.yml"
+  schedule:
+    - cron: "6-56/10 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: coins-seedless-scout
+  cancel-in-progress: true
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install
+        run: python -m pip install .
+
+      - name: Discover zero-upfront bounty candidates
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p data
+          cog review github-bounties --limit 75 --output data/github-zero-upfront.jsonl
+          cog review taskbounty --limit 75 --output data/taskbounty-zero-upfront.jsonl
+
+      - name: Build strict seedless shortlist
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          source_paths = (
+              Path("data/github-zero-upfront.jsonl"),
+              Path("data/taskbounty-zero-upfront.jsonl"),
+          )
+          candidates = []
+
+          for path in source_paths:
+              if not path.exists():
+                  continue
+              for line in path.read_text(encoding="utf-8").splitlines():
+                  if not line.strip():
+                      continue
+                  row = json.loads(line)
+                  opportunity = row.get("opportunity", {})
+                  metadata = opportunity.get("metadata", {})
+                  if not row.get("review_allowed"):
+                      continue
+                  if opportunity.get("upfront_funding_class") != "ZERO_UPFRONT":
+                      continue
+                  if metadata.get("bootstrap_candidate") == "false":
+                      continue
+
+                  account = metadata.get("external_account_required", "unknown")
+                  lane = "secondary_account_required" if account == "true" else "primary"
+                  candidates.append(
+                      {
+                          "lane": lane,
+                          "review_score": row.get("review_score", 0),
+                          "source": opportunity.get("source"),
+                          "title": opportunity.get("title"),
+                          "reward": opportunity.get("reward"),
+                          "currency": opportunity.get("currency"),
+                          "external_account_required": account,
+                          "wallet_required": metadata.get("wallet_required", "unknown"),
+                          "payout_platform_hint": metadata.get("payout_platform_hint", ""),
+                          "direct_wallet_hint": metadata.get("direct_wallet_hint", "false"),
+                          "evidence_urls": opportunity.get("evidence_urls", []),
+                          "required_action": opportunity.get("required_action"),
+                          "metadata": metadata,
+                      }
+                  )
+
+          candidates.sort(
+              key=lambda item: (
+                  item["lane"] == "primary",
+                  int(item["review_score"]),
+              ),
+              reverse=True,
+          )
+
+          out = Path("data/seedless-opportunities.jsonl")
+          with out.open("w", encoding="utf-8") as handle:
+              for item in candidates:
+                  handle.write(json.dumps(item, ensure_ascii=False) + "\n")
+
+          summary = {
+              "format": "cog-seedless-scout-v1",
+              "execution_performed": False,
+              "candidates": len(candidates),
+              "primary": sum(item["lane"] == "primary" for item in candidates),
+              "secondary_account_required": sum(
+                  item["lane"] == "secondary_account_required"
+                  for item in candidates
+              ),
+              "top_candidates": candidates[:10],
+          }
+          Path("data/seedless-summary.json").write_text(
+              json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(summary, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Upload seedless Scout report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seedless-scout
+          path: |
+            data/seedless-opportunities.jsonl
+            data/seedless-summary.json
+            data/github-zero-upfront.jsonl
+            data/taskbounty-zero-upfront.jsonl
+          if-no-files-found: error
+          retention-days: 7
