@@ -1502,7 +1502,7 @@ def _add_common_scan_args(parser: argparse.ArgumentParser) -> None:
 def _add_source_argument(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "source",
-        choices=("all", "averray", "agent-bounties", "akash", "bidpostloop", "clawlancer", "frantic", "github-bounties", "issuehunt", "algora", "immunefi", "keep3r", "sherlock", "taskbounty", "taskmarket"),
+        choices=("all", "averray", "agent-bounties", "akash", "bidpostloop", "clawlancer", "convex-earmark", "frantic", "github-bounties", "issuehunt", "algora", "immunefi", "keep3r", "sherlock", "taskbounty", "taskmarket"),
         default="all",
         nargs="?",
     )
