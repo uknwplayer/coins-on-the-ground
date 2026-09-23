@@ -1,7 +1,14 @@
+import json
 from decimal import Decimal
 
+import httpx
+import pytest
+
 from coins_on_the_ground.opportunity import RiskClass
-from coins_on_the_ground.scouts.averray import parse_averray_jobs
+from coins_on_the_ground.scouts.averray import (
+    _validate_public_github_job,
+    parse_averray_jobs,
+)
 
 
 def _job() -> dict[str, object]:
@@ -81,3 +88,71 @@ def test_unclaimable_or_non_starter_job_is_ignored() -> None:
 def test_jobs_array_response_is_supported() -> None:
     opportunities = parse_averray_jobs([_job()])
     assert len(opportunities) == 1
+
+
+@pytest.mark.asyncio
+async def test_live_github_job_validation_rejects_assigned_issue() -> None:
+    opportunity = parse_averray_jobs({"jobs": [_job()]})[0]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "api.averray.com":
+            payload = {
+                "source": {
+                    "type": "github_issue",
+                    "repo": "example/project",
+                    "issueNumber": 42,
+                }
+            }
+        else:
+            payload = {
+                "state": "open",
+                "assignees": [{"login": "someone"}],
+                "body": "Implement the documented change.",
+                "html_url": "https://github.com/example/project/issues/42",
+                "updated_at": "2026-09-23T12:00:00Z",
+            }
+        return httpx.Response(200, json=payload, request=request)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        validated = await _validate_public_github_job(
+            client,
+            opportunity,
+            github_token=None,
+        )
+
+    assert validated is None
+
+
+@pytest.mark.asyncio
+async def test_live_github_job_validation_confirms_unassigned_issue() -> None:
+    opportunity = parse_averray_jobs({"jobs": [_job()]})[0]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "api.averray.com":
+            payload = {
+                "source": {
+                    "type": "github_issue",
+                    "repo": "example/project",
+                    "issueNumber": 42,
+                }
+            }
+        else:
+            payload = {
+                "state": "open",
+                "assignees": [],
+                "body": "Implement the documented change.",
+                "html_url": "https://github.com/example/project/issues/42",
+                "updated_at": "2026-09-23T12:00:00Z",
+            }
+        return httpx.Response(200, json=payload, request=request)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        validated = await _validate_public_github_job(
+            client,
+            opportunity,
+            github_token="token",
+        )
+
+    assert validated is not None
+    assert validated.metadata["upstream_availability_confirmed"] == "true"
+    assert validated.metadata["upstream_repo"] == "example/project"
