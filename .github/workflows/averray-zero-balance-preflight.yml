@@ -63,13 +63,28 @@ jobs:
 
               signed = account.sign_message(encode_defunct(text=message))
               signature = signed.signature.hex()
+              if not signature.startswith("0x"):
+                  signature = f"0x{signature}"
 
               verified = client.post(
                   f"{API}/auth/verify",
                   json={"message": message, "signature": signature},
               )
-              verified.raise_for_status()
-              verified_payload = verified.json()
+              try:
+                  verified_payload = verified.json()
+              except ValueError:
+                  verified_payload = {}
+              if not verified.is_success:
+                  safe_error = {
+                      "http_status": verified.status_code,
+                      "code": verified_payload.get("code"),
+                      "message": verified_payload.get("message"),
+                      "error": verified_payload.get("error"),
+                  }
+                  raise RuntimeError(
+                      "Averray SIWE verification failed: "
+                      + json.dumps(safe_error, ensure_ascii=False)
+                  )
               token = verified_payload.get("token")
               if not isinstance(token, str) or not token:
                   raise RuntimeError("Averray did not return an auth token")
