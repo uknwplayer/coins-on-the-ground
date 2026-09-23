@@ -78,6 +78,7 @@ from coins_on_the_ground.scouts import (
     BidPostLoopScout,
     ClawlancerScout,
     ConvexEarmarkScout,
+    CryptoPuzzleScout,
     FranticBountyScout,
     GitHubBountyScout,
     ImmunefiScout,
@@ -242,6 +243,8 @@ def _scouts_for_source(source: str, limit: int) -> list[Scout]:
         return [ClawlancerScout(limit=limit)]
     if source == "convex-earmark":
         return [ConvexEarmarkScout(limit=limit)]
+    if source == "crypto-puzzles":
+        return [CryptoPuzzleScout(limit=limit)]
     if source == "frantic":
         return [FranticBountyScout(limit=limit)]
     if source == "github-bounties":
@@ -267,6 +270,7 @@ def _scouts_for_source(source: str, limit: int) -> list[Scout]:
         BidPostLoopScout(limit=limit),
         ClawlancerScout(limit=limit),
         ConvexEarmarkScout(limit=limit),
+        CryptoPuzzleScout(limit=limit),
         FranticBountyScout(limit=limit),
         GitHubBountyScout(limit=limit),
         IssueHuntScout(limit=limit),
@@ -1502,7 +1506,7 @@ def _add_common_scan_args(parser: argparse.ArgumentParser) -> None:
 def _add_source_argument(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "source",
-        choices=("all", "averray", "agent-bounties", "akash", "bidpostloop", "clawlancer", "convex-earmark", "frantic", "github-bounties", "issuehunt", "algora", "immunefi", "keep3r", "sherlock", "taskbounty", "taskmarket"),
+        choices=("all", "averray", "agent-bounties", "akash", "bidpostloop", "clawlancer", "convex-earmark", "crypto-puzzles", "frantic", "github-bounties", "issuehunt", "algora", "immunefi", "keep3r", "sherlock", "taskbounty", "taskmarket"),
         default="all",
         nargs="?",
     )
