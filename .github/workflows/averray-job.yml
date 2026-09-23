@@ -1,6 +1,10 @@
 name: Averray Job Pipeline
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "data/averray-job-request.json"
   workflow_dispatch:
     inputs:
       action:
@@ -36,9 +40,6 @@ jobs:
     env:
       AVERRAY_WALLET_PRIVATE_KEY: ${{ secrets.AVERRAY_WALLET_PRIVATE_KEY }}
       GITHUB_TOKEN: ${{ github.token }}
-      PIPELINE_ACTION: ${{ inputs.action }}
-      TARGET_JOB_ID: ${{ inputs.job_id }}
-      TARGET_PR_URL: ${{ inputs.pr_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -53,6 +54,41 @@ jobs:
             echo "::error::Missing Actions secret AVERRAY_WALLET_PRIVATE_KEY"
             exit 1
           fi
+
+      - name: Resolve pipeline request
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_ACTION: ${{ inputs.action }}
+          INPUT_JOB_ID: ${{ inputs.job_id }}
+          INPUT_PR_URL: ${{ inputs.pr_url }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          if os.environ["EVENT_NAME"] == "workflow_dispatch":
+              action = os.environ.get("INPUT_ACTION", "").strip()
+              job_id = os.environ.get("INPUT_JOB_ID", "").strip()
+              pr_url = os.environ.get("INPUT_PR_URL", "").strip()
+          else:
+              payload = json.loads(
+                  Path("data/averray-job-request.json").read_text(encoding="utf-8")
+              )
+              action = str(payload.get("action") or "").strip()
+              job_id = str(payload.get("job_id") or "").strip()
+              pr_url = str(payload.get("pr_url") or "").strip()
+
+          if action not in {"preflight", "claim", "submit", "status"}:
+              raise SystemExit("invalid pipeline action")
+          if not job_id:
+              raise SystemExit("job_id is required")
+
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as handle:
+              handle.write(f"PIPELINE_ACTION={action}\n")
+              handle.write(f"TARGET_JOB_ID={job_id}\n")
+              handle.write(f"TARGET_PR_URL={pr_url}\n")
+          PY
 
       - name: Install wallet support
         run: python -m pip install -e ".[wallet]"
@@ -549,7 +585,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: averray-job-${{ inputs.action }}-${{ inputs.job_id }}
+          name: averray-job-pipeline
           path: data/averray-job-pipeline.json
           if-no-files-found: ignore
           retention-days: 14
