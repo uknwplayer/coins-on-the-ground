@@ -14,8 +14,8 @@ _GITHUB_SEARCH_URL = "https://api.github.com/search/issues"
 
 _REWARD_CONTEXT_RE = re.compile(
     r"(?is)(?:bounty|reward|payout|paid|compensation).{0,80}"
-    r"(?:US\\$|USD|(?<![A-Za-z])\\$|EUR|€|BRL|R\\$)"
-    r"|(?:US\\$|USD|(?<![A-Za-z])\\$|EUR|€|BRL|R\\$).{0,80}"
+    r"(?:US\$|USD|(?<![A-Za-z])\$|EUR|€|BRL|R\$)"
+    r"|(?:US\$|USD|(?<![A-Za-z])\$|EUR|€|BRL|R\$).{0,80}"
     r"(?:bounty|reward|payout|paid|compensation)"
 )
 
@@ -74,7 +74,7 @@ def _bounty_metadata_flags(title: str, body: str) -> dict[str, str]:
 
     engagement = any(term in f" {text} " for term in engagement_terms)
     speculative = bool(
-        re.search(r"(?i)\\b(?:bounty proposal|proposal for bounty|radar|bounty discovery)\\b", text)
+        re.search(r"(?i)\b(?:bounty proposal|proposal for bounty|radar|bounty discovery)\b", text)
     )
     platform = next((term for term in platform_terms if term in text), "")
     wallet_direct = any(term in text for term in wallet_terms)
@@ -161,7 +161,7 @@ class GitHubBountyScout:
             body = str(item.get("body") or "")
             title_reward = (
                 extract_reward(title)
-                if re.search(r"(?i)\\b(?:bounty|reward|paid|payout)\\b", title)
+                if re.search(r"(?i)\b(?:bounty|reward|paid|payout)\b", title)
                 else None
             )
             reward = title_reward or extract_reward(body, require_context=True)
