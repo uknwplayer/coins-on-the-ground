@@ -12,6 +12,13 @@ from coins_on_the_ground.opportunity import Opportunity, OpportunityClass, RiskC
 
 _GITHUB_SEARCH_URL = "https://api.github.com/search/issues"
 
+_REWARD_CONTEXT_RE = re.compile(
+    r"(?is)(?:bounty|reward|payout|paid|compensation).{0,80}"
+    r"(?:US\\$|USD|(?<![A-Za-z])\\$|EUR|€|BRL|R\\$)"
+    r"|(?:US\\$|USD|(?<![A-Za-z])\\$|EUR|€|BRL|R\\$).{0,80}"
+    r"(?:bounty|reward|payout|paid|compensation)"
+)
+
 _REWARD_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
         "USD",
@@ -66,6 +73,9 @@ def _bounty_metadata_flags(title: str, body: str) -> dict[str, str]:
     )
 
     engagement = any(term in f" {text} " for term in engagement_terms)
+    speculative = bool(
+        re.search(r"(?i)\\b(?:bounty proposal|proposal for bounty|radar|bounty discovery)\\b", text)
+    )
     platform = next((term for term in platform_terms if term in text), "")
     wallet_direct = any(term in text for term in wallet_terms)
 
@@ -74,18 +84,25 @@ def _bounty_metadata_flags(title: str, body: str) -> dict[str, str]:
         "upfront_gas_required": "false",
         "external_account_required": "unknown" if platform else "false",
         "wallet_required": "true" if wallet_direct else "unknown",
-        "bootstrap_candidate": "false" if engagement else "primary",
+        "bootstrap_candidate": (
+            "false" if engagement or speculative else "primary"
+        ),
         "engagement_bounty": "true" if engagement else "false",
+        "speculative_bounty": "true" if speculative else "false",
         "payout_platform_hint": platform,
         "direct_wallet_hint": "true" if wallet_direct else "false",
     }
 
 
-def extract_reward(text: str) -> tuple[Decimal, str] | None:
-    """Return the first explicit fiat-denominated reward found in text.
+def extract_reward(
+    text: str,
+    *,
+    require_context: bool = False,
+) -> tuple[Decimal, str] | None:
+    """Return the first explicit fiat-denominated reward found in text."""
 
-    This intentionally ignores bare numbers and token symbols to minimize false positives.
-    """
+    if require_context and not _REWARD_CONTEXT_RE.search(text or ""):
+        return None
 
     for currency, pattern in _REWARD_PATTERNS:
         match = pattern.search(text or "")
@@ -142,7 +159,12 @@ class GitHubBountyScout:
         for item in payload.get("items", []):
             title = str(item.get("title") or "")
             body = str(item.get("body") or "")
-            reward = extract_reward(title) or extract_reward(body)
+            title_reward = (
+                extract_reward(title)
+                if re.search(r"(?i)\\b(?:bounty|reward|paid|payout)\\b", title)
+                else None
+            )
+            reward = title_reward or extract_reward(body, require_context=True)
             if reward is None:
                 continue
 
