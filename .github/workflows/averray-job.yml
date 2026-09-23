@@ -1,0 +1,555 @@
+name: Averray Job Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Pipeline action"
+        required: true
+        type: choice
+        options:
+          - preflight
+          - claim
+          - submit
+          - status
+        default: preflight
+      job_id:
+        description: "Averray job id"
+        required: true
+        type: string
+      pr_url:
+        description: "GitHub PR URL (required only for submit)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: averray-job-${{ inputs.job_id }}
+  cancel-in-progress: false
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      AVERRAY_WALLET_PRIVATE_KEY: ${{ secrets.AVERRAY_WALLET_PRIVATE_KEY }}
+      GITHUB_TOKEN: ${{ github.token }}
+      PIPELINE_ACTION: ${{ inputs.action }}
+      TARGET_JOB_ID: ${{ inputs.job_id }}
+      TARGET_PR_URL: ${{ inputs.pr_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Require dedicated wallet secret
+        run: |
+          if [ -z "$AVERRAY_WALLET_PRIVATE_KEY" ]; then
+            echo "::error::Missing Actions secret AVERRAY_WALLET_PRIVATE_KEY"
+            exit 1
+          fi
+
+      - name: Install wallet support
+        run: python -m pip install -e ".[wallet]"
+
+      - name: Run guarded Averray action
+        run: |
+          mkdir -p data
+          python - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+          from urllib.parse import urlparse
+
+          import httpx
+          from eth_account import Account
+          from eth_account.messages import encode_defunct
+
+          API = "https://api.averray.com"
+          ACTION = os.environ["PIPELINE_ACTION"].strip()
+          JOB_ID = os.environ["TARGET_JOB_ID"].strip()
+          PR_URL = os.environ.get("TARGET_PR_URL", "").strip()
+
+          if ACTION not in {"preflight", "claim", "submit", "status"}:
+              raise RuntimeError(f"unsupported action: {ACTION}")
+          if not JOB_ID:
+              raise RuntimeError("job_id is required")
+
+          private_key = os.environ.get("AVERRAY_WALLET_PRIVATE_KEY", "").strip()
+          if not private_key:
+              raise RuntimeError("wallet secret is missing")
+          if not private_key.startswith("0x"):
+              private_key = "0x" + private_key
+          account = Account.from_key(private_key)
+
+          github_headers = {
+              "Accept": "application/vnd.github+json",
+              "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+              "X-GitHub-Api-Version": "2022-11-28",
+              "User-Agent": "coins-on-the-ground/0.1",
+          }
+
+          def safe_json(response):
+              try:
+                  value = response.json()
+              except ValueError:
+                  return {"raw": response.text[:500]}
+              return value if isinstance(value, dict) else {"value": value}
+
+          def authenticate(client):
+              nonce = client.post(
+                  f"{API}/auth/nonce",
+                  json={"wallet": account.address},
+                  timeout=30.0,
+              )
+              nonce.raise_for_status()
+              message = safe_json(nonce).get("message")
+              if not isinstance(message, str) or not message:
+                  raise RuntimeError("Averray nonce response missing SIWE message")
+              signature = account.sign_message(
+                  encode_defunct(text=message)
+              ).signature.hex()
+              if not signature.startswith("0x"):
+                  signature = "0x" + signature
+              verify = client.post(
+                  f"{API}/auth/verify",
+                  json={"message": message, "signature": signature},
+                  timeout=30.0,
+              )
+              verify.raise_for_status()
+              token = safe_json(verify).get("token")
+              if not isinstance(token, str) or not token:
+                  raise RuntimeError("Averray verify response missing bearer token")
+              return {
+                  "Authorization": f"Bearer {token}",
+                  "User-Agent": "coins-on-the-ground/0.1",
+              }
+
+          def get_definition(client, auth):
+              response = client.get(
+                  f"{API}/jobs/definition",
+                  params={"jobId": JOB_ID},
+                  headers=auth,
+                  timeout=30.0,
+              )
+              response.raise_for_status()
+              return safe_json(response)
+
+          def github_source(definition):
+              source = definition.get("source")
+              if not isinstance(source, dict) or source.get("type") != "github_issue":
+                  raise RuntimeError(
+                      "generic mutation pipeline currently supports github_issue jobs only"
+                  )
+              repo = source.get("repo")
+              issue = source.get("issueNumber")
+              if not isinstance(repo, str) or not repo or not isinstance(issue, int):
+                  raise RuntimeError("Averray GitHub source is missing repo/issueNumber")
+              return repo, issue, source
+
+          def revalidate_issue(client, repo, issue_number):
+              response = client.get(
+                  f"https://api.github.com/repos/{repo}/issues/{issue_number}",
+                  headers=github_headers,
+                  timeout=30.0,
+              )
+              response.raise_for_status()
+              issue = safe_json(response)
+              if issue.get("pull_request") is not None:
+                  raise RuntimeError("Averray source resolved to a pull request, not an issue")
+              if issue.get("state") != "open":
+                  raise RuntimeError("upstream issue is no longer open")
+              if issue.get("assignee") is not None or issue.get("assignees"):
+                  raise RuntimeError("upstream issue now has an assignee")
+              return issue
+
+          def get_preflight(client, auth):
+              response = client.get(
+                  f"{API}/jobs/preflight",
+                  params={"jobId": JOB_ID},
+                  headers=auth,
+                  timeout=30.0,
+              )
+              response.raise_for_status()
+              return safe_json(response)
+
+          def assert_zero_upfront(preflight):
+              required = {
+                  "eligible": True,
+                  "claimable": True,
+                  "currentWalletCanClaim": True,
+                  "claimEconomicsWaived": True,
+                  "claimStake": 0,
+                  "claimFee": 0,
+                  "totalClaimLock": 0,
+                  "gasRetentionSupported": True,
+              }
+              mismatches = {
+                  key: {"expected": expected, "actual": preflight.get(key)}
+                  for key, expected in required.items()
+                  if preflight.get(key) != expected
+              }
+              if mismatches:
+                  raise RuntimeError(
+                      "zero-upfront guard rejected changed economics: "
+                      + json.dumps(mismatches, sort_keys=True)
+                  )
+
+          def parse_pr_url(value):
+              parsed = urlparse(value)
+              match = re.fullmatch(
+                  r"/([^/]+)/([^/]+)/pull/(\d+)/?",
+                  parsed.path,
+              )
+              if parsed.scheme != "https" or parsed.netloc != "github.com" or not match:
+                  raise RuntimeError("pr_url must be a canonical GitHub pull-request URL")
+              return f"{match.group(1)}/{match.group(2)}", int(match.group(3))
+
+          report = {
+              "format": "cog-averray-job-pipeline-v1",
+              "action": ACTION,
+              "job_id": JOB_ID,
+              "wallet": account.address,
+              "private_key_printed": False,
+              "auth_token_printed": False,
+              "user_funds_spent": False,
+          }
+
+          with httpx.Client(
+              timeout=30.0,
+              follow_redirects=False,
+              headers={"User-Agent": "coins-on-the-ground/0.1"},
+          ) as client:
+              auth = authenticate(client)
+              definition = get_definition(client, auth)
+              repo, issue_number, _ = github_source(definition)
+              report["source_repo"] = repo
+              report["source_issue"] = issue_number
+
+              if ACTION == "status":
+                  claim_status = definition.get("claimStatus")
+                  if not isinstance(claim_status, dict):
+                      claim_status = {}
+                  session_id = (
+                      claim_status.get("sessionId")
+                      or definition.get("sessionId")
+                  )
+                  report["state"] = (
+                      claim_status.get("state")
+                      or claim_status.get("claimState")
+                      or definition.get("state")
+                  )
+                  report["session_id"] = session_id
+                  if isinstance(session_id, str) and session_id:
+                      session = client.get(
+                          f"{API}/session",
+                          params={"sessionId": session_id},
+                          headers=auth,
+                          timeout=30.0,
+                      )
+                      if session.is_success:
+                          session_payload = safe_json(session)
+                          report["session_status"] = (
+                              session_payload.get("status")
+                              or session_payload.get("state")
+                          )
+                      verifier = client.get(
+                          f"{API}/verifier/result",
+                          params={"sessionId": session_id},
+                          headers=auth,
+                          timeout=30.0,
+                      )
+                      if verifier.is_success:
+                          verifier_payload = safe_json(verifier)
+                          report["verifier"] = {
+                              "outcome": verifier_payload.get("outcome"),
+                              "reason_code": verifier_payload.get("reasonCode"),
+                              "score": verifier_payload.get("score"),
+                              "payout_tx": verifier_payload.get("payoutTx"),
+                          }
+
+              elif ACTION == "preflight":
+                  issue = revalidate_issue(client, repo, issue_number)
+                  preflight = get_preflight(client, auth)
+                  report["upstream_issue"] = issue.get("html_url")
+                  report["preflight"] = {
+                      "eligible": preflight.get("eligible"),
+                      "claimable": preflight.get("claimable"),
+                      "current_wallet_can_claim": preflight.get(
+                          "currentWalletCanClaim"
+                      ),
+                      "claim_economics_waived": preflight.get(
+                          "claimEconomicsWaived"
+                      ),
+                      "claim_stake": preflight.get("claimStake"),
+                      "claim_fee": preflight.get("claimFee"),
+                      "total_claim_lock": preflight.get("totalClaimLock"),
+                      "gas_retention_supported": preflight.get(
+                          "gasRetentionSupported"
+                      ),
+                      "verifier_mode": preflight.get("verifierMode"),
+                  }
+
+              elif ACTION == "claim":
+                  issue = revalidate_issue(client, repo, issue_number)
+                  preflight = get_preflight(client, auth)
+                  assert_zero_upfront(preflight)
+                  idem = f"cog:{JOB_ID}:{account.address.lower()}"
+                  claim_payload = None
+                  timed_out = False
+                  try:
+                      claim = client.post(
+                          f"{API}/jobs/claim",
+                          headers={**auth, "Content-Type": "application/json"},
+                          json={"jobId": JOB_ID, "idempotencyKey": idem},
+                          timeout=150.0,
+                      )
+                      claim_payload = safe_json(claim)
+                      if not claim.is_success:
+                          raise RuntimeError(
+                              "Averray claim failed safely: "
+                              + json.dumps(
+                                  {
+                                      "status": claim.status_code,
+                                      "code": claim_payload.get("code"),
+                                      "error": claim_payload.get("error"),
+                                      "message": claim_payload.get("message"),
+                                  },
+                                  ensure_ascii=False,
+                              )
+                          )
+                  except httpx.ReadTimeout:
+                      timed_out = True
+
+                  if timed_out:
+                      refreshed = get_definition(client, auth)
+                      status = refreshed.get("claimStatus")
+                      if not isinstance(status, dict):
+                          status = {}
+                      claimed_by = str(status.get("claimedBy") or "")
+                      if claimed_by.lower() != account.address.lower():
+                          raise RuntimeError(
+                              "claim timed out and no owned claim was visible; "
+                              "do not retry with a different idempotency key"
+                          )
+                      claim_payload = status
+
+                  if not isinstance(claim_payload, dict):
+                      claim_payload = {}
+                  session = claim_payload.get("session")
+                  if not isinstance(session, dict):
+                      session = {}
+                  report["upstream_issue"] = issue.get("html_url")
+                  report["preflight_zero_upfront"] = True
+                  report["claim"] = {
+                      "status": (
+                          claim_payload.get("status")
+                          or claim_payload.get("state")
+                          or claim_payload.get("claimState")
+                      ),
+                      "session_id": (
+                          claim_payload.get("sessionId")
+                          or session.get("sessionId")
+                      ),
+                      "claim_expires_at": (
+                          claim_payload.get("claimExpiresAt")
+                          or session.get("claimExpiresAt")
+                      ),
+                      "recovered_after_timeout": timed_out,
+                  }
+
+              elif ACTION == "submit":
+                  if not PR_URL:
+                      raise RuntimeError("pr_url is required for submit")
+                  claim_status = definition.get("claimStatus")
+                  if not isinstance(claim_status, dict):
+                      claim_status = {}
+                  session_id = (
+                      claim_status.get("sessionId")
+                      or definition.get("sessionId")
+                  )
+                  if not isinstance(session_id, str) or not session_id:
+                      raise RuntimeError("job definition has no owned session id")
+                  claimed_by = str(
+                      claim_status.get("claimedBy")
+                      or definition.get("claimedBy")
+                      or ""
+                  )
+                  if claimed_by.lower() != account.address.lower():
+                      raise RuntimeError("current wallet does not own the claim")
+
+                  pr_repo, pr_number = parse_pr_url(PR_URL)
+                  if pr_repo.casefold() != repo.casefold():
+                      raise RuntimeError("PR repository does not match Averray source repo")
+                  pr_response = client.get(
+                      f"https://api.github.com/repos/{pr_repo}/pulls/{pr_number}",
+                      headers=github_headers,
+                      timeout=30.0,
+                  )
+                  pr_response.raise_for_status()
+                  pr = safe_json(pr_response)
+                  if pr.get("state") != "open":
+                      raise RuntimeError("PR is no longer open")
+                  body = pr.get("body") or ""
+                  if f"#{issue_number}" not in body:
+                      raise RuntimeError("PR body does not reference the source issue")
+                  wallet_line = f"Agent identity: {account.address}"
+                  session_line = f"Claim session: {session_id}"
+                  if wallet_line not in body and session_line not in body:
+                      raise RuntimeError(
+                          "PR body is not bound to the claimant wallet/session"
+                      )
+
+                  files_response = client.get(
+                      f"https://api.github.com/repos/{pr_repo}/pulls/"
+                      f"{pr_number}/files",
+                      headers=github_headers,
+                      timeout=30.0,
+                  )
+                  files_response.raise_for_status()
+                  try:
+                      files_payload = files_response.json()
+                  except ValueError:
+                      files_payload = []
+                  files_changed = [
+                      item.get("filename")
+                      for item in files_payload
+                      if isinstance(item, dict)
+                      and isinstance(item.get("filename"), str)
+                  ]
+
+                  submission = {
+                      "prUrl": PR_URL,
+                      "summary": (
+                          f"Implemented the focused change requested by "
+                          f"{repo} issue #{issue_number} in PR #{pr_number}."
+                      ),
+                      "tests": (
+                          "PR evidence reviewed; issue reference and claimant "
+                          "binding confirmed. See the PR body for the recorded "
+                          "test/review evidence."
+                      ),
+                      "prBody": body,
+                      "issueNumber": issue_number,
+                      "issueUrl": (
+                          f"https://github.com/{repo}/issues/{issue_number}"
+                      ),
+                      "commitUrl": (
+                          ((pr.get("head") or {}).get("repo") or {}).get("html_url", "")
+                          + "/commit/"
+                          + str((pr.get("head") or {}).get("sha") or "")
+                      ),
+                      "filesChanged": files_changed,
+                      "referencesIssue": True,
+                      "checksPassing": False,
+                      "ciStatus": "unknown",
+                      "reviewApproved": False,
+                      "merged": False,
+                  }
+
+                  validation = client.post(
+                      f"{API}/jobs/validate-submission",
+                      headers={**auth, "Content-Type": "application/json"},
+                      json={"jobId": JOB_ID, "submission": submission},
+                      timeout=30.0,
+                  )
+                  validation.raise_for_status()
+                  validation_payload = safe_json(validation)
+                  if validation_payload.get("valid") is not True:
+                      raise RuntimeError(
+                          "Averray rejected submission schema: "
+                          + json.dumps(validation_payload, ensure_ascii=False)[:1200]
+                      )
+
+                  before = client.get(
+                      f"{API}/session",
+                      params={"sessionId": session_id},
+                      headers=auth,
+                      timeout=30.0,
+                  )
+                  before.raise_for_status()
+                  before_payload = safe_json(before)
+                  before_status = (
+                      before_payload.get("status")
+                      or before_payload.get("state")
+                  )
+                  if before_status != "claimed":
+                      report["submit"] = {
+                          "action": "no_submit",
+                          "session_id": session_id,
+                          "session_status": before_status,
+                          "draft_valid": True,
+                      }
+                  else:
+                      submit_payload = None
+                      timed_out = False
+                      try:
+                          submit = client.post(
+                              f"{API}/jobs/submit",
+                              headers={**auth, "Content-Type": "application/json"},
+                              json={
+                                  "sessionId": session_id,
+                                  "submission": submission,
+                              },
+                              timeout=150.0,
+                          )
+                          submit_payload = safe_json(submit)
+                          submit.raise_for_status()
+                      except httpx.ReadTimeout:
+                          timed_out = True
+
+                      after = client.get(
+                          f"{API}/session",
+                          params={"sessionId": session_id},
+                          headers=auth,
+                          timeout=30.0,
+                      )
+                      after.raise_for_status()
+                      after_payload = safe_json(after)
+                      after_status = (
+                          after_payload.get("status")
+                          or after_payload.get("state")
+                      )
+                      if timed_out and after_status == "claimed":
+                          raise RuntimeError(
+                              "submit timed out and session is still claimed; "
+                              "not retrying a non-idempotent submit"
+                          )
+                      report["submit"] = {
+                          "session_id": session_id,
+                          "draft_valid": True,
+                          "session_before": before_status,
+                          "session_after": after_status,
+                          "submit_status": (
+                              (submit_payload or {}).get("status")
+                              or (submit_payload or {}).get("state")
+                              or (
+                                  "timeout_but_state_advanced"
+                                  if timed_out
+                                  else None
+                              )
+                          ),
+                      }
+
+          out = Path("data/averray-job-pipeline.json")
+          out.write_text(
+              json.dumps(report, indent=2, ensure_ascii=False) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(report, indent=2, ensure_ascii=False))
+          PY
+
+      - name: Upload sanitized pipeline receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: averray-job-${{ inputs.action }}-${{ inputs.job_id }}
+          path: data/averray-job-pipeline.json
+          if-no-files-found: ignore
+          retention-days: 14
