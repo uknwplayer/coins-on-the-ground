@@ -45,7 +45,7 @@ jobs:
         run: |
           mkdir -p data
           cog review github-bounties --limit 75 --output data/github-zero-upfront.jsonl
-          cog review clawlancer --limit 50 --output data/clawlancer-sponsored-gas.jsonl
+          cog review clawlancer --limit 100 --output data/clawlancer-sponsored-gas.jsonl
           if [ -n "$TASKBOUNTY_API_KEY" ]; then
             cog review taskbounty --limit 75 --output data/taskbounty-zero-upfront.jsonl
           else
@@ -129,9 +129,16 @@ jobs:
                       }
                   )
 
+          def reward_value(item):
+              try:
+                  return float(item.get("reward") or 0)
+              except (TypeError, ValueError):
+                  return 0.0
+
           candidates.sort(
               key=lambda item: (
                   item["lane"] == "primary",
+                  reward_value(item),
                   int(item["review_score"]),
               ),
               reverse=True,
