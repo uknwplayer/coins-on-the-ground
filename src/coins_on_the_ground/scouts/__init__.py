@@ -15,6 +15,8 @@ from .frantic import FranticBountyScout as FranticBountyScout
 from .frantic import parse_frantic_issue as parse_frantic_issue
 from .github_bounties import GitHubBountyScout as GitHubBountyScout
 from .github_bounties import extract_reward as extract_reward
+from .gravita import GravitaScout as GravitaScout
+from .gravita import scan_gravita as scan_gravita
 from .immunefi import ImmunefiScout as ImmunefiScout
 from .immunefi import parse_immunefi_listing as parse_immunefi_listing
 from .issuehunt import IssueHuntScout as IssueHuntScout
@@ -44,6 +46,7 @@ __all__ = [
     "ClawlancerScout",
     "FranticBountyScout",
     "GitHubBountyScout",
+    "GravitaScout",
     "ImmunefiScout",
     "IssueHuntScout",
     "Keep3rScout",
@@ -70,6 +73,7 @@ __all__ = [
     "parse_sherlock_bounties",
     "parse_taskbounty_tasks",
     "parse_taskmarket_response",
+    "scan_gravita",
     "scan_liquity_v1",
     "scan_liquity_v2",
 ]
