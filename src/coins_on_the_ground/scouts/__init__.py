@@ -29,6 +29,8 @@ from .sherlock import SherlockScout as SherlockScout
 from .sherlock import parse_sherlock_bounties as parse_sherlock_bounties
 from .sources import NetworkSurface as NetworkSurface
 from .sources import ScoutSource as ScoutSource
+from .taskbounty import TaskBountyScout as TaskBountyScout
+from .taskbounty import parse_taskbounty_tasks as parse_taskbounty_tasks
 from .taskmarket import TaskmarketScout as TaskmarketScout
 from .taskmarket import parse_taskmarket_response as parse_taskmarket_response
 
@@ -49,6 +51,7 @@ __all__ = [
     "Scout",
     "ScoutSource",
     "SherlockScout",
+    "TaskBountyScout",
     "TaskmarketScout",
     "discover_keep3r_jobs",
     "extract_reward",
@@ -62,6 +65,7 @@ __all__ = [
     "parse_issuehunt_html",
     "parse_scout_source_registry",
     "parse_sherlock_bounties",
+    "parse_taskbounty_tasks",
     "parse_taskmarket_response",
     "scan_liquity_v2",
 ]
