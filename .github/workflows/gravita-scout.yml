@@ -10,7 +10,7 @@ on:
       - "tests/test_gravita.py"
       - ".github/workflows/gravita-scout.yml"
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "2-59/5 * * * *"
 
 permissions:
   contents: read
