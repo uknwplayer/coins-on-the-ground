@@ -82,6 +82,7 @@ from coins_on_the_ground.scouts import (
     Keep3rScout,
     Scout,
     SherlockScout,
+    TaskBountyScout,
     TaskmarketScout,
     parse_scout_source_registry,
 )
@@ -248,6 +249,8 @@ def _scouts_for_source(source: str, limit: int) -> list[Scout]:
         return [Keep3rScout(limit=limit)]
     if source == "sherlock":
         return [SherlockScout(limit=limit)]
+    if source == "taskbounty":
+        return [TaskBountyScout(limit=limit)]
     if source == "taskmarket":
         return [TaskmarketScout(limit=limit)]
     return [
@@ -262,6 +265,7 @@ def _scouts_for_source(source: str, limit: int) -> list[Scout]:
         ImmunefiScout(limit=limit),
         Keep3rScout(limit=limit),
         SherlockScout(limit=limit),
+        TaskBountyScout(limit=limit),
         TaskmarketScout(limit=limit),
     ]
 
@@ -368,6 +372,10 @@ async def _scan_keep3r(args: argparse.Namespace) -> int:
 
 async def _scan_sherlock(args: argparse.Namespace) -> int:
     return await _emit_scan(SherlockScout(limit=args.limit), args)
+
+
+async def _scan_taskbounty(args: argparse.Namespace) -> int:
+    return await _emit_scan(TaskBountyScout(limit=args.limit), args)
 
 
 async def _scan_taskmarket(args: argparse.Namespace) -> int:
@@ -1405,7 +1413,7 @@ def _add_common_scan_args(parser: argparse.ArgumentParser) -> None:
 def _add_source_argument(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "source",
-        choices=("all", "agent-bounties", "akash", "bidpostloop", "clawlancer", "frantic", "github-bounties", "issuehunt", "algora", "immunefi", "keep3r", "sherlock", "taskmarket"),
+        choices=("all", "agent-bounties", "akash", "bidpostloop", "clawlancer", "frantic", "github-bounties", "issuehunt", "algora", "immunefi", "keep3r", "sherlock", "taskbounty", "taskmarket"),
         default="all",
         nargs="?",
     )
@@ -1535,6 +1543,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_common_scan_args(sherlock)
     sherlock.set_defaults(handler=_scan_sherlock)
+
+    taskbounty = scan_sub.add_parser(
+        "taskbounty",
+        help="scan public funded/open TaskBounty solver tasks",
+    )
+    _add_common_scan_args(taskbounty)
+    taskbounty.set_defaults(handler=_scan_taskbounty)
 
     taskmarket = scan_sub.add_parser(
         "taskmarket",
