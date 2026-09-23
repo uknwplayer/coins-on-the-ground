@@ -56,3 +56,21 @@ def test_bounty_metadata_flags_separate_technical_and_engagement_work() -> None:
 
     assert platform["external_account_required"] == "unknown"
     assert platform["payout_platform_hint"] == "opire"
+
+
+def test_context_required_for_body_reward() -> None:
+    assert extract_reward("Market cap is $197000", require_context=True) is None
+    assert extract_reward("Bounty payout: $3000 after merge", require_context=True) == (
+        Decimal(3000),
+        "USD",
+    )
+
+
+def test_speculative_bounty_is_not_bootstrap_candidate() -> None:
+    flags = _bounty_metadata_flags(
+        "[RADAR] High-value blockchain bounty discovery",
+        "Potential reward $197000 if a future program launches.",
+    )
+
+    assert flags["speculative_bounty"] == "true"
+    assert flags["bootstrap_candidate"] == "false"
