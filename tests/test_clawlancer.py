@@ -82,3 +82,20 @@ def test_duplicate_listing_id_is_deduplicated() -> None:
     assert len(
         parse_clawlancer_listings({"listings": [listing, listing]})
     ) == 1
+
+
+def test_schema_variants_are_accepted_conservatively() -> None:
+    listing = _listing()
+    listing["listing_type"] = "bounty"
+    listing["price_wei"] = 2_000_000
+    listing["currency"] = "usdc"
+    listing.pop("is_active")
+    listing["status"] = "open"
+
+    opportunities = parse_clawlancer_listings({"listings": [listing]})
+
+    assert len(opportunities) == 1
+    assert opportunities[0].reward == Decimal("1.98")
+    assert opportunities[0].metadata["bootstrap_candidate"] == (
+        "conditional_sponsored_gas"
+    )
