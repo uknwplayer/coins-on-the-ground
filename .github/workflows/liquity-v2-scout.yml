@@ -2,6 +2,13 @@ name: Liquity V2 Read-Only Scout
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "src/coins_on_the_ground/scouts/liquity_v2.py"
+      - "tests/test_liquity_v2.py"
+      - ".github/workflows/liquity-v2-scout.yml"
   schedule:
     - cron: "*/15 * * * *"
 
