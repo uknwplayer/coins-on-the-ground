@@ -162,3 +162,15 @@ TASKBOUNTY = ScoutSource(
     eligibility_review_required=True,
     authorization_review_required=True,
 )
+
+
+LIQUITY_V1 = ScoutSource(
+    source_id="liquity-v1",
+    display_name="Liquity V1",
+    base_url="https://www.liquity.org",
+    network_surface=NetworkSurface.CLEARNET,
+    country=None,
+    jurisdiction=None,
+    eligibility_review_required=False,
+    authorization_review_required=False,
+)
