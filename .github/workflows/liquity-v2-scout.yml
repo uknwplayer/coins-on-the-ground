@@ -40,7 +40,7 @@ jobs:
         run: |
           mkdir -p data
           python -m coins_on_the_ground.scouts.liquity_v2 \
-            --batch-size 200 \
+            --batch-size 500 \
             --max-troves-per-branch 5000 \
             --output data/liquity-v2-scan.json
 
