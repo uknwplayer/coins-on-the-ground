@@ -44,6 +44,7 @@ jobs:
         run: |
           mkdir -p data
           cog review github-bounties --limit 75 --output data/github-zero-upfront.jsonl
+          cog review clawlancer --limit 50 --output data/clawlancer-sponsored-gas.jsonl
           if [ -n "$TASKBOUNTY_API_KEY" ]; then
             cog review taskbounty --limit 75 --output data/taskbounty-zero-upfront.jsonl
           else
@@ -61,6 +62,7 @@ jobs:
           source_paths = (
               Path("data/github-zero-upfront.jsonl"),
               Path("data/taskbounty-zero-upfront.jsonl"),
+              Path("data/clawlancer-sponsored-gas.jsonl"),
           )
           candidates = []
 
@@ -75,10 +77,15 @@ jobs:
                   metadata = opportunity.get("metadata", {})
                   if not row.get("review_allowed"):
                       continue
-                  if opportunity.get("upfront_funding_class") != "ZERO_UPFRONT":
-                      continue
-                  if metadata.get("bootstrap_candidate") != "primary":
-                      continue
+                  bootstrap = metadata.get("bootstrap_candidate", "")
+                  funding_class = opportunity.get("upfront_funding_class")
+                  if bootstrap == "conditional_sponsored_gas":
+                      lane = "conditional_sponsored_gas"
+                  else:
+                      if funding_class != "ZERO_UPFRONT" or bootstrap != "primary":
+                          continue
+                      lane = ""
+
                   if int(metadata.get("github_assignee_count", "0") or 0) > 0:
                       continue
 
@@ -96,12 +103,13 @@ jobs:
 
                   account = metadata.get("external_account_required", "unknown")
                   platform = metadata.get("payout_platform_hint", "")
-                  if account == "true":
-                      lane = "secondary_account_required"
-                  elif account == "unknown" or platform:
-                      lane = "secondary_payout_review"
-                  else:
-                      lane = "primary"
+                  if not lane:
+                      if account == "true":
+                          lane = "secondary_account_required"
+                      elif account == "unknown" or platform:
+                          lane = "secondary_payout_review"
+                      else:
+                          lane = "primary"
                   candidates.append(
                       {
                           "lane": lane,
@@ -146,6 +154,10 @@ jobs:
                   item["lane"] == "secondary_payout_review"
                   for item in candidates
               ),
+              "conditional_sponsored_gas": sum(
+                  item["lane"] == "conditional_sponsored_gas"
+                  for item in candidates
+              ),
               "top_candidates": candidates[:10],
           }
           Path("data/seedless-summary.json").write_text(
@@ -165,5 +177,6 @@ jobs:
             data/seedless-summary.json
             data/github-zero-upfront.jsonl
             data/taskbounty-zero-upfront.jsonl
+            data/clawlancer-sponsored-gas.jsonl
           if-no-files-found: error
           retention-days: 7
