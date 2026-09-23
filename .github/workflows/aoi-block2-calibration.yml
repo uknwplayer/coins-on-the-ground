@@ -136,16 +136,64 @@ jobs:
                   record["target_index"] = addresses.index(TARGET)
                   full_hits.append(record)
 
+          # Family 2: every 1- or 2-letter capitalization toggle anywhere
+          # in the exact 1,549-byte worked example. The author's language says
+          # "change only ... capitalization", so this is a bounded literal test,
+          # not a password/key search.
+          raw = bytearray(base.encode("utf-8"))
+          alpha = [
+              i for i, b in enumerate(raw)
+              if 65 <= b <= 90 or 97 <= b <= 122
+          ]
+          edit12_prefix = []
+          edit12_full = []
+
+          def maybe_test(buf, positions):
+              digest = hashlib.md5(buf).digest()
+              if not (digest[0] == 0x3C and (digest[1] >> 4) == 0x6):
+                  return
+              candidate = bytes(buf).decode("utf-8")
+              addresses = derive(candidate)
+              record = {
+                  "positions": list(positions),
+                  "chars_before": [base[p] for p in positions],
+                  "md5": digest.hex(),
+              }
+              edit12_prefix.append(record)
+              if TARGET in addresses:
+                  record["target_index"] = addresses.index(TARGET)
+                  edit12_full.append(record)
+
+          for i in alpha:
+              raw[i] ^= 32
+              maybe_test(raw, (i,))
+              raw[i] ^= 32
+
+          for ai, i in enumerate(alpha):
+              raw[i] ^= 32
+              for j in alpha[ai + 1:]:
+                  raw[j] ^= 32
+                  maybe_test(raw, (i, j))
+                  raw[j] ^= 32
+              raw[i] ^= 32
+
           report = {
               "raw_md5_ok": True,
               "sentence_pairs": len(pairs),
               "prefix_hits": len(prefix_hits),
               "full_hits": full_hits,
+              "edit12_alpha_positions": len(alpha),
+              "edit12_prefix_hits": len(edit12_prefix),
+              "edit12_full_hits": edit12_full,
               "prefix_candidates": prefix_hits,
           }
           print(json.dumps(report, indent=2))
           if full_hits:
-              print("Aoi worked-example structural rule candidate MATCHED target.")
+              print("Aoi sentence-boundary rule candidate MATCHED target.")
           else:
               print("No full target hit in the sentence-boundary pair family.")
+          if edit12_full:
+              print("Aoi 1/2-letter capitalization candidate MATCHED target.")
+          else:
+              print("No full target hit in the 1/2-letter capitalization family.")
           PY
