@@ -1,0 +1,289 @@
+name: Averray Submit 779
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/averray-submit-779.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: averray-submit-779
+  cancel-in-progress: false
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      AVERRAY_WALLET_PRIVATE_KEY: ${{ secrets.AVERRAY_WALLET_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Require dedicated wallet secret
+        run: |
+          if [ -z "$AVERRAY_WALLET_PRIVATE_KEY" ]; then
+            echo "::error::Missing Actions secret AVERRAY_WALLET_PRIVATE_KEY"
+            exit 1
+          fi
+
+      - name: Install wallet support
+        run: python -m pip install -e ".[wallet]"
+
+      - name: Validate evidence and submit once
+        run: |
+          mkdir -p data
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          import httpx
+          from eth_account import Account
+          from eth_account.messages import encode_defunct
+
+          API = "https://api.averray.com"
+          JOB_ID = "pr-openledger-foundation-kora-frontend-779"
+          SESSION_ID = "pr-openledger-foundation-kora-frontend-779:0x062B6e792C3A343590A19FF09258264C63BeDC6C"
+          EXPECTED_WALLET = "0x062B6e792C3A343590A19FF09258264C63BeDC6C"
+          PR_URL = "https://github.com/OpenLedger-Foundation/Kora-Frontend/pull/833"
+          PR_API = "https://api.github.com/repos/OpenLedger-Foundation/Kora-Frontend/pulls/833"
+          EXPECTED_HEAD_SHA = "7f970fb9d0c309c16fcfce8a43e5ae528ebe4ae4"
+
+          private_key = os.environ["AVERRAY_WALLET_PRIVATE_KEY"].strip()
+          if not private_key.startswith("0x"):
+              private_key = "0x" + private_key
+          account = Account.from_key(private_key)
+          if account.address.lower() != EXPECTED_WALLET.lower():
+              raise RuntimeError("wallet secret does not match the wallet that owns the claim")
+
+          with httpx.Client(timeout=30.0, follow_redirects=False) as client:
+              pr = client.get(
+                  PR_API,
+                  headers={
+                      "Accept": "application/vnd.github+json",
+                      "User-Agent": "coins-on-the-ground/0.1",
+                  },
+              )
+              pr.raise_for_status()
+              pr_data = pr.json()
+              pr_body = pr_data.get("body") or ""
+
+              if pr_data.get("state") != "open":
+                  raise RuntimeError("PR #833 is no longer open")
+              if (pr_data.get("head") or {}).get("sha") != EXPECTED_HEAD_SHA:
+                  raise RuntimeError("PR #833 head SHA changed; refusing stale submission")
+              for required_text in (
+                  "Closes #779",
+                  f"Agent identity: {EXPECTED_WALLET}",
+                  f"Claim session: {SESSION_ID}",
+              ):
+                  if required_text not in pr_body:
+                      raise RuntimeError(f"PR #833 is missing required evidence: {required_text}")
+
+              submission = {
+                  "prUrl": PR_URL,
+                  "summary": (
+                      "Documented the missing NEXT_PUBLIC_ENABLE_CATEGORY_TAXONOMY_PREVIEW "
+                      "entry in .env.example so all eight feature flags mapped by FLAG_ENV_MAP "
+                      "have 1:1 environment-example coverage, without changing runtime or "
+                      "production defaults."
+                  ),
+                  "tests": (
+                      "Diff review completed; verified all 8 NEXT_PUBLIC_ENABLE_* values "
+                      "referenced by FLAG_ENV_MAP are present in .env.example; confirmed "
+                      "commit 7f970fb9d0c309c16fcfce8a43e5ae528ebe4ae4 changes only "
+                      ".env.example (+3 lines)."
+                  ),
+                  "notes": "Documentation-only change for OpenLedger-Foundation/Kora-Frontend issue #779.",
+                  "prBody": pr_body,
+                  "issueNumber": 779,
+                  "issueUrl": "https://github.com/OpenLedger-Foundation/Kora-Frontend/issues/779",
+                  "commitUrl": (
+                      "https://github.com/uknwplayer/Kora-Frontend/commit/"
+                      "7f970fb9d0c309c16fcfce8a43e5ae528ebe4ae4"
+                  ),
+                  "branchUrl": (
+                      "https://github.com/uknwplayer/Kora-Frontend/tree/"
+                      "docs/env-example-feature-flags"
+                  ),
+                  "filesChanged": [".env.example"],
+                  "referencesIssue": True,
+                  "checksPassing": False,
+                  "ciStatus": "unknown",
+                  "reviewApproved": False,
+                  "merged": False,
+              }
+
+              validation = client.post(
+                  f"{API}/jobs/validate-submission",
+                  json={"jobId": JOB_ID, "submission": submission},
+                  timeout=30.0,
+              )
+              validation.raise_for_status()
+              validation_data = validation.json()
+              if validation_data.get("valid") is not True:
+                  raise RuntimeError(
+                      "Averray rejected the draft schema: "
+                      + json.dumps(validation_data, ensure_ascii=False)[:1200]
+                  )
+
+              nonce = client.post(
+                  f"{API}/auth/nonce",
+                  json={"wallet": account.address},
+                  timeout=30.0,
+              )
+              nonce.raise_for_status()
+              message = nonce.json().get("message")
+              if not isinstance(message, str) or not message:
+                  raise RuntimeError("Averray nonce response missing SIWE message")
+
+              signature = account.sign_message(
+                  encode_defunct(text=message)
+              ).signature.hex()
+              if not signature.startswith("0x"):
+                  signature = "0x" + signature
+
+              verify = client.post(
+                  f"{API}/auth/verify",
+                  json={"message": message, "signature": signature},
+                  timeout=30.0,
+              )
+              verify.raise_for_status()
+              token = verify.json().get("token")
+              if not isinstance(token, str) or not token:
+                  raise RuntimeError("Averray verify response missing bearer token")
+
+              auth = {
+                  "Authorization": f"Bearer {token}",
+                  "User-Agent": "coins-on-the-ground/0.1",
+              }
+
+              session = client.get(
+                  f"{API}/session",
+                  params={"sessionId": SESSION_ID},
+                  headers=auth,
+                  timeout=30.0,
+              )
+              session.raise_for_status()
+              before = session.json()
+              before_status = before.get("status") or before.get("state")
+
+              if before_status != "claimed":
+                  report = {
+                      "format": "cog-averray-submit-779-v1",
+                      "job_id": JOB_ID,
+                      "session_id": SESSION_ID,
+                      "wallet": account.address,
+                      "pr_url": PR_URL,
+                      "draft_valid": True,
+                      "action": "no_submit",
+                      "reason": f"session already in state {before_status}",
+                      "session_status": before_status,
+                      "private_key_printed": False,
+                      "auth_token_printed": False,
+                      "user_funds_spent": False,
+                  }
+                  Path("data/averray-submit-779.json").write_text(
+                      json.dumps(report, indent=2) + "\n",
+                      encoding="utf-8",
+                  )
+                  print(json.dumps(report, indent=2))
+                  raise SystemExit(0)
+
+              submit_payload = None
+              submit_error = None
+              try:
+                  submit = client.post(
+                      f"{API}/jobs/submit",
+                      headers={**auth, "Content-Type": "application/json"},
+                      json={"sessionId": SESSION_ID, "submission": submission},
+                      timeout=150.0,
+                  )
+                  submit.raise_for_status()
+                  submit_payload = submit.json()
+              except httpx.ReadTimeout as exc:
+                  submit_error = f"read_timeout:{type(exc).__name__}"
+
+              after_resp = client.get(
+                  f"{API}/session",
+                  params={"sessionId": SESSION_ID},
+                  headers=auth,
+                  timeout=30.0,
+              )
+              after_resp.raise_for_status()
+              after = after_resp.json()
+              after_status = after.get("status") or after.get("state")
+
+              if submit_error and after_status == "claimed":
+                  raise RuntimeError(
+                      "submit timed out and session is still claimed; not retrying because "
+                      "/jobs/submit is non-idempotent"
+                  )
+
+              if submit_payload is not None:
+                  returned_status = submit_payload.get("status") or submit_payload.get("state")
+                  if returned_status == "claimed" and after_status == "claimed":
+                      raise RuntimeError("submit returned without advancing the session")
+
+              verifier = None
+              try:
+                  vr = client.get(
+                      f"{API}/verifier/result",
+                      params={"sessionId": SESSION_ID},
+                      headers=auth,
+                      timeout=30.0,
+                  )
+                  if vr.is_success:
+                      verifier = vr.json()
+              except Exception:
+                  verifier = None
+
+          report = {
+              "format": "cog-averray-submit-779-v1",
+              "job_id": JOB_ID,
+              "session_id": SESSION_ID,
+              "wallet": account.address,
+              "pr_url": PR_URL,
+              "draft_valid": True,
+              "session_before": before_status,
+              "submit_status": (
+                  (submit_payload or {}).get("status")
+                  or (submit_payload or {}).get("state")
+                  or ("timeout_but_state_advanced" if submit_error else None)
+              ),
+              "session_after": after_status,
+              "verifier": {
+                  "outcome": (verifier or {}).get("outcome"),
+                  "reason_code": (verifier or {}).get("reasonCode"),
+                  "score": (verifier or {}).get("score"),
+                  "payout_tx": (verifier or {}).get("payoutTx"),
+              } if verifier else None,
+              "private_key_printed": False,
+              "auth_token_printed": False,
+              "user_funds_spent": False,
+          }
+
+          Path("data/averray-submit-779.json").write_text(
+              json.dumps(report, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(report, indent=2))
+          PY
+
+      - name: Upload sanitized submit receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: averray-submit-779
+          path: data/averray-submit-779.json
+          if-no-files-found: ignore
+          retention-days: 7
