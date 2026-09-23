@@ -75,3 +75,42 @@ def test_duplicate_evidence_keeps_stronger_source() -> None:
 
     assert len(reviews) == 1
     assert reviews[0].opportunity.source == "frantic"
+
+
+def test_unique_claim_urls_do_not_collapse_shared_listing_endpoint() -> None:
+    common = "https://market.example/api/listings"
+    first = _opportunity(evidence_urls=(common,))
+    first = Opportunity(
+        source=first.source,
+        title="First",
+        opportunity_class=first.opportunity_class,
+        reward=first.reward,
+        currency=first.currency,
+        authorization_basis=first.authorization_basis,
+        required_action=first.required_action,
+        risk_class=first.risk_class,
+        evidence_urls=(common,),
+        metadata={
+            **first.metadata,
+            "claim_url": "https://market.example/listings/1",
+        },
+    )
+    second = Opportunity(
+        source=first.source,
+        title="Second",
+        opportunity_class=first.opportunity_class,
+        reward=first.reward,
+        currency=first.currency,
+        authorization_basis=first.authorization_basis,
+        required_action=first.required_action,
+        risk_class=first.risk_class,
+        evidence_urls=(common,),
+        metadata={
+            **first.metadata,
+            "claim_url": "https://market.example/listings/2",
+        },
+    )
+
+    reviews = review_and_deduplicate([first, second])
+
+    assert len(reviews) == 2
