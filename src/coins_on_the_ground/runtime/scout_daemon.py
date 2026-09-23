@@ -36,7 +36,8 @@ async def run_scout_daemon(
         cycles += 1
         try:
             last_exit_code = await cycle(cycles)
-        except Exception:
+        # Daemon boundary: one broken Scout must not stop later monitoring cycles.
+        except Exception:  # noqa: BLE001
             last_exit_code = 1
 
         if last_exit_code == 0:
