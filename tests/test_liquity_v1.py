@@ -8,10 +8,10 @@ from coins_on_the_ground.opportunity import RiskClass
 from coins_on_the_ground.scouts.liquity_v1 import (
     LiquityV1Scout,
     V1TroveSnapshot,
+    _decode_troves,
     _effective_trove,
     _get_multiple_call_data,
     _liquidate_call_data,
-    _decode_troves,
     scan_liquity_v1,
 )
 
