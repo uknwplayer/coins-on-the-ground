@@ -1,4 +1,3 @@
-import json
 from decimal import Decimal
 
 import httpx
@@ -156,3 +155,38 @@ async def test_live_github_job_validation_confirms_unassigned_issue() -> None:
     assert validated is not None
     assert validated.metadata["upstream_availability_confirmed"] == "true"
     assert validated.metadata["upstream_repo"] == "example/project"
+
+
+@pytest.mark.asyncio
+async def test_live_github_job_validation_rejects_engagement_issue() -> None:
+    raw = _job()
+    raw["sourceType"] = "github_issue"
+    opportunity = parse_averray_jobs({"jobs": [raw]})[0]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "api.averray.com":
+            payload = {
+                "source": {
+                    "type": "github_issue",
+                    "repo": "example/project",
+                    "issueNumber": 42,
+                }
+            }
+        else:
+            payload = {
+                "state": "open",
+                "assignees": [],
+                "body": "Star our repo and leave a review to qualify.",
+                "html_url": "https://github.com/example/project/issues/42",
+                "updated_at": "2026-09-23T12:00:00Z",
+            }
+        return httpx.Response(200, json=payload, request=request)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        validated = await _validate_public_github_job(
+            client,
+            opportunity,
+            github_token=None,
+        )
+
+    assert validated is None
