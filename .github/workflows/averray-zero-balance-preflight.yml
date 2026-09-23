@@ -1,0 +1,146 @@
+name: Averray Zero-Balance Preflight
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/averray-zero-balance-preflight.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install wallet support
+        run: python -m pip install -e ".[wallet]"
+
+      - name: Authenticate ephemeral empty wallet and preflight jobs
+        run: |
+          mkdir -p data
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          import httpx
+          from eth_account import Account
+          from eth_account.messages import encode_defunct
+
+          API = "https://api.averray.com"
+          JOBS = (
+              "pr-openledger-foundation-kora-frontend-779",
+              "pr-openledger-foundation-kora-frontend-778",
+              "pr-saidur-droid-mergeearn-69",
+          )
+
+          account = Account.create()
+
+          with httpx.Client(
+              timeout=20.0,
+              headers={"User-Agent": "coins-on-the-ground/0.1"},
+              follow_redirects=False,
+          ) as client:
+              nonce = client.post(
+                  f"{API}/auth/nonce",
+                  json={"wallet": account.address},
+              )
+              nonce.raise_for_status()
+              nonce_payload = nonce.json()
+              message = nonce_payload.get("message")
+              if not isinstance(message, str) or not message.strip():
+                  raise RuntimeError("Averray did not return a SIWE message")
+
+              signed = account.sign_message(encode_defunct(text=message))
+              signature = signed.signature.hex()
+
+              verified = client.post(
+                  f"{API}/auth/verify",
+                  json={"message": message, "signature": signature},
+              )
+              verified.raise_for_status()
+              verified_payload = verified.json()
+              token = verified_payload.get("token")
+              if not isinstance(token, str) or not token:
+                  raise RuntimeError("Averray did not return an auth token")
+
+              headers = {"Authorization": f"Bearer {token}"}
+              rows = []
+              for job_id in JOBS:
+                  response = client.get(
+                      f"{API}/jobs/preflight",
+                      params={"jobId": job_id},
+                      headers=headers,
+                  )
+                  try:
+                      payload = response.json()
+                  except ValueError:
+                      payload = {"raw": response.text[:300]}
+
+                  if not isinstance(payload, dict):
+                      payload = {"value": payload}
+
+                  rows.append(
+                      {
+                          "job_id": job_id,
+                          "http_status": response.status_code,
+                          "eligible": payload.get("eligible"),
+                          "claimable": payload.get("claimable"),
+                          "current_wallet_can_claim": payload.get(
+                              "currentWalletCanClaim"
+                          ),
+                          "reason": payload.get("reason"),
+                          "funding_state": payload.get("fundingState"),
+                          "claim_economics_waived": payload.get(
+                              "claimEconomicsWaived"
+                          ),
+                          "claim_stake": payload.get("claimStake"),
+                          "claim_fee": payload.get("claimFee"),
+                          "total_claim_lock": payload.get("totalClaimLock"),
+                          "gas_retention_supported": payload.get(
+                              "gasRetentionSupported"
+                          ),
+                          "verifier_mode": payload.get("verifierMode"),
+                          "required_output_schema": payload.get(
+                              "requiredOutputSchema"
+                          ),
+                      }
+                  )
+
+          report = {
+              "format": "cog-averray-zero-balance-preflight-v1",
+              "wallet": account.address,
+              "ephemeral_wallet": True,
+              "private_key_persisted": False,
+              "private_key_printed": False,
+              "auth_token_persisted": False,
+              "claim_performed": False,
+              "submit_performed": False,
+              "transaction_broadcast": False,
+              "results": rows,
+          }
+
+          Path("data/averray-zero-balance-preflight.json").write_text(
+              json.dumps(report, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(report, indent=2))
+          PY
+
+      - name: Upload sanitized preflight report
+        uses: actions/upload-artifact@v4
+        with:
+          name: averray-zero-balance-preflight
+          path: data/averray-zero-balance-preflight.json
+          if-no-files-found: error
+          retention-days: 1
