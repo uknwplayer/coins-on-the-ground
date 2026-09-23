@@ -19,7 +19,7 @@ from coins_on_the_ground.scouts.sources import LIQUITY_V2
 _DEFAULT_RPC_URL = "https://1rpc.io/eth"
 _MULTI_TROVE_GETTER = "0xfa61db085510c64b83056db3a7acf3b6f631d235"
 _GET_MULTIPLE_SORTED_TROVES_SELECTOR = "0x27addfca"
-_LAST_GOOD_PRICE_SELECTOR = "0x0490be83"
+_FETCH_PRICE_SELECTOR = "0x0fdb11cf"
 _BATCH_LIQUIDATE_TROVES_SELECTOR = "0xef49a6b4"
 _FIXED_GAS_COMPENSATION_WEI = 37_500_000_000_000_000
 _WEI = Decimal(10) ** 18
@@ -123,6 +123,20 @@ def _decode_uint256(result: str) -> int:
     if not raw or len(raw) > 64:
         raise ValueError("invalid uint256 ABI payload")
     return int(raw, 16)
+
+
+def _decode_fetch_price(result: str) -> int:
+    """Decode fetchPrice() -> (uint256 price, bool oracle_failure)."""
+
+    if not isinstance(result, str) or not result.startswith("0x"):
+        raise ValueError("invalid fetchPrice eth_call result")
+    raw = result[2:]
+    if len(raw) < 128 or len(raw) % 64 != 0:
+        raise ValueError("invalid fetchPrice ABI payload")
+    oracle_failure = int(raw[64:128], 16)
+    if oracle_failure not in {0, 1}:
+        raise ValueError("invalid fetchPrice boolean result")
+    return int(raw[:64], 16)
 
 
 def _decode_combined_troves(result: str) -> tuple[TroveSnapshot, ...]:
@@ -326,6 +340,7 @@ def _opportunity(
             "trove_manager": branch.trove_manager,
             "price_feed": branch.price_feed,
             "price_usd": str(Decimal(price_wei) / _WEI),
+            "price_source": "simulated_fetchPrice_eth_call",
             "entire_debt_bold": str(Decimal(trove.entire_debt_wei) / _WEI),
             "entire_collateral": str(Decimal(trove.entire_coll_wei) / _WEI),
             "icr": _format_ratio(icr_wei),
@@ -366,14 +381,16 @@ async def scan_liquity_v2(
     stats: list[BranchScanStats] = []
 
     for branch in _BRANCHES:
+        # fetchPrice() is non-view on-chain, but eth_call simulates it without persisting
+        # writes. That gives us the oracle-fresh protocol price while keeping the Scout read-only.
         price_result = await _eth_call(
             client,
             rpc_url,
             to=branch.price_feed,
-            data=_LAST_GOOD_PRICE_SELECTOR,
+            data=_FETCH_PRICE_SELECTOR,
             block_tag=block_tag,
         )
-        price_wei = _decode_uint256(price_result)
+        price_wei = _decode_fetch_price(price_result)
         troves = await _fetch_branch_troves(
             client,
             rpc_url,
@@ -502,6 +519,7 @@ def _serialize_report(report: LiquityScanReport, rpc_url: str) -> dict[str, Any]
         "gas_price_wei": report.gas_price_wei,
         "read_only": True,
         "execution_enabled": False,
+        "price_source": "simulated_fetchPrice_eth_call",
         "branch_stats": [
             {
                 "branch": item.branch,
