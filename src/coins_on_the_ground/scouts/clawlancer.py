@@ -15,7 +15,7 @@ _BASIS_POINTS = Decimal(10_000)
 
 
 def _usdc_base_units(value: object) -> Decimal | None:
-    if not isinstance(value, str):
+    if isinstance(value, bool) or not isinstance(value, (str, int)):
         return None
     try:
         raw = Decimal(value)
@@ -57,6 +57,15 @@ def parse_clawlancer_listings(
         status = raw.get("status")
         currency = raw.get("currency")
         gross = _usdc_base_units(raw.get("price_wei"))
+        listing_type_value = (
+            listing_type.casefold() if isinstance(listing_type, str) else ""
+        )
+        status_value = status.casefold() if isinstance(status, str) else ""
+        currency_value = currency.casefold() if isinstance(currency, str) else ""
+        active = (
+            is_active is True
+            or (is_active is None and status_value in {"active", "open"})
+        )
 
         if (
             not isinstance(listing_id, str)
@@ -66,10 +75,10 @@ def parse_clawlancer_listings(
             or not title.strip()
             or not isinstance(description, str)
             or not description.strip()
-            or listing_type != "BOUNTY"
-            or is_active is not True
-            or status not in {None, "active"}
-            or currency != "USDC"
+            or listing_type_value != "bounty"
+            or not active
+            or status_value not in {"", "active", "open"}
+            or currency_value != "usdc"
             or gross is None
         ):
             continue
