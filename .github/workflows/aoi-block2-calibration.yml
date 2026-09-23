@@ -136,6 +136,52 @@ jobs:
                   record["target_index"] = addresses.index(TARGET)
                   full_hits.append(record)
 
+          # Family 1b: for each paragraph, either leave it untouched or
+          # lowercase its first alphabetic character and uppercase the final
+          # alphabetic character of ONE sentence in that paragraph. This
+          # directly models the author's odd worked example: a paragraph
+          # beginning with I is described as becoming i...himselF even though
+          # "himself" ends its first sentence, not the paragraph.
+          paragraph_options = []
+          for p in paragraphs:
+              first = next(i for i, ch in enumerate(p) if ch.isalpha())
+              ends = []
+              for a, b in sentence_spans(p):
+                  letters = [i for i in range(a, b) if p[i].isalpha()]
+                  if letters:
+                      ends.append(letters[-1])
+              paragraph_options.append((first, [None] + ends))
+
+          para_sentence_prefix = []
+          para_sentence_full = []
+          option_lists = [options for _, options in paragraph_options]
+          for choice in itertools.product(*option_lists):
+              chars = list(base)
+              selected = []
+              for pi, end_local in enumerate(choice):
+                  if end_local is None:
+                      continue
+                  first_local = paragraph_options[pi][0]
+                  offset = offsets[pi]
+                  chars[offset + first_local] = chars[offset + first_local].lower()
+                  chars[offset + end_local] = chars[offset + end_local].upper()
+                  selected.append({
+                      "paragraph": pi + 1,
+                      "first_before": paragraphs[pi][first_local],
+                      "end_before": paragraphs[pi][end_local],
+                      "end_offset": end_local,
+                  })
+              candidate = "".join(chars)
+              md5 = hashlib.md5(candidate.encode("utf-8")).hexdigest()
+              if not md5.startswith("3c6"):
+                  continue
+              addresses = derive(candidate)
+              record = {"md5": md5, "selected": selected}
+              para_sentence_prefix.append(record)
+              if TARGET in addresses:
+                  record["target_index"] = addresses.index(TARGET)
+                  para_sentence_full.append(record)
+
           # Family 2: every 1- or 2-letter capitalization toggle anywhere
           # in the exact 1,549-byte worked example. The author's language says
           # "change only ... capitalization", so this is a bounded literal test,
@@ -182,6 +228,9 @@ jobs:
               "sentence_pairs": len(pairs),
               "prefix_hits": len(prefix_hits),
               "full_hits": full_hits,
+              "paragraph_sentence_prefix_hits": len(para_sentence_prefix),
+              "paragraph_sentence_full_hits": para_sentence_full,
+              "paragraph_sentence_candidates": para_sentence_prefix,
               "edit12_alpha_positions": len(alpha),
               "edit12_prefix_hits": len(edit12_prefix),
               "edit12_full_hits": edit12_full,
@@ -192,6 +241,10 @@ jobs:
               print("Aoi sentence-boundary rule candidate MATCHED target.")
           else:
               print("No full target hit in the sentence-boundary pair family.")
+          if para_sentence_full:
+              print("Aoi paragraph+sentence-end candidate MATCHED target.")
+          else:
+              print("No full target hit in the paragraph+sentence-end family.")
           if edit12_full:
               print("Aoi 1/2-letter capitalization candidate MATCHED target.")
           else:
