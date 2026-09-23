@@ -194,3 +194,28 @@ def test_scout_cycle_cli_is_registered() -> None:
     assert args.scan_budget_per_day == 24
     assert args.refresh_interval_hours == 24
     assert args.handler.__name__ == "_scout_cycle"
+
+
+def test_scout_daemon_cli_is_registered() -> None:
+    args = build_parser().parse_args(
+        [
+            "scout-daemon",
+            "--snapshot-ledger",
+            "data/opportunity-snapshots.jsonl",
+            "--state",
+            "data/adaptive-scout-state.json",
+            "--report-dir",
+            "data/scout-reports",
+            "--tick-minutes",
+            "60",
+            "--max-cycles",
+            "2",
+        ]
+    )
+
+    assert args.snapshot_ledger == "data/opportunity-snapshots.jsonl"
+    assert args.state == "data/adaptive-scout-state.json"
+    assert args.report_dir == "data/scout-reports"
+    assert args.tick_minutes == 60
+    assert args.max_cycles == 2
+    assert args.handler.__name__ == "_scout_daemon"
