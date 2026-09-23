@@ -1,0 +1,117 @@
+name: Crypto Puzzle Scout
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/coins_on_the_ground/scouts/crypto_puzzles.py"
+      - "src/coins_on_the_ground/scouts/__init__.py"
+      - "src/coins_on_the_ground/cli.py"
+      - ".github/workflows/crypto-puzzle-scout.yml"
+  schedule:
+    - cron: "17 */6 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crypto-puzzle-scout
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install
+        run: python -m pip install .
+
+      - name: Scan authorized public crypto treasure hunts
+        env:
+          CRYPTO_PUZZLE_ETH_RPC_URL: ${{ secrets.CRYPTO_PUZZLE_ETH_RPC_URL }}
+        run: |
+          mkdir -p data
+          cog review crypto-puzzles --limit 40 --output data/crypto-puzzles.jsonl
+
+      - name: Build treasure-hunt shortlist
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          rows = []
+          path = Path("data/crypto-puzzles.jsonl")
+          if path.exists():
+              for line in path.read_text(encoding="utf-8").splitlines():
+                  if not line.strip():
+                      continue
+                  row = json.loads(line)
+                  opportunity = row.get("opportunity", {})
+                  metadata = opportunity.get("metadata", {})
+                  rows.append({
+                      "title": opportunity.get("title"),
+                      "reward": opportunity.get("reward"),
+                      "currency": opportunity.get("currency"),
+                      "review_allowed": row.get("review_allowed"),
+                      "review_score": row.get("review_score"),
+                      "puzzle_id": metadata.get("puzzle_id"),
+                      "chain": metadata.get("chain"),
+                      "puzzle_type": metadata.get("puzzle_type"),
+                      "limited_by": metadata.get("limited_by"),
+                      "usd_snapshot": metadata.get("usd_snapshot"),
+                      "live_funding_confirmed": metadata.get("live_funding_confirmed"),
+                      "live_native_balance_checked": metadata.get("live_native_balance_checked"),
+                      "explorer": metadata.get("explorer"),
+                      "evidence_urls": opportunity.get("evidence_urls", []),
+                  })
+
+          def usd(item):
+              try:
+                  return float(item.get("usd_snapshot") or 0)
+              except (TypeError, ValueError):
+                  return 0.0
+
+          rows.sort(
+              key=lambda item: (
+                  item.get("live_funding_confirmed") == "true",
+                  usd(item),
+              ),
+              reverse=True,
+          )
+
+          summary = {
+              "format": "cog-crypto-puzzle-scout-v1",
+              "execution_performed": False,
+              "scope": "explicitly authorized public treasure-hunt wallets only",
+              "candidates": len(rows),
+              "live_funding_confirmed": sum(
+                  item.get("live_funding_confirmed") == "true"
+                  for item in rows
+              ),
+              "top_candidates": rows[:20],
+          }
+          Path("data/crypto-puzzle-summary.json").write_text(
+              json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(summary, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Upload crypto puzzle report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crypto-puzzle-scout
+          path: |
+            data/crypto-puzzles.jsonl
+            data/crypto-puzzle-summary.json
+          if-no-files-found: error
+          retention-days: 14
