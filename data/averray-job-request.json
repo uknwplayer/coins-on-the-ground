@@ -1,5 +1,5 @@
 {
-  "action": "preflight",
+  "action": "claim",
   "job_id": "pr-openledger-foundation-kora-frontend-778",
   "pr_url": ""
 }
