@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from decimal import Decimal
+import os
 
 import httpx
 
@@ -36,7 +37,14 @@ def parse_taskbounty_tasks(
         raise TypeError("TaskBounty response must be an object")
 
     raw_tasks = value.get("tasks")
+    if isinstance(raw_tasks, dict):
+        raw_tasks = raw_tasks.get("items") or raw_tasks.get("data")
+    if raw_tasks is None:
+        raw_tasks = value.get("items") or value.get("data")
     if not isinstance(raw_tasks, list):
+        message = str(value.get("error") or value.get("message") or "")
+        if message:
+            raise PermissionError(f"TaskBounty listing unavailable: {message}")
         raise TypeError("TaskBounty tasks must be a list")
 
     opportunities: list[Opportunity] = []
@@ -152,13 +160,16 @@ class TaskBountyScout:
 
     name = TASKBOUNTY.source_id
 
-    def __init__(self, limit: int = 25) -> None:
+    def __init__(self, limit: int = 25, token: str | None = None) -> None:
         if limit < 1 or limit > 100:
             raise ValueError("limit must be between 1 and 100")
         self.limit = limit
+        self.token = token or os.getenv("TASKBOUNTY_API_KEY")
 
     async def discover(self) -> AsyncIterator[Opportunity]:
         headers = {"User-Agent": "coins-on-the-ground/0.1"}
+        if self.token:
+            headers["Authorization"] = f"Bearer {self.token}"
         async with httpx.AsyncClient(
             timeout=20.0,
             headers=headers,
