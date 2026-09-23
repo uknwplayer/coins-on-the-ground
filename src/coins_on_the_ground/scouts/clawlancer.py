@@ -214,24 +214,43 @@ class ClawlancerScout:
 
     async def discover(self) -> AsyncIterator[Opportunity]:
         headers = {"User-Agent": "coins-on-the-ground/0.1"}
+        discovered: list[Opportunity] = []
+        seen: set[str] = set()
+        page_size = 100
+
         async with httpx.AsyncClient(
             timeout=20.0,
             headers=headers,
             follow_redirects=False,
         ) as client:
-            response = await client.get(
-                _LISTINGS_URL,
-                params={
-                    "listing_type": "BOUNTY",
-                    "sort": "newest",
-                    "limit": str(self.limit),
-                },
-            )
-            response.raise_for_status()
-            payload = response.json()
+            for offset in range(0, 500, page_size):
+                response = await client.get(
+                    _LISTINGS_URL,
+                    params={
+                        "listing_type": "BOUNTY",
+                        "sort": "newest",
+                        "limit": str(page_size),
+                        "offset": str(offset),
+                    },
+                )
+                response.raise_for_status()
+                page = parse_clawlancer_listings(
+                    response.json(),
+                    limit=page_size,
+                )
 
-        for opportunity in parse_clawlancer_listings(
-            payload,
-            limit=self.limit,
-        ):
+                new_items = 0
+                for opportunity in page:
+                    listing_id = opportunity.metadata.get("listing_id", "")
+                    if not listing_id or listing_id in seen:
+                        continue
+                    seen.add(listing_id)
+                    discovered.append(opportunity)
+                    new_items += 1
+
+                if len(page) < page_size or new_items == 0:
+                    break
+
+        discovered.sort(key=lambda item: item.reward, reverse=True)
+        for opportunity in discovered[: self.limit]:
             yield opportunity
