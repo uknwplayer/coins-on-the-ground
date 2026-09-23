@@ -16,7 +16,7 @@ import httpx
 from coins_on_the_ground.opportunity import Opportunity, OpportunityClass, RiskClass
 from coins_on_the_ground.scouts.sources import LIQUITY_V2
 
-_DEFAULT_RPC_URL = "https://1rpc.io/eth"
+_DEFAULT_RPC_URL = "https://ethereum-rpc.publicnode.com,https://eth.llamarpc.com,https://1rpc.io/eth"
 _MULTI_TROVE_GETTER = "0xfa61db085510c64b83056db3a7acf3b6f631d235"
 _GET_MULTIPLE_SORTED_TROVES_SELECTOR = "0x27addfca"
 _FETCH_PRICE_SELECTOR = "0x0fdb11cf"
@@ -86,6 +86,15 @@ _BRANCHES = (
         mcr_wei=1_200_000_000_000_000_000,
     ),
 )
+
+
+def _rpc_endpoints(rpc_url: str) -> tuple[str, ...]:
+    endpoints = tuple(part.strip() for part in rpc_url.split(",") if part.strip())
+    if not endpoints:
+        raise ValueError("at least one Liquity RPC URL is required")
+    if any(not endpoint.startswith("https://") for endpoint in endpoints):
+        raise ValueError("Liquity RPC URLs must use https")
+    return endpoints
 
 
 def _word(value: int) -> str:
@@ -184,25 +193,43 @@ async def _rpc(
     *,
     request_id: int = 1,
 ) -> Any:
-    response = await client.post(
-        rpc_url,
-        json={
-            "jsonrpc": "2.0",
-            "id": request_id,
-            "method": method,
-            "params": params,
-        },
-    )
-    response.raise_for_status()
-    payload = response.json()
-    if not isinstance(payload, dict):
-        raise TypeError(f"{method} RPC response must be an object")
-    error = payload.get("error")
-    if error:
-        raise ValueError(f"{method} RPC call failed: {error}")
-    if "result" not in payload:
-        raise ValueError(f"{method} RPC response has no result")
-    return payload["result"]
+    retryable_statuses = {429, 500, 502, 503, 504}
+    last_transport_error: Exception | None = None
+    request = {
+        "jsonrpc": "2.0",
+        "id": request_id,
+        "method": method,
+        "params": params,
+    }
+
+    for endpoint in _rpc_endpoints(rpc_url):
+        try:
+            response = await client.post(endpoint, json=request)
+            if response.status_code in retryable_statuses:
+                last_transport_error = httpx.HTTPStatusError(
+                    f"retryable RPC status {response.status_code}",
+                    request=response.request,
+                    response=response,
+                )
+                continue
+            response.raise_for_status()
+        except httpx.HTTPError as exc:
+            last_transport_error = exc
+            continue
+
+        payload = response.json()
+        if not isinstance(payload, dict):
+            raise TypeError(f"{method} RPC response must be an object")
+        error = payload.get("error")
+        if error:
+            raise ValueError(f"{method} RPC call failed: {error}")
+        if "result" not in payload:
+            raise ValueError(f"{method} RPC response has no result")
+        return payload["result"]
+
+    if last_transport_error is not None:
+        raise last_transport_error
+    raise RuntimeError(f"{method} RPC call had no usable endpoint")
 
 
 async def _eth_call(
@@ -462,8 +489,7 @@ class LiquityV2Scout:
         max_troves_per_branch: int = 5_000,
     ) -> None:
         self.rpc_url = rpc_url or os.getenv("LIQUITY_RPC_URL") or _DEFAULT_RPC_URL
-        if not self.rpc_url.startswith("https://"):
-            raise ValueError("Liquity RPC URL must use https")
+        _rpc_endpoints(self.rpc_url)
         self.batch_size = batch_size
         self.max_troves_per_branch = max_troves_per_branch
 
@@ -513,7 +539,7 @@ def _serialize_report(report: LiquityScanReport, rpc_url: str) -> dict[str, Any]
     return {
         "format": "cog-liquity-v2-scan-v1",
         "generated_at": datetime.now(UTC).isoformat(),
-        "rpc_host": httpx.URL(rpc_url).host,
+        "rpc_hosts": [httpx.URL(endpoint).host for endpoint in _rpc_endpoints(rpc_url)],
         "chain_id": 1,
         "block_number": report.block_number,
         "gas_price_wei": report.gas_price_wei,
@@ -539,8 +565,7 @@ def _serialize_report(report: LiquityScanReport, rpc_url: str) -> dict[str, Any]
 
 async def _run(args: argparse.Namespace) -> int:
     rpc_url = args.rpc_url or os.getenv("LIQUITY_RPC_URL") or _DEFAULT_RPC_URL
-    if not rpc_url.startswith("https://"):
-        raise ValueError("Liquity RPC URL must use https")
+    _rpc_endpoints(rpc_url)
 
     headers = {"User-Agent": "coins-on-the-ground/0.1"}
     async with httpx.AsyncClient(
