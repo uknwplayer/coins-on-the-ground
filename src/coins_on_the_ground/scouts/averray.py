@@ -19,8 +19,8 @@ _MANIFEST_URL = "https://averray.com/.well-known/agent-tools.json"
 _AGENTS_URL = "https://averray.com/agents/"
 
 _ENGAGEMENT_RE = re.compile(
-    r"(?i)\\b(?:star (?:our|the) repo|leave (?:a )?review|follow (?:our|the)|"
-    r"retweet|upvote|subscribe)\\b"
+    r"(?i)\b(?:star (?:our|the) repo|leave (?:a )?review|follow (?:our|the)|"
+    r"retweet|upvote|subscribe)\b"
 )
 
 _REAL_WAIVER_SOURCES = frozenset(
@@ -313,6 +313,9 @@ class AverrayScout:
 
     async def discover(self) -> AsyncIterator[Opportunity]:
         headers = {"User-Agent": "coins-on-the-ground/0.1"}
+        github_token = os.getenv("GITHUB_TOKEN")
+        validated_opportunities: list[Opportunity] = []
+
         async with httpx.AsyncClient(
             timeout=20.0,
             headers=headers,
@@ -329,12 +332,14 @@ class AverrayScout:
             response.raise_for_status()
             payload = response.json()
 
-        github_token = os.getenv("GITHUB_TOKEN")
-        for opportunity in parse_averray_jobs(payload, limit=self.limit):
-            validated = await _validate_public_github_job(
-                client,
-                opportunity,
-                github_token=github_token,
-            )
-            if validated is not None:
-                yield validated
+            for opportunity in parse_averray_jobs(payload, limit=self.limit):
+                validated = await _validate_public_github_job(
+                    client,
+                    opportunity,
+                    github_token=github_token,
+                )
+                if validated is not None:
+                    validated_opportunities.append(validated)
+
+        for opportunity in validated_opportunities:
+            yield opportunity
