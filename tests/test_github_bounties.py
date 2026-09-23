@@ -74,3 +74,24 @@ def test_speculative_bounty_is_not_bootstrap_candidate() -> None:
 
     assert flags["speculative_bounty"] == "true"
     assert flags["bootstrap_candidate"] == "false"
+
+
+def test_default_query_prefers_unassigned_bounties() -> None:
+    scout = GitHubBountyScout()
+    assert "no:assignee" in scout.query
+
+
+def test_explicitly_unfunded_and_hardware_bounties_are_not_primary() -> None:
+    unfunded = _bounty_metadata_flags(
+        "Optimization idea",
+        "Benchmark cost is $1,428. Not a bounty.",
+    )
+    hardware = _bounty_metadata_flags(
+        "[BOUNTY $3000] Fix device kernel",
+        "Approved bounty. Requires a Wormhole single-device hardware regression test.",
+    )
+
+    assert unfunded["explicitly_unfunded"] == "true"
+    assert unfunded["bootstrap_candidate"] == "false"
+    assert hardware["special_hardware_required"] == "true"
+    assert hardware["bootstrap_candidate"] == "capability_review"
