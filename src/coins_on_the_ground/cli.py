@@ -71,6 +71,7 @@ from coins_on_the_ground.planning import (
 from coins_on_the_ground.runtime import run_scout_daemon
 from coins_on_the_ground.scouts import (
     AgentBountiesScout,
+    AverrayScout,
     AkashScout,
     AlgoraScout,
     BidPostLoopScout,
@@ -227,6 +228,8 @@ async def _collect(scout: Scout) -> list[Opportunity]:
 
 
 def _scouts_for_source(source: str, limit: int) -> list[Scout]:
+    if source == "averray":
+        return [AverrayScout(limit=limit)]
     if source == "agent-bounties":
         return [AgentBountiesScout(limit=limit)]
     if source == "akash":
@@ -254,6 +257,7 @@ def _scouts_for_source(source: str, limit: int) -> list[Scout]:
     if source == "taskmarket":
         return [TaskmarketScout(limit=limit)]
     return [
+        AverrayScout(limit=limit),
         AgentBountiesScout(limit=limit),
         AkashScout(limit=limit),
         BidPostLoopScout(limit=limit),
@@ -318,6 +322,10 @@ async def _emit_scan(scout: Scout, args: argparse.Namespace) -> int:
         )
     )
     return 0
+
+
+async def _scan_averray(args: argparse.Namespace) -> int:
+    return await _emit_scan(AverrayScout(limit=args.limit), args)
 
 
 async def _scan_agent_bounties(args: argparse.Namespace) -> int:
@@ -1413,7 +1421,7 @@ def _add_common_scan_args(parser: argparse.ArgumentParser) -> None:
 def _add_source_argument(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "source",
-        choices=("all", "agent-bounties", "akash", "bidpostloop", "clawlancer", "frantic", "github-bounties", "issuehunt", "algora", "immunefi", "keep3r", "sherlock", "taskbounty", "taskmarket"),
+        choices=("all", "averray", "agent-bounties", "akash", "bidpostloop", "clawlancer", "frantic", "github-bounties", "issuehunt", "algora", "immunefi", "keep3r", "sherlock", "taskbounty", "taskmarket"),
         default="all",
         nargs="?",
     )
@@ -1453,6 +1461,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     scan = subparsers.add_parser("scan", help="discover read-only opportunity candidates")
     scan_sub = scan.add_subparsers(dest="source", required=True)
+
+    averray = scan_sub.add_parser(
+        "averray",
+        help="scan public zero-upfront Averray starter jobs",
+    )
+    _add_common_scan_args(averray)
+    averray.set_defaults(handler=_scan_averray)
 
     agent_bounties = scan_sub.add_parser(
         "agent-bounties",
