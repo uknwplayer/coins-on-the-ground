@@ -104,6 +104,8 @@ def _json_value(value: Any) -> Any:
 def serialize(opportunity: Opportunity) -> dict[str, Any]:
     return {key: _json_value(value) for key, value in asdict(opportunity).items()} | {
         "expected_net_value": _json_value(opportunity.expected_net_value),
+        "upfront_funding_class": opportunity.upfront_funding_class,
+        "zero_balance_executable": opportunity.zero_balance_executable,
         "execution_candidate": opportunity.execution_candidate,
     }
 
