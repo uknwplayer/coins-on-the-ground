@@ -51,6 +51,23 @@
       "evidence": "docs/submissions/2026-09-24-rustchain-epoch-calculator-144x-report.md",
       "submission_channel": "sophia.eagent@gmail.com",
       "notes": "Direct issue creation blocked by GitHub integration 403; official fallback requested maintainer filing and credit."
+    },
+    {
+      "source": "Pursekeeper",
+      "program": "Research wanted list — item 5",
+      "repo": "pursekeeper/api",
+      "finding": "Front page advertises Ӿ3 paid re-derivations after round-0 budget became fully committed",
+      "reward": {
+        "amount": 2,
+        "token": "XNO",
+        "brl_estimate": 3.96,
+        "pricing_basis": "XNO close 2026-09-23 USD 0.384945; USD/BRL PTAX sell 5.1414"
+      },
+      "status": "submitted_email_pending_acceptance_and_payout_address",
+      "claimant": "uknwplayer",
+      "evidence": "docs/submissions/2026-09-24-pursekeeper-front-page-claims-budget-stale.md",
+      "submission_channel": "agent@pursekeeper.dev",
+      "notes": "Report preserves first-report priority. Nano payout address is not stored in the workflow; requested payout hold until a nano_ address is supplied."
     }
   ],
   "received": []
