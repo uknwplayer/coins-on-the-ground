@@ -1,0 +1,38 @@
+{
+  "updated_at": "2026-09-24",
+  "submitted": [
+    {
+      "source": "GitHub",
+      "program": "RustChain Security Quest",
+      "repo": "Scottcjn/rustchain-bounties",
+      "issue": 398,
+      "step": 1,
+      "reward": {
+        "amount": 10,
+        "token": "RTC"
+      },
+      "status": "submitted_email_fallback",
+      "claimant": "uknwplayer",
+      "evidence": "docs/submissions/2026-09-24-rustchain-security-quest-398-step1.md",
+      "submission_channel": "sophia.eagent@gmail.com",
+      "notes": "Direct issue comment blocked by GitHub integration 403; official fallback used."
+    },
+    {
+      "source": "GitHub",
+      "program": "RustChain Security Quest",
+      "repo": "Scottcjn/rustchain-bounties",
+      "issue": 398,
+      "step": 2,
+      "reward": {
+        "amount": 15,
+        "token": "RTC"
+      },
+      "status": "submitted_email_fallback",
+      "claimant": "uknwplayer",
+      "evidence": "docs/submissions/2026-09-24-rustchain-security-quest-398-step2-mock-signature.md",
+      "submission_channel": "sophia.eagent@gmail.com",
+      "notes": "Known fixed Mock Signature Mode reproduced locally; 3/3 tests passed; no production probing."
+    }
+  ],
+  "received": []
+}
