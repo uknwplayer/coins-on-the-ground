@@ -32,6 +32,25 @@
       "evidence": "docs/submissions/2026-09-24-rustchain-security-quest-398-step2-mock-signature.md",
       "submission_channel": "sophia.eagent@gmail.com",
       "notes": "Known fixed Mock Signature Mode reproduced locally; 3/3 tests passed; no production probing."
+    },
+    {
+      "source": "GitHub",
+      "program": "RustChain Ongoing Bug Bounty",
+      "repo": "Scottcjn/rustchain-bounties",
+      "issue": 71,
+      "finding": "Mining calculator treats 10-minute slots as epochs, inflating reward estimates ~144x",
+      "reward": {
+        "token": "RTC",
+        "min_amount": 5,
+        "max_amount": 50,
+        "triage": "pending",
+        "note": "Program pays 5-15 RTC for Low and 15-50 RTC for Medium; maintainer determines severity."
+      },
+      "status": "submitted_email_fallback_pending_triage",
+      "claimant": "uknwplayer",
+      "evidence": "docs/submissions/2026-09-24-rustchain-epoch-calculator-144x-report.md",
+      "submission_channel": "sophia.eagent@gmail.com",
+      "notes": "Direct issue creation blocked by GitHub integration 403; official fallback requested maintainer filing and credit."
     }
   ],
   "received": []
