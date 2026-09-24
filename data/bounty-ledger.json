@@ -131,6 +131,27 @@
       "claimant": "uknwplayer",
       "payout_address": "pending_private_submission",
       "notes": "Issue is also in Stellar Wave for implementation. Wave applications do not replace original reporter attribution. SECURITY.md states researcher payout occurs after fix is deployed. No verified historical USDC payout found yet."
+    },
+    {
+      "source": "GitHub",
+      "program": "StellarLend Bug Bounty Program",
+      "repo": "Smartdevs17/stellarlend",
+      "issue": 1115,
+      "finding": "MigrationHub pulls user tokens into the hub, never deposits/refunds them, yet marks migration Completed",
+      "reward": {
+        "token": "USDC",
+        "amount_if_reported_severity_accepted": 5000,
+        "reported_severity": "High",
+        "brl_estimate_if_accepted": 25957,
+        "pricing_basis": "USD/BRL 5.1914 checked 2026-09-24",
+        "triage": "pending",
+        "note": "SECURITY.md lists High = $5,000 USDC; maintainer has not accepted severity or payout."
+      },
+      "status": "submitted_github_pending_security_triage_and_fix_deployment",
+      "claimant": "uknwplayer",
+      "evidence": "docs/submissions/2026-09-24-stellarlend-migrationhub-stranded-funds.md",
+      "payout_address": "pending_private_submission",
+      "notes": "Repository unit test itself confirms migrated tokens remain in MigrationHub while status is Completed. No public payout confirmation assumed."
     }
   ],
   "received": [],
