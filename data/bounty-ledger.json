@@ -70,5 +70,25 @@
       "notes": "Report preserves first-report priority. Nano payout address is not stored in the workflow; requested payout hold until a nano_ address is supplied."
     }
   ],
-  "received": []
+  "received": [],
+  "ready_to_submit": [
+    {
+      "source": "GitHub",
+      "program": "Chain.Love DBIP Grant Program",
+      "repo": "Chain-Love/chain-love",
+      "finding": "Canonicalize former Base Account SDK as Coinbase Wallet SDK; remove product-as-provider identity",
+      "reward": {
+        "amount": 10,
+        "token": "USDC",
+        "network": "Ethereum mainnet ERC-20",
+        "brl_estimate": 51.79,
+        "pricing_basis": "USDC ≈ USD 0.9998; 2026-09-24 PTAX USD/BRL sell 5.1795"
+      },
+      "status": "ready_to_submit_github_write_blocked_403",
+      "claimant": "uknwplayer",
+      "evidence": "docs/submissions/2026-09-24-chainlove-base-account-coinbase-wallet-sdk-dbip.md",
+      "payout_address": "pending",
+      "notes": "Direct issue creation blocked by GitHub integration 403. No official alternate submission channel used. Ethereum-mainnet ERC-20 address may be supplied on approval."
+    }
+  ]
 }
