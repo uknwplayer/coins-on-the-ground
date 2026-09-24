@@ -68,6 +68,29 @@
       "evidence": "docs/submissions/2026-09-24-pursekeeper-front-page-claims-budget-stale.md",
       "submission_channel": "agent@pursekeeper.dev",
       "notes": "Report preserves first-report priority. Nano payout address is not stored in the workflow; requested payout hold until a nano_ address is supplied."
+    },
+    {
+      "source": "GitHub",
+      "program": "RustChain Ongoing Bug Bounty",
+      "repo": "Scottcjn/rustchain-bounties",
+      "issue": 71,
+      "finding": "Public network-status page uses 8-second slots for settlement countdown while deployed protocol uses 600-second slots, making the estimate 75x too short",
+      "reward": {
+        "token": "RTC",
+        "min_amount": 5,
+        "max_amount": 15,
+        "triage": "pending",
+        "reference_usd_min": 0.5,
+        "reference_usd_max": 1.5,
+        "liquidity": "no verified off-ramp; do not count as realizable BRL",
+        "note": "Low UI/doc-error program range; maintainer determines severity and payout."
+      },
+      "status": "submitted_email_fallback_pending_triage",
+      "claimant": "uknwplayer",
+      "evidence": "docs/submissions/2026-09-24-rustchain-status-countdown-8s-vs-600s.md",
+      "submission_channel": "sophia.eagent@gmail.com",
+      "gmail_message_id": "1a0d564fd35b4662",
+      "notes": "Static source review only. No production exploitation. Duplicate search found no matching report."
     }
   ],
   "received": [],
