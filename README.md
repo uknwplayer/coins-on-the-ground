@@ -1,5 +1,7 @@
 # Coins on the Ground
 
+[![Powered by RustChain](https://img.shields.io/badge/Powered%20by-RustChain-orange)](https://rustchain.org)
+
 Coins on the Ground é um sistema experimental para descobrir pequenas oportunidades econômicas
 legítimas que humanos tendem a ignorar por serem fragmentadas, de baixo valor, técnicas ou caras
 de localizar manualmente.
