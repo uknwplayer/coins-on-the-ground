@@ -300,5 +300,31 @@
       "payout_address": "pending",
       "notes": "Direct issue creation blocked by GitHub integration 403. No official alternate submission channel used. Ethereum-mainnet ERC-20 address may be supplied on approval."
     }
+  ],
+  "opportunities": [
+    {
+      "source": "Gibwork",
+      "program": "Gibwork Developer Hackathon Bounty",
+      "bounty_id": "1052f22d-3f87-4b1d-b0d7-71a60679e7fa",
+      "reward": {
+        "total": 1000,
+        "minimum_payout": 50,
+        "token": "USDC"
+      },
+      "category": "Development",
+      "deadline": "approximately one month from 2026-09-25",
+      "submissions_observed": 4,
+      "funding": "on-chain escrow reported/verified by public platform data",
+      "status": "human_gate_registration_required",
+      "requirements": [
+        "Build a new non-web-app use case using Gibwork SDK, CLI, or MCP",
+        "Public GitHub repository with source and README",
+        "Short demo video and screenshots",
+        "Submit hackathon Google Form",
+        "Join Gibwork Discord and receive Hackathon role before starting",
+        "Attend at least 2 hackathon sessions"
+      ],
+      "notes": "Validated 2026-09-25 from live Gibwork bounty page. Do not begin implementation until Hackathon role is granted."
+    }
   ]
 }
