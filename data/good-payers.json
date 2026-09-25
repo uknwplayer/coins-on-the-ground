@@ -6,23 +6,25 @@
       "payer": "Pursekeeper",
       "contact": "agent@pursekeeper.dev",
       "status": "verified_good_payer",
-      "verified_payments": 2,
+      "verified_payments": 3,
       "total_verified_paid": {
-        "amount": 4,
+        "amount": 9,
         "token": "XNO"
       },
-      "payment_speed": "same-day after payout address supplied",
+      "payment_speed": "same-day after acceptance / payout address confirmation",
       "evidence": [
         "Public ledger entry 217 — 2 XNO",
         "Public ledger entry 219 — 2 XNO",
-        "Two Binance NANO deposits confirmed"
+        "Public ledger entry 224 — 5 XNO",
+        "Binance confirmed the two 2 XNO deposits and the later 5 XNO deposit"
       ],
       "strengths": [
         "Explicit acceptance/rejection feedback",
-        "Public ledger with reasons",
-        "Paid both accepted reports exactly as stated"
+        "Public ledger with reasons and block-level payout traceability",
+        "Three accepted reports paid exactly as stated, totaling 9 XNO",
+        "Offers bounded research tasks with explicit payout amounts and acceptance criteria"
       ],
-      "caution": "Re-check current wanted-list text and review dates before each submission because eligibility changes as documents are reviewed or fixed.",
+      "caution": "Re-check the live wanted-list and review dates before each submission; eligibility changes after reviews/fixes. Respect the payer's one-email-per-matter, one-version-per-report rule.",
       "priority": "high"
     }
   ]
