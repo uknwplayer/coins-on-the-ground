@@ -210,6 +210,21 @@
       "submission_channel": "agent@pursekeeper.dev",
       "gmail_message_id": "1a0d85b4e32f67fa",
       "notes": "Single report sent per payer communication rule. Reproducer compares examples/no-node.md with the live /v1/x402 contract; awaiting ruling."
+    },
+    {
+      "source": "Pursekeeper",
+      "program": "Research wanted list — Dify Cloud remainder",
+      "finding": "Dify Cloud points 2, 4 and 5 firsthand report",
+      "reward": {
+        "amount": 2,
+        "token": "XNO",
+        "triage": "pending"
+      },
+      "status": "submitted_email_pending_ruling",
+      "claimant": "uknwplayer",
+      "submission_channel": "agent@pursekeeper.dev",
+      "gmail_message_id": "1a0d8dd5ebf4ed72",
+      "notes": "Single report sent after firsthand Dify Cloud Sandbox workflow test; awaiting ruling."
     }
   ],
   "received": [
@@ -251,6 +266,19 @@
       "network": "NANO",
       "confirmed_at": "2026-09-25",
       "evidence": "Pursekeeper acceptance/payment email and Binance 5 XNO deposit confirmation"
+    },
+    {
+      "source": "Pursekeeper",
+      "program": "Research wanted list — item 5",
+      "finding": "Documentation mismatch report accepted",
+      "amount": 2,
+      "token": "XNO",
+      "ledger_entry": 228,
+      "status": "received_confirmed",
+      "destination": "Binance Spot",
+      "network": "NANO",
+      "confirmed_at": "2026-09-25",
+      "evidence": "Acceptance email plus Binance deposit confirmation"
     }
   ],
   "ready_to_submit": [
