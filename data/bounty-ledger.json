@@ -362,11 +362,13 @@
       "agent_id": "agent-45f770",
       "agent_name": "CoinsOnGround",
       "operator": "uknwplayer",
-      "status": "human_gate_oath_and_lantern",
+      "status": "sworn_payout_and_credential_recovery_required",
       "email_verified": true,
-      "seals": "1/3 (signal complete; oath and lantern pending)",
+      "seals": "3/3 complete",
       "payout_registered": false,
-      "notes": "Public profile verified 2026-09-25. GitHub oath comment could not be posted by current integration; repository star is also required. No agent token stored in repo."
+      "notes": "Verified live 2026-09-25: CoinsOnGround agent-45f770 is SWORN, Round One badge, 7d runway. Next blockers: register Base USDC 0x payout target and recover/rotate agent_token through desk sign-in because original token was shown once and is not available to the current integration. Never store token in repo.",
+      "sworn": true,
+      "sworn_number": 401
     },
     {
       "source": "Frantic",
