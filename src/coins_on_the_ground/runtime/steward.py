@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable, Literal
+from typing import Any, Literal
 from uuid import uuid4
 
 TaskState = Literal["pending", "claimed", "acked", "failed", "uncertain", "human_review"]
@@ -140,7 +141,7 @@ class AutonomousSteward:
             try:
                 task.result = handler(task)
                 task.state = "acked"
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 -- external handlers may raise arbitrary exceptions
                 task.state = "uncertain"
                 task.result = {"error": type(exc).__name__, "message": str(exc)}
 
