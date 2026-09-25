@@ -412,8 +412,8 @@
         "occupied": 7,
         "available": 3
       },
-      "status": "selected_next_human_scope_reveal",
-      "notes": "Selected as next Frantic target on 2026-09-25 because it is funded, <=$10, has 3 slots, no initial capital indicated, and completion of one paid bounty unlocks larger paid work. Private/sealed scope must be inspected in authenticated UI before claim."
+      "status": "deprioritized_pending_first_acceptance",
+      "notes": "Live check 2026-09-25: 3/10 open, 7 delivered, 0 accepted, 0 paid, 12 rejected attempts, 34 expired. Recent 4/5 and 5/5 auto-reviewed deliveries are awaiting human review. Do not claim blind while private scope remains sealed."
     },
     {
       "source": "Frantic",
@@ -431,6 +431,34 @@
       },
       "status": "open_private_requires_identity",
       "notes": "Potential no-capital task; inspect private scope after Frantic identity gate is complete."
+    },
+    {
+      "source": "Gibwork",
+      "program": "Invite a UGC Creator to Gibwork and Get a Reply",
+      "bounty_id": "c35bd56f-9c59-4155-863a-cacfcb36a4b2",
+      "reward": {
+        "total": 30,
+        "minimum_payout": 3,
+        "token": "USDC"
+      },
+      "category": "Social Media",
+      "status": "selected_human_gate_send_one_personalized_dm",
+      "submissions_observed": 12,
+      "time_remaining_observed": "11 days",
+      "initial_capital_required": false,
+      "candidate": {
+        "handle": "@jennamediaco",
+        "followers_observed": 15072,
+        "verified_observed": true,
+        "fit": "UGC creator with public AI website/SaaS UGC example"
+      },
+      "requirements": [
+        "Invite one qualifying UGC creator via personalized X DM",
+        "Creator must be verified on X and have at least 800 followers",
+        "Get a relevant reply",
+        "Submit profile URL, at least two relevant video links, fit explanation, and screenshots of sent DM + reply with dates",
+        "No bulk spam or fabricated proof"
+      ]
     }
   ]
 }
