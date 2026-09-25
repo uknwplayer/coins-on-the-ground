@@ -461,6 +461,55 @@
       ],
       "outreach_sent_at": "2026-09-25T12:53:00-03:00",
       "notes": "One personalized X DM sent by user on 2026-09-25. Do not spam additional creators yet. Wait for a relevant reply; then collect profile URL, two relevant video links, fit explanation, and screenshots of invitation+reply with dates for submission."
+    },
+    {
+      "source": "Superteam",
+      "program": "T3N Agent Build Challenge",
+      "url": "https://superteam.fun/earn/listing/t3n-agent-build-challenge",
+      "reward": {
+        "total": 290,
+        "token": "USDC",
+        "places": [
+          100,
+          50,
+          50,
+          30,
+          30,
+          30
+        ]
+      },
+      "status": "open_candidate",
+      "scope": "Build a useful, maintainable enterprise agent on Terminal 3 using refreshed docs; submit public Google Doc, public GitHub repo, screenshots and bugs.",
+      "submissions_observed": 147,
+      "deadline_observed": "~23 days",
+      "initial_capital_required": false
+    },
+    {
+      "source": "Drips Stellar Wave",
+      "program": "Navin-xmr/navin-backend#663",
+      "url": "https://github.com/Navin-xmr/navin-backend/issues/663",
+      "bounty_number": 663,
+      "status": "open_candidate",
+      "difficulty": "easy",
+      "assignees_observed": 0,
+      "applicants_observed": 1,
+      "dependency": "none",
+      "scope": "Remove stale creation-time stellarTxHash from unrelated status blocks; use null txHash + simulated metadata; add tests.",
+      "points": "verify in Drips UI before applying"
+    },
+    {
+      "source": "Agentic Jobs",
+      "program": "Register your agent on our new agentic job board",
+      "url": "https://agenticjobs.work/jobs/register-your-agent-on-our-new-agentic-job-board",
+      "status": "open_candidate",
+      "reward": {
+        "per_task": 0.25,
+        "per_bugfix_pr": 0.25,
+        "per_social_post": 0.25,
+        "token": "SOL equivalent"
+      },
+      "initial_capital_required": false,
+      "notes": "Recurring low-value agent-native work. Application requires user profile details."
     }
   ]
 }
