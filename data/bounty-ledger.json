@@ -196,43 +196,20 @@
       "notes": "Second and final per-item claim under #1102 cap=2. Live production HTML verified; requested UI/cosmetic tier."
     },
     {
-      "id": "pursekeeper-item-1-arion-vend",
       "source": "Pursekeeper",
-      "program": "Research wanted list — item 1",
+      "program": "Research wanted list — item 5",
       "repo": "pursekeeper/api",
-      "finding": "ARION paid Vend 0.0005 XNO from independently earned-and-swapped funds for a delivered /api/v1/nano-info call",
+      "finding": "no-node.md promises 6 free GPU work requests/minute at about one second without stating the shared 30/minute GPU budget and CPU fallback",
       "reward": {
-        "amount": 5,
+        "amount": 2,
         "token": "XNO",
-        "brl_estimate_if_accepted": 9.66,
-        "pricing_basis": "XNO close 2026-09-24 USD 0.372149; USD/BRL reference 5.1914",
-        "triage": "accepted"
+        "triage": "pending"
       },
-      "status": "paid_confirmed",
+      "status": "submitted_email_pending_ruling",
       "claimant": "uknwplayer",
       "submission_channel": "agent@pursekeeper.dev",
-      "gmail_message_id": "1a0d7ff602ea8b10",
-      "evidence": {
-        "send_block": "B749B757EE750FC9AEA72F33CB429EACCD2ABEC9F2CCF59BF17AFAC304C9A58F",
-        "buyer": "ARION (The Colony)",
-        "buyer_account": "nano_3m8cz87zwxb1y16ob4bzp1eyek78qaig8ktohk7d45b18sh6u9exbowbnekr",
-        "seller": "Vend API Merchant",
-        "seller_account": "nano_1yo6c1t64ahfjdw1dxizmbbnpdmbrckwhw9phbg5pdkeubrizga4qhnjmnx7",
-        "amount_xno": 0.0005,
-        "purchase": "Vend /api/v1/nano-info paid call",
-        "buyer_record": "https://github.com/dhyabi2/agent-conversations/blob/main/conversations/ARION--The-Colony.json",
-        "seller_delivery_proof": "https://extract.paypercall.dev/api/v1/delivery-proof?block_hash=B749B757EE750FC9AEA72F33CB429EACCD2ABEC9F2CCF59BF17AFAC304C9A58F",
-        "funding": "ARION converted externally earned USDC-BASE to 6.2756 XNO via Nanswap order 00b1d9dfdaac3f before the purchase"
-      },
-      "notes": "Accepted and paid by pursekeeper as research item 1 second of five. Public ledger entry 224. Binance confirmed 5 XNO deposited. Pursekeeper independently verified chain history, swap-origin funding, seller delivery-proof, buyer statement, and seller-side solicitation.",
-      "payout": {
-        "amount": 5,
-        "token": "XNO",
-        "ledger_entry": 224,
-        "destination": "Binance Spot via native NANO deposit",
-        "confirmed_at": "2026-09-25",
-        "evidence": "Pursekeeper acceptance email + Binance deposit receipt + public ledger entry 224"
-      }
+      "gmail_message_id": "1a0d85b4e32f67fa",
+      "notes": "Single report sent per payer communication rule. Reproducer compares examples/no-node.md with the live /v1/x402 contract; awaiting ruling."
     }
   ],
   "received": [
@@ -265,7 +242,7 @@
     {
       "source": "Pursekeeper",
       "program": "Research wanted list — item 1",
-      "finding": "ARION paid Vend for a delivered /api/v1/nano-info call using independently swapped Nano",
+      "finding": "ARION paid Vend for a real Nano-priced API call; independent agent-to-agent payment evidence accepted",
       "amount": 5,
       "token": "XNO",
       "ledger_entry": 224,
@@ -273,7 +250,7 @@
       "destination": "Binance Spot",
       "network": "NANO",
       "confirmed_at": "2026-09-25",
-      "evidence": "Pursekeeper acceptance email and Binance deposit receipt"
+      "evidence": "Pursekeeper acceptance/payment email and Binance 5 XNO deposit confirmation"
     }
   ],
   "ready_to_submit": [
@@ -294,100 +271,6 @@
       "evidence": "docs/submissions/2026-09-24-chainlove-base-account-coinbase-wallet-sdk-dbip.md",
       "payout_address": "pending",
       "notes": "Direct issue creation blocked by GitHub integration 403. No official alternate submission channel used. Ethereum-mainnet ERC-20 address may be supplied on approval."
-    }
-  ],
-  "in_progress": [
-    {
-      "id": "pursekeeper-item-2a-make-ai-agents",
-      "source": "Pursekeeper",
-      "program": "Research wanted list — item 2(a)",
-      "target": "Make AI Agents hosted runtime",
-      "reward": {
-        "amount": 3,
-        "token": "XNO",
-        "status": "hold_granted"
-      },
-      "status": "held_report_due_2026-10-02T12:00:00Z",
-      "claimant": "uknwplayer",
-      "submitted_via": "email",
-      "constraints": [
-        "Do not spend paid quota before hold confirmation",
-        "Firsthand hosted-runtime evidence required",
-        "Test persistence, signing capability, egress, and unattended trigger"
-      ],
-      "notes": "Hold granted by pursekeeper on 2026-09-25. Five-point firsthand hosted-runtime report due 2026-10-02 12:00 UTC; 3 XNO on acceptance. Documentary-only context unpaid; plan cost is claimant's."
-    },
-    {
-      "id": "pursekeeper-item-2a-ilands-native",
-      "source": "Pursekeeper",
-      "program": "Research wanted list — item 2(a)",
-      "target": "iLands native iLander workspace",
-      "reward": {
-        "amount": 3,
-        "token": "XNO",
-        "status": "hold_granted"
-      },
-      "status": "held_report_due_2026-10-02T12:00:00Z",
-      "claimant": "uknwplayer",
-      "submitted_via": "email",
-      "constraints": [
-        "Verdict must come from inside a native iLander",
-        "BYOA runners do not count",
-        "Failure to create a native iLander is an unpaid access limitation",
-        "Five-point firsthand report required"
-      ],
-      "notes": "Hold granted by pursekeeper on 2026-09-25; 3 XNO on acceptance."
-    },
-    {
-      "id": "pursekeeper-dify-reopened-245",
-      "source": "Pursekeeper",
-      "program": "Research wanted list — Dify reopened points 2,4,5",
-      "target": "Dify Cloud",
-      "reward": {
-        "amount": 2,
-        "token": "XNO",
-        "status": "open_first_valid_report"
-      },
-      "status": "open_no_hold_first_report_wins",
-      "claimant": "uknwplayer",
-      "deadline": "2026-10-01T12:00:00Z",
-      "constraints": [
-        "Only reopened points 2, 4 and 5",
-        "First valid report wins",
-        "Firsthand evidence required",
-        "No hold is granted"
-      ],
-      "notes": "Pursekeeper explicitly said go ahead on 2026-09-25. Point 3/signing was already completed by prior claimant; remaining work is persistence, egress and unattended running."
-    },
-    {
-      "id": "stellar-wave9-ophirpay-776",
-      "source": "Drips Wave / Stellar Wave 9",
-      "target": "OphirPay/OphirPay#776 — Add request and response examples to every OpenAPI path",
-      "reward": {
-        "type": "points_share",
-        "points": 150,
-        "wave_budget_usd": 75000,
-        "fixed_usd": false,
-        "note": "Final payout = contributor's share of total Wave 9 points; not a fixed dollar bounty."
-      },
-      "status": "human_action_required_drips_apply",
-      "claimant": "uknwplayer",
-      "deadline": "2026-09-30T13:00:00Z",
-      "competition": {
-        "observed_applicants": 1,
-        "assignee": null,
-        "checked_at": "2026-09-25"
-      },
-      "requirements": [
-        "KYC in Drips Wave is mandatory before applying",
-        "Must be assigned through Drips Wave and resolved before Wave 9 ends",
-        "PR must target integration/staging",
-        "Every body-accepting path needs a request example; every path a success response example",
-        "Error responses document machine code alongside HTTP status",
-        "OpenAPI conformance test must fail when a new path ships without examples"
-      ],
-      "preflight": "Existing API_COOKBOOK.md has realistic payloads/responses; docs/openapi.yaml and openapi-conformance.test.ts are present on integration/staging. Scope appears executable without paid infrastructure.",
-      "notes": "Do not start implementation until uknwplayer applies through Drips and is accepted/assigned. Monitor for assignee/competition changes."
     }
   ]
 }
