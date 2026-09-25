@@ -1,0 +1,101 @@
+name: Coins Autonomous Steward
+
+on:
+  workflow_run:
+    workflows:
+      - Adaptive Scout
+      - Permissionless Reward Scout
+      - Crypto Puzzle Scout
+      - Averray Payout Watch
+      - CI
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      event_kind:
+        description: Canonical event kind
+        required: false
+        type: string
+      event_source:
+        description: Canonical event source
+        required: false
+        type: string
+      external_id:
+        description: Optional external id used for idempotency
+        required: false
+        type: string
+      payload_json:
+        description: JSON object payload
+        required: false
+        default: "{}"
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: coins-autonomous-steward
+  cancel-in-progress: false
+
+jobs:
+  steward:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Restore Steward ledger
+        uses: actions/cache/restore@v4
+        with:
+          path: data/steward-ledger.jsonl
+          key: ${{ runner.os }}-coins-steward-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            ${{ runner.os }}-coins-steward-
+
+      - name: Install
+        run: python -m pip install .
+
+      - name: Process event
+        id: steward
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p data
+          cog-steward github-event \
+            --github-event "$GITHUB_EVENT_PATH" \
+            --policy examples/steward-policy.example.json \
+            --ledger data/steward-ledger.jsonl \
+            | tee data/steward-report.json
+
+      - name: Verify ledger
+        if: always()
+        shell: bash
+        run: |
+          if [ -f data/steward-ledger.jsonl ]; then
+            cog-steward status --ledger data/steward-ledger.jsonl \
+              | tee data/steward-status.json
+          fi
+
+      - name: Save Steward ledger
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data/steward-ledger.jsonl
+          key: ${{ runner.os }}-coins-steward-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Upload Steward checkpoint
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coins-autonomous-steward-${{ github.run_id }}
+          path: |
+            data/steward-ledger.jsonl
+            data/steward-report.json
+            data/steward-status.json
+          if-no-files-found: error
+          retention-days: 30
