@@ -56,8 +56,9 @@ class StewardEvent:
                 "kind": self.kind,
                 "source": self.source,
                 "external_id": self.external_id,
-                "payload": dict(self.payload),
             }
+            if self.external_id is None:
+                basis["payload"] = dict(self.payload)
             object.__setattr__(self, "event_id", digest(basis)[:32])
 
     def to_dict(self) -> dict[str, Any]:
