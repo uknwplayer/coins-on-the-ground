@@ -442,7 +442,7 @@
         "token": "USDC"
       },
       "category": "Social Media",
-      "status": "selected_human_gate_send_one_personalized_dm",
+      "status": "outreach_sent_waiting_reply",
       "submissions_observed": 12,
       "time_remaining_observed": "11 days",
       "initial_capital_required": false,
@@ -458,7 +458,9 @@
         "Get a relevant reply",
         "Submit profile URL, at least two relevant video links, fit explanation, and screenshots of sent DM + reply with dates",
         "No bulk spam or fabricated proof"
-      ]
+      ],
+      "outreach_sent_at": "2026-09-25T12:53:00-03:00",
+      "notes": "One personalized X DM sent by user on 2026-09-25. Do not spam additional creators yet. Wait for a relevant reply; then collect profile URL, two relevant video links, fit explanation, and screenshots of invitation+reply with dates for submission."
     }
   ]
 }
