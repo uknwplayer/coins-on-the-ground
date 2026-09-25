@@ -489,13 +489,16 @@
       "program": "Navin-xmr/navin-backend#663",
       "url": "https://github.com/Navin-xmr/navin-backend/issues/663",
       "bounty_number": 663,
-      "status": "open_candidate",
+      "status": "applied_waiting_assignment",
       "difficulty": "easy",
       "assignees_observed": 0,
-      "applicants_observed": 1,
+      "applicants_observed": 2,
       "dependency": "none",
       "scope": "Remove stale creation-time stellarTxHash from unrelated status blocks; use null txHash + simulated metadata; add tests.",
-      "points": "verify in Drips UI before applying"
+      "points": 100,
+      "application_id": "921076b4-325b-4b88-9e91-0287246015b3",
+      "applied_at": "2026-09-25T13:09:00-03:00",
+      "notes": "Drips Wave 9 application by @uknwplayer confirmed in GitHub comments. Do not start implementation until assigned/accepted."
     },
     {
       "source": "Agentic Jobs",
