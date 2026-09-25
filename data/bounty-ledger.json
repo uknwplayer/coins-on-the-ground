@@ -243,5 +243,50 @@
       "payout_address": "pending",
       "notes": "Direct issue creation blocked by GitHub integration 403. No official alternate submission channel used. Ethereum-mainnet ERC-20 address may be supplied on approval."
     }
+  ],
+  "in_progress": [
+    {
+      "id": "pursekeeper-item-2a-make-ai-agents",
+      "source": "Pursekeeper",
+      "program": "Research wanted list — item 2(a)",
+      "target": "Make AI Agents hosted runtime",
+      "reward": {
+        "amount": 3,
+        "token": "XNO",
+        "status": "requested_hold"
+      },
+      "status": "hold_requested_waiting_reply",
+      "claimant": "uknwplayer",
+      "submitted_via": "email",
+      "constraints": [
+        "Do not spend paid quota before hold confirmation",
+        "Firsthand hosted-runtime evidence required",
+        "Test persistence, signing capability, egress, and unattended trigger"
+      ],
+      "notes": "Hold request sent to pursekeeper on 2026-09-25. No reply at last Gmail check."
+    },
+    {
+      "id": "pursekeeper-item-1-exactchange-third-party-purchase",
+      "source": "Pursekeeper",
+      "program": "Research wanted list — item 1",
+      "target": "Pre-existing independently funded agent-to-agent Nano purchase",
+      "candidate": "ExactChange / Feeless402",
+      "reward": {
+        "amount": 5,
+        "token": "XNO",
+        "slots_remaining_last_verified": 4
+      },
+      "status": "evidence_outreach_pending",
+      "claimant": "uknwplayer",
+      "evidence_lead": "ExactChange is publicly identified as a Feeless402-operated agent and pursekeeper records its funding trail as independent of pursekeeper.",
+      "constraints": [
+        "Neither party may be pursekeeper",
+        "Buyer funds must not come from pursekeeper or the seller",
+        "Need both parties' words or qualifying seller-side receipt/status record",
+        "Do not reuse already-filled Feeless402→NanoGPT pair",
+        "Prefer pre-existing real purchase; do not manufacture a transaction"
+      ],
+      "notes": "GitHub issue outreach to Feeless402 failed with integration 403. Asked pursekeeper by email to forward a no-spend evidence question to ExactChange."
+    }
   ]
 }
