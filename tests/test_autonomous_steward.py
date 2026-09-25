@@ -247,3 +247,39 @@ def test_no_route_persists_observation_without_task(tmp_path: Path) -> None:
         "event.observed",
         "event.no_route",
     ]
+
+
+def test_external_id_deduplicates_payload_variants(tmp_path: Path) -> None:
+    ledger = StewardLedger(tmp_path / "ledger.jsonl")
+    calls = 0
+
+    def handler(event, task):
+        nonlocal calls
+        calls += 1
+        return DispatchResult(ok=True)
+
+    steward = AutonomousSteward(
+        ledger=ledger,
+        policy=_policy(),
+        handlers={"record_only": handler, "triage_opportunity": handler},
+    )
+    first_event = StewardEvent(
+        kind="workflow.completed",
+        source="Adaptive Scout",
+        external_id="github-run-7",
+        payload={"status": "completed"},
+    )
+    replay_event = StewardEvent(
+        kind="workflow.completed",
+        source="Adaptive Scout",
+        external_id="github-run-7",
+        payload={"status": "completed", "extra": "late metadata"},
+    )
+
+    first = steward.process(first_event)
+    replay = steward.process(replay_event)
+
+    assert first_event.event_id == replay_event.event_id
+    assert first.status == TaskStatus.ACKED.value
+    assert replay.duplicate is True
+    assert calls == 1
