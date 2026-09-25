@@ -1,4 +1,9 @@
-from coins_on_the_ground.runtime.steward import AutonomousSteward, StewardEvent, StewardLedger, StewardPolicy
+from coins_on_the_ground.runtime.steward import (
+    AutonomousSteward,
+    StewardEvent,
+    StewardLedger,
+    StewardPolicy,
+)
 
 
 def make_steward(tmp_path, handler):
