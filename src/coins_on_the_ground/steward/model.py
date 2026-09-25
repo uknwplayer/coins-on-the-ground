@@ -5,7 +5,8 @@ import json
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 
 def utc_now() -> datetime:
@@ -95,7 +96,7 @@ class StewardTask:
     created_at: datetime
 
     @classmethod
-    def from_event(cls, event: StewardEvent, route: Route) -> "StewardTask":
+    def from_event(cls, event: StewardEvent, route: Route) -> StewardTask:
         task_id = digest({"event_id": event.event_id, "route_id": route.route_id})[:32]
         return cls(
             task_id=task_id,
