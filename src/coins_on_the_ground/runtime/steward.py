@@ -78,13 +78,8 @@ Handler = Callable[[StewardTask], dict[str, Any]]
 class AutonomousSteward:
     """Event-driven, persist-before-dispatch steward for Coins on the Ground."""
 
-    def __init__(
-        self,
-        ledger: StewardLedger,
-        policy: StewardPolicy,
-        routes: dict[str, tuple[str, str]],
-        handlers: dict[str, Handler],
-    ) -> None:
+    def __init__(self, ledger: StewardLedger, policy: StewardPolicy,
+                 routes: dict[str, tuple[str, str]], handlers: dict[str, Handler]) -> None:
         self.ledger = ledger
         self.policy = policy
         self.routes = routes
@@ -94,16 +89,14 @@ class AutonomousSteward:
     def task_id(event: StewardEvent) -> str:
         canonical = json.dumps(
             {"kind": event.kind, "payload": event.payload, "source": event.source},
-            sort_keys=True,
-            separators=(",", ":"),
+            sort_keys=True, separators=(",", ":"),
         ).encode()
         return hashlib.sha256(canonical).hexdigest()[:24]
 
     def ingest(self, event: StewardEvent) -> StewardTask | None:
         route = self.routes.get(event.kind)
         if route is None:
-            return None  # NO ROUTE: no agent is awakened.
-
+            return None
         capability, handler_name = route
         admitted = self.policy.admits(event, capability)
         if admitted is None:
@@ -112,29 +105,21 @@ class AutonomousSteward:
         tasks = self.ledger.load()
         task_id = self.task_id(event)
         if task_id in tasks:
-            return tasks[task_id]  # idempotent replay
+            return tasks[task_id]
 
-        task = StewardTask(
-            task_id=task_id,
-            event_id=event.event_id,
-            kind=event.kind,
-            payload=event.payload,
-            state=admitted,
-            capability=capability,
-            handler=handler_name,
-        )
+        task = StewardTask(task_id=task_id, event_id=event.event_id, kind=event.kind,
+                           payload=event.payload, state=admitted, capability=capability,
+                           handler=handler_name)
         tasks[task_id] = task
-        self.ledger.save(tasks)  # critical invariant: persist BEFORE dispatch
+        self.ledger.save(tasks)  # persist BEFORE dispatch
         return task
 
     def dispatch(self, task_id: str) -> StewardTask:
         tasks = self.ledger.load()
         task = tasks[task_id]
-
         if task.state in {"acked", "failed", "uncertain", "human_review"}:
             return task
         if task.state != "pending":
-            # A pre-existing claim may have performed an external side effect.
             task.state = "uncertain"
             task.updated_at = utc_now()
             tasks[task_id] = task
@@ -145,7 +130,7 @@ class AutonomousSteward:
         task.attempts += 1
         task.updated_at = utc_now()
         tasks[task_id] = task
-        self.ledger.save(tasks)  # claim is durable before handler invocation
+        self.ledger.save(tasks)  # durable claim before handler
 
         handler = self.handlers.get(task.handler or "")
         if handler is None:
@@ -155,7 +140,7 @@ class AutonomousSteward:
             try:
                 task.result = handler(task)
                 task.state = "acked"
-            except Exception as exc:  # external completion is unknown after an exception
+            except Exception as exc:
                 task.state = "uncertain"
                 task.result = {"error": type(exc).__name__, "message": str(exc)}
 
@@ -169,12 +154,7 @@ class AutonomousSteward:
         task = tasks[task_id]
         if task.state not in {"claimed", "failed", "uncertain"}:
             return task
-        if external_happened is None:
-            task.state = "uncertain"
-        elif external_happened:
-            task.state = "acked"
-        else:
-            task.state = "failed"
+        task.state = "uncertain" if external_happened is None else ("acked" if external_happened else "failed")
         task.updated_at = utc_now()
         tasks[task_id] = task
         self.ledger.save(tasks)
