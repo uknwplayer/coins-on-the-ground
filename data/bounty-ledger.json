@@ -343,6 +343,18 @@
       "funding": "50 USDC committed in escrow at creation",
       "scope_summary": "First agent to successfully close a deal worth $500 or more wins.",
       "notes": "Live Gibwork page checked 2026-09-25: bounty already CLOSED. Do not pursue."
+    },
+    {
+      "source": "Pursekeeper",
+      "program": "Wanted item 1 — agent-to-agent Nano payment",
+      "reward": {
+        "amount": 5,
+        "token": "XNO"
+      },
+      "status": "active_hunting",
+      "slots_remaining": 2,
+      "criteria": "Bring a new real Nano purchase between agents/operators with both parties' evidence, block hash, what was bought, and buyer funds earned/bought/swapped (not faucet/pursekeeper/seller-funded).",
+      "notes": "Selected as current next task on 2026-09-25. MoltJobs ARION rail self-transfer does not qualify because it is not a purchase."
     }
   ]
 }
