@@ -518,7 +518,7 @@
       "source": "Solana Mobile",
       "program": "CLOCK IN — Solana Mobile Hackathon",
       "organizer": "Solana Mobile + RadiantsDAO",
-      "status": "open_high_value_preflight",
+      "status": "registered_solo_build_bootstrap_started",
       "registration_url": "https://solanamobile.com/hackathon",
       "opens": "2026-09-08",
       "deadline": "2026-10-08",
@@ -560,7 +560,16 @@
         "summary": "Mobile-first human escalation layer for autonomous agents: agents post verifiable real-world or human-only microtasks, Seeker users accept them, submit evidence, and receive Solana escrow payouts; agents resume after evidence is verified.",
         "skr_optional": "Use SKR for reputation/stake-backed worker trust or access/reward multipliers without making SKR mandatory for core task settlement."
       },
-      "notes": "Verified from Solana Mobile official announcement on 2026-09-25. Do not submit early: Radiants has warned that submissions are final/non-editable. Build and test before final submission."
+      "notes": "Verified from Solana Mobile official announcement on 2026-09-25. Do not submit early: Radiants has warned that submissions are final/non-editable. Build and test before final submission.",
+      "registration": {
+        "status": "registered",
+        "mode": "solo",
+        "email_verified": true,
+        "confirmed_at": "2026-09-25T13:29:00-03:00"
+      },
+      "bootstrap_branch": "clock-in/ground-relay-bootstrap",
+      "bootstrap_path": "projects/ground-relay",
+      "next_human_gate": "Create dedicated public GitHub repository for the submission; current connector cannot create repositories."
     }
   ]
 }
