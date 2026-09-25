@@ -513,6 +513,54 @@
       },
       "initial_capital_required": false,
       "notes": "Recurring low-value agent-native work. Application requires user profile details."
+    },
+    {
+      "source": "Solana Mobile",
+      "program": "CLOCK IN — Solana Mobile Hackathon",
+      "organizer": "Solana Mobile + RadiantsDAO",
+      "status": "open_high_value_preflight",
+      "registration_url": "https://solanamobile.com/hackathon",
+      "opens": "2026-09-08",
+      "deadline": "2026-10-08",
+      "winners_expected": "early November 2026",
+      "reward": {
+        "main_pool_usdc": 125000,
+        "placements_usdc": [
+          30000,
+          25000,
+          20000,
+          15000,
+          10000,
+          5000,
+          5000,
+          5000,
+          5000,
+          5000
+        ],
+        "skr_bonus_value_usd": 10000
+      },
+      "deliverables": [
+        "functional Android APK",
+        "public GitHub repository with source",
+        "demo video showing app in use",
+        "pitch deck or short presentation"
+      ],
+      "technical_requirements": [
+        "mobile-first Android app for Solana Mobile/Seeker",
+        "meaningful Solana interaction",
+        "Solana Mobile Stack integration",
+        "Mobile Wallet Adapter integration"
+      ],
+      "prize_claim_condition": "Winning teams must publish the app on the Solana dApp Store to claim the prize.",
+      "seeker_required": false,
+      "submissions_final": true,
+      "initial_capital_required": false,
+      "candidate_concept": {
+        "name": "Ground Relay",
+        "summary": "Mobile-first human escalation layer for autonomous agents: agents post verifiable real-world or human-only microtasks, Seeker users accept them, submit evidence, and receive Solana escrow payouts; agents resume after evidence is verified.",
+        "skr_optional": "Use SKR for reputation/stake-backed worker trust or access/reward multipliers without making SKR mandatory for core task settlement."
+      },
+      "notes": "Verified from Solana Mobile official announcement on 2026-09-25. Do not submit early: Radiants has warned that submissions are final/non-editable. Build and test before final submission."
     }
   ]
 }
