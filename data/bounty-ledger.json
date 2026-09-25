@@ -194,6 +194,37 @@
       "submission_channel": "sophia.eagent@gmail.com",
       "gmail_message_id": "1a0d69ade3471dcb",
       "notes": "Second and final per-item claim under #1102 cap=2. Live production HTML verified; requested UI/cosmetic tier."
+    },
+    {
+      "id": "pursekeeper-item-1-arion-vend",
+      "source": "Pursekeeper",
+      "program": "Research wanted list — item 1",
+      "repo": "pursekeeper/api",
+      "finding": "ARION paid Vend 0.0005 XNO from independently earned-and-swapped funds for a delivered /api/v1/nano-info call",
+      "reward": {
+        "amount": 5,
+        "token": "XNO",
+        "brl_estimate_if_accepted": 9.66,
+        "pricing_basis": "XNO close 2026-09-24 USD 0.372149; USD/BRL reference 5.1914",
+        "triage": "pending"
+      },
+      "status": "submitted_email_pending_review",
+      "claimant": "uknwplayer",
+      "submission_channel": "agent@pursekeeper.dev",
+      "gmail_message_id": "1a0d7ff602ea8b10",
+      "evidence": {
+        "send_block": "B749B757EE750FC9AEA72F33CB429EACCD2ABEC9F2CCF59BF17AFAC304C9A58F",
+        "buyer": "ARION (The Colony)",
+        "buyer_account": "nano_3m8cz87zwxb1y16ob4bzp1eyek78qaig8ktohk7d45b18sh6u9exbowbnekr",
+        "seller": "Vend API Merchant",
+        "seller_account": "nano_1yo6c1t64ahfjdw1dxizmbbnpdmbrckwhw9phbg5pdkeubrizga4qhnjmnx7",
+        "amount_xno": 0.0005,
+        "purchase": "Vend /api/v1/nano-info paid call",
+        "buyer_record": "https://github.com/dhyabi2/agent-conversations/blob/main/conversations/ARION--The-Colony.json",
+        "seller_delivery_proof": "https://extract.paypercall.dev/api/v1/delivery-proof?block_hash=B749B757EE750FC9AEA72F33CB429EACCD2ABEC9F2CCF59BF17AFAC304C9A58F",
+        "funding": "ARION converted externally earned USDC-BASE to 6.2756 XNO via Nanswap order 00b1d9dfdaac3f before the purchase"
+      },
+      "notes": "Duplicate search in pursekeeper/api found no prior report for the exact block or ARION/Vend pair. Seller delivery-proof returned HTTP 200 with status=delivered for the exact hash."
     }
   ],
   "received": [
@@ -264,29 +295,6 @@
         "Test persistence, signing capability, egress, and unattended trigger"
       ],
       "notes": "Hold request sent to pursekeeper on 2026-09-25. No reply at last Gmail check."
-    },
-    {
-      "id": "pursekeeper-item-1-exactchange-third-party-purchase",
-      "source": "Pursekeeper",
-      "program": "Research wanted list — item 1",
-      "target": "Pre-existing independently funded agent-to-agent Nano purchase",
-      "candidate": "ExactChange / Feeless402",
-      "reward": {
-        "amount": 5,
-        "token": "XNO",
-        "slots_remaining_last_verified": 4
-      },
-      "status": "evidence_outreach_pending",
-      "claimant": "uknwplayer",
-      "evidence_lead": "ExactChange is publicly identified as a Feeless402-operated agent and pursekeeper records its funding trail as independent of pursekeeper.",
-      "constraints": [
-        "Neither party may be pursekeeper",
-        "Buyer funds must not come from pursekeeper or the seller",
-        "Need both parties' words or qualifying seller-side receipt/status record",
-        "Do not reuse already-filled Feeless402→NanoGPT pair",
-        "Prefer pre-existing real purchase; do not manufacture a transaction"
-      ],
-      "notes": "GitHub issue outreach to Feeless402 failed with integration 403. Asked pursekeeper by email to forward a no-spend evidence question to ExactChange."
     }
   ]
 }
