@@ -518,7 +518,7 @@
       "source": "Solana Mobile",
       "program": "CLOCK IN — Solana Mobile Hackathon",
       "organizer": "Solana Mobile + RadiantsDAO",
-      "status": "registered_solo_build_bootstrap_started",
+      "status": "registered_solo_repo_created_mobile_bootstrap_in_progress",
       "registration_url": "https://solanamobile.com/hackathon",
       "opens": "2026-09-08",
       "deadline": "2026-10-08",
@@ -569,7 +569,18 @@
       },
       "bootstrap_branch": "clock-in/ground-relay-bootstrap",
       "bootstrap_path": "projects/ground-relay",
-      "next_human_gate": "Create dedicated public GitHub repository for the submission; current connector cannot create repositories."
+      "next_human_gate": "Create dedicated public GitHub repository for the submission; current connector cannot create repositories.",
+      "submission_repo": "https://github.com/uknwplayer/ground-relay",
+      "mobile_bootstrap": {
+        "mwa_provider": true,
+        "devnet_cluster": true,
+        "wallet_connect": true,
+        "claim_receipt_memo": true,
+        "protocol_types": true,
+        "task_state_machine": true,
+        "ci": true
+      },
+      "next_gate": "Get CI green, then run Android custom development build on an emulator/device with an MWA-compatible wallet."
     }
   ]
 }
