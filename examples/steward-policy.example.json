@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "allowed_autonomous_actions": [
+    "observe.workflow",
+    "analysis.triage",
+    "ledger.write"
+  ],
+  "human_only_actions": [
+    "external.claim",
+    "work.submit",
+    "asset.transfer",
+    "wallet.send"
+  ],
+  "denied_actions": [
+    "repository.merge",
+    "main.write",
+    "trust.modify",
+    "identity.issue",
+    "secret.read",
+    "arbitrary.shell"
+  ],
+  "allowed_executors": [
+    "steward.observe",
+    "steward.triage",
+    "steward.accounting"
+  ],
+  "routes": [
+    {
+      "id": "adaptive-scout-completed",
+      "event_kind": "workflow.completed",
+      "source": "Adaptive Scout",
+      "executor": "steward.observe",
+      "capability": "observe.workflow",
+      "action": "observe.workflow",
+      "handler": "record_only"
+    },
+    {
+      "id": "permissionless-scout-completed",
+      "event_kind": "workflow.completed",
+      "source": "Permissionless Reward Scout",
+      "executor": "steward.observe",
+      "capability": "observe.workflow",
+      "action": "observe.workflow",
+      "handler": "record_only"
+    },
+    {
+      "id": "crypto-puzzle-scout-completed",
+      "event_kind": "workflow.completed",
+      "source": "Crypto Puzzle Scout",
+      "executor": "steward.observe",
+      "capability": "observe.workflow",
+      "action": "observe.workflow",
+      "handler": "record_only"
+    },
+    {
+      "id": "payout-watch-completed",
+      "event_kind": "workflow.completed",
+      "source": "Averray Payout Watch",
+      "executor": "steward.accounting",
+      "capability": "observe.payment",
+      "action": "ledger.write",
+      "handler": "record_only"
+    },
+    {
+      "id": "ci-completed",
+      "event_kind": "workflow.completed",
+      "source": "CI",
+      "executor": "steward.observe",
+      "capability": "observe.ci",
+      "action": "observe.workflow",
+      "handler": "record_only"
+    },
+    {
+      "id": "opportunity-candidate",
+      "event_kind": "opportunity.candidate",
+      "source": "*",
+      "executor": "steward.triage",
+      "capability": "analyze.opportunity",
+      "action": "analysis.triage",
+      "handler": "triage_opportunity"
+    },
+    {
+      "id": "external-bounty-claim",
+      "event_kind": "bounty.claim.requested",
+      "source": "*",
+      "executor": "steward.triage",
+      "capability": "claim.external",
+      "action": "external.claim",
+      "handler": "record_only"
+    },
+    {
+      "id": "external-work-submit",
+      "event_kind": "work.submit.requested",
+      "source": "*",
+      "executor": "steward.triage",
+      "capability": "submit.external",
+      "action": "work.submit",
+      "handler": "record_only"
+    },
+    {
+      "id": "asset-transfer",
+      "event_kind": "asset.transfer.requested",
+      "source": "*",
+      "executor": "steward.accounting",
+      "capability": "asset.transfer",
+      "action": "asset.transfer",
+      "handler": "record_only"
+    }
+  ]
+}

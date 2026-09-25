@@ -279,6 +279,31 @@ src/coins_on_the_ground/
   execution/       # futuro; intencionalmente inativo no MVP
 ```
 
+## Autonomous Steward
+
+O projeto agora possui uma camada experimental de orquestração event-driven em
+`src/coins_on_the_ground/steward/`.
+
+O Steward segue três invariantes:
+
+1. **persist-before-dispatch** — toda tarefa é registrada antes de claim/execução;
+2. **sem retry automático após ambiguidade** — `FAILED` e `UNCERTAIN` exigem reconciliação explícita;
+3. **autoridade explícita** — claim externo, submit e movimentação de ativos permanecem human-gated,
+   enquanto merge, escrita em `main`, alteração de trust, emissão de identidade, leitura de secrets
+   e shell arbitrário são negados.
+
+O workflow `.github/workflows/autonomous-steward.yml` é orientado a eventos e não possui
+agendamento periódico próprio. Ele reage a conclusões de workflows relevantes, mantém um ledger
+JSONL hash-chained entre execuções via cache do GitHub Actions e publica checkpoints como artifacts.
+
+Uso local:
+
+```bash
+cog-steward status --ledger ./data/steward-ledger.jsonl
+```
+
+Veja `docs/autonomous-steward.md` e `examples/steward-policy.example.json`.
+
 ## Fora de escopo
 
 O projeto não foi criado para:
