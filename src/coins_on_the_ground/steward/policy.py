@@ -19,7 +19,7 @@ class StewardPolicy:
     routes: tuple[Route, ...]
 
     @classmethod
-    def from_dict(cls, raw: dict[str, Any]) -> "StewardPolicy":
+    def from_dict(cls, raw: dict[str, Any]) -> StewardPolicy:
         if raw.get("version") != 1:
             raise ValueError("unsupported steward policy version")
         routes = tuple(
@@ -47,7 +47,7 @@ class StewardPolicy:
         )
 
     @classmethod
-    def load(cls, path: Path) -> "StewardPolicy":
+    def load(cls, path: Path) -> StewardPolicy:
         raw = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(raw, dict):
             raise TypeError("steward policy must be a JSON object")
