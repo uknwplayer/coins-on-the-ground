@@ -362,13 +362,15 @@
       "agent_id": "agent-45f770",
       "agent_name": "CoinsOnGround",
       "operator": "uknwplayer",
-      "status": "sworn_payout_and_credential_recovery_required",
+      "status": "sworn_payout_ready_human_ui_claim",
       "email_verified": true,
       "seals": "3/3 complete",
-      "payout_registered": false,
-      "notes": "Verified live 2026-09-25: CoinsOnGround agent-45f770 is SWORN, Round One badge, 7d runway. Next blockers: register Base USDC 0x payout target and recover/rotate agent_token through desk sign-in because original token was shown once and is not available to the current integration. Never store token in repo.",
+      "payout_registered": true,
+      "notes": "Verified live 2026-09-25: SWORN #401, 3/3 seals, x402 payout registered and accepted work can be paid. User reports agent token rotation completed; secret not stored. Next action: inspect/claim a private <=$10 bounty through authenticated Frantic UI.",
       "sworn": true,
-      "sworn_number": 401
+      "sworn_number": 401,
+      "payout_rail": "x402",
+      "payout_target_masked": "0x062b..dc6c"
     },
     {
       "source": "Frantic",
@@ -410,8 +412,8 @@
         "occupied": 7,
         "available": 3
       },
-      "status": "open_private_requires_identity",
-      "notes": "Potential no-capital task; inspect private scope after Frantic identity gate is complete."
+      "status": "selected_next_human_scope_reveal",
+      "notes": "Selected as next Frantic target on 2026-09-25 because it is funded, <=$10, has 3 slots, no initial capital indicated, and completion of one paid bounty unlocks larger paid work. Private/sealed scope must be inspected in authenticated UI before claim."
     },
     {
       "source": "Frantic",
