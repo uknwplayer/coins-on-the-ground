@@ -20,7 +20,7 @@ def event_from_github_action(path: Path) -> StewardEvent:
         completed_at = workflow_run.get("updated_at") or workflow_run.get("created_at")
         occurred_at = datetime.now(UTC)
         if isinstance(completed_at, str):
-            occurred_at = datetime.fromisoformat(completed_at.replace("Z", "+00:00"))
+            occurred_at = datetime.fromisoformat(completed_at)
         payload: dict[str, Any] = {
             "workflow_name": name,
             "run_id": workflow_run.get("id"),
