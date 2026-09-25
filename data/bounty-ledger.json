@@ -206,9 +206,9 @@
         "token": "XNO",
         "brl_estimate_if_accepted": 9.66,
         "pricing_basis": "XNO close 2026-09-24 USD 0.372149; USD/BRL reference 5.1914",
-        "triage": "pending"
+        "triage": "accepted"
       },
-      "status": "submitted_email_pending_review",
+      "status": "paid_confirmed",
       "claimant": "uknwplayer",
       "submission_channel": "agent@pursekeeper.dev",
       "gmail_message_id": "1a0d7ff602ea8b10",
@@ -224,7 +224,15 @@
         "seller_delivery_proof": "https://extract.paypercall.dev/api/v1/delivery-proof?block_hash=B749B757EE750FC9AEA72F33CB429EACCD2ABEC9F2CCF59BF17AFAC304C9A58F",
         "funding": "ARION converted externally earned USDC-BASE to 6.2756 XNO via Nanswap order 00b1d9dfdaac3f before the purchase"
       },
-      "notes": "Duplicate search in pursekeeper/api found no prior report for the exact block or ARION/Vend pair. Seller delivery-proof returned HTTP 200 with status=delivered for the exact hash."
+      "notes": "Accepted and paid by pursekeeper as research item 1 second of five. Public ledger entry 224. Binance confirmed 5 XNO deposited. Pursekeeper independently verified chain history, swap-origin funding, seller delivery-proof, buyer statement, and seller-side solicitation.",
+      "payout": {
+        "amount": 5,
+        "token": "XNO",
+        "ledger_entry": 224,
+        "destination": "Binance Spot via native NANO deposit",
+        "confirmed_at": "2026-09-25",
+        "evidence": "Pursekeeper acceptance email + Binance deposit receipt + public ledger entry 224"
+      }
     }
   ],
   "received": [
@@ -253,6 +261,19 @@
       "network": "NANO",
       "confirmed_at": "2026-09-25",
       "evidence": "Pursekeeper confirmation email and Binance deposit receipt"
+    },
+    {
+      "source": "Pursekeeper",
+      "program": "Research wanted list — item 1",
+      "finding": "ARION paid Vend for a delivered /api/v1/nano-info call using independently swapped Nano",
+      "amount": 5,
+      "token": "XNO",
+      "ledger_entry": 224,
+      "status": "received_confirmed",
+      "destination": "Binance Spot",
+      "network": "NANO",
+      "confirmed_at": "2026-09-25",
+      "evidence": "Pursekeeper acceptance email and Binance deposit receipt"
     }
   ],
   "ready_to_submit": [
@@ -284,9 +305,9 @@
       "reward": {
         "amount": 3,
         "token": "XNO",
-        "status": "requested_hold"
+        "status": "hold_granted"
       },
-      "status": "hold_requested_waiting_reply",
+      "status": "held_report_due_2026-10-02T12:00:00Z",
       "claimant": "uknwplayer",
       "submitted_via": "email",
       "constraints": [
@@ -294,7 +315,49 @@
         "Firsthand hosted-runtime evidence required",
         "Test persistence, signing capability, egress, and unattended trigger"
       ],
-      "notes": "Hold request sent to pursekeeper on 2026-09-25. No reply at last Gmail check."
+      "notes": "Hold granted by pursekeeper on 2026-09-25. Five-point firsthand hosted-runtime report due 2026-10-02 12:00 UTC; 3 XNO on acceptance. Documentary-only context unpaid; plan cost is claimant's."
+    },
+    {
+      "id": "pursekeeper-item-2a-ilands-native",
+      "source": "Pursekeeper",
+      "program": "Research wanted list — item 2(a)",
+      "target": "iLands native iLander workspace",
+      "reward": {
+        "amount": 3,
+        "token": "XNO",
+        "status": "hold_granted"
+      },
+      "status": "held_report_due_2026-10-02T12:00:00Z",
+      "claimant": "uknwplayer",
+      "submitted_via": "email",
+      "constraints": [
+        "Verdict must come from inside a native iLander",
+        "BYOA runners do not count",
+        "Failure to create a native iLander is an unpaid access limitation",
+        "Five-point firsthand report required"
+      ],
+      "notes": "Hold granted by pursekeeper on 2026-09-25; 3 XNO on acceptance."
+    },
+    {
+      "id": "pursekeeper-dify-reopened-245",
+      "source": "Pursekeeper",
+      "program": "Research wanted list — Dify reopened points 2,4,5",
+      "target": "Dify Cloud",
+      "reward": {
+        "amount": 2,
+        "token": "XNO",
+        "status": "open_first_valid_report"
+      },
+      "status": "open_no_hold_first_report_wins",
+      "claimant": "uknwplayer",
+      "deadline": "2026-10-01T12:00:00Z",
+      "constraints": [
+        "Only reopened points 2, 4 and 5",
+        "First valid report wins",
+        "Firsthand evidence required",
+        "No hold is granted"
+      ],
+      "notes": "Pursekeeper explicitly said go ahead on 2026-09-25. Point 3/signing was already completed by prior claimant; remaining work is persistence, egress and unattended running."
     }
   ]
 }
