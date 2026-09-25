@@ -518,7 +518,7 @@
       "source": "Solana Mobile",
       "program": "CLOCK IN — Solana Mobile Hackathon",
       "organizer": "Solana Mobile + RadiantsDAO",
-      "status": "registered_solo_standalone_apk_ready_human_smoke_test",
+      "status": "standalone_apk_runtime_crash_asyncstorage_fix_building",
       "registration_url": "https://solanamobile.com/hackathon",
       "opens": "2026-09-08",
       "deadline": "2026-10-08",
@@ -569,7 +569,7 @@
       },
       "bootstrap_branch": "clock-in/ground-relay-bootstrap",
       "bootstrap_path": "projects/ground-relay",
-      "next_human_gate": "Install standalone APK on Android. Expected first screen is Ground Relay app itself, not Expo Development Build. Then tap Connect with an MWA-compatible wallet and report/screenshots.",
+      "next_human_gate": "Install replacement standalone APK after run 36172137484 succeeds; verify app opens, then test MWA connect.",
       "submission_repo": "https://github.com/uknwplayer/ground-relay",
       "mobile_bootstrap": {
         "typecheck_ci": "green",
@@ -601,6 +601,14 @@
           "Paid",
           "Cancelled"
         ]
+      },
+      "mobile_runtime_issue": {
+        "observed_at": "2026-09-25T15:11:00-03:00",
+        "error": "[@RNC/AsyncStorage]: NativeModule: AsyncStorage is null",
+        "cause": "package drift pulled AsyncStorage v3 via 'latest' while wallet-ui React Native kit expects AsyncStorage 2.2.x",
+        "fix_commit": "64cc49b7e2fa272149811894eec4cc00bd27bdb6",
+        "fix": "pin @react-native-async-storage/async-storage 2.2.0 and Solana Mobile template-compatible wallet/native package versions",
+        "replacement_build_run": 36172137484
       }
     }
   ]
