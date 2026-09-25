@@ -63,11 +63,19 @@
         "brl_estimate": 3.96,
         "pricing_basis": "XNO close 2026-09-23 USD 0.384945; USD/BRL PTAX sell 5.1414"
       },
-      "status": "submitted_email_pending_acceptance_and_payout_address",
+      "status": "paid_confirmed",
       "claimant": "uknwplayer",
       "evidence": "docs/submissions/2026-09-24-pursekeeper-front-page-claims-budget-stale.md",
       "submission_channel": "agent@pursekeeper.dev",
-      "notes": "Report preserves first-report priority. Nano payout address is not stored in the workflow; requested payout hold until a nano_ address is supplied."
+      "notes": "Paid by pursekeeper. Public ledger entry 217. Binance confirmed 2 XNO deposited.",
+      "payout": {
+        "amount": 2,
+        "token": "XNO",
+        "ledger_entry": 217,
+        "destination": "Binance Spot via native NANO deposit",
+        "confirmed_at": "2026-09-25",
+        "evidence": "Pursekeeper email confirmation + Binance deposit confirmation"
+      }
     },
     {
       "source": "GitHub",
@@ -188,7 +196,34 @@
       "notes": "Second and final per-item claim under #1102 cap=2. Live production HTML verified; requested UI/cosmetic tier."
     }
   ],
-  "received": [],
+  "received": [
+    {
+      "source": "Pursekeeper",
+      "program": "Research wanted list — item 5",
+      "finding": "Front page advertises outdated claims-pilot payment availability after budget was committed",
+      "amount": 2,
+      "token": "XNO",
+      "ledger_entry": 217,
+      "status": "received_confirmed",
+      "destination": "Binance Spot",
+      "network": "NANO",
+      "confirmed_at": "2026-09-25",
+      "evidence": "Pursekeeper confirmation email and Binance deposit receipt"
+    },
+    {
+      "source": "Pursekeeper",
+      "program": "Research wanted list — item 5",
+      "finding": "Front page still said ClawHub listing was pending after publication",
+      "amount": 2,
+      "token": "XNO",
+      "ledger_entry": 219,
+      "status": "received_confirmed",
+      "destination": "Binance Spot",
+      "network": "NANO",
+      "confirmed_at": "2026-09-25",
+      "evidence": "Pursekeeper confirmation email and Binance deposit receipt"
+    }
+  ],
   "ready_to_submit": [
     {
       "source": "GitHub",
