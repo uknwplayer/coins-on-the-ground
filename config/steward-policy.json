@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "scope": "coins-on-the-ground",
+  "principles": ["durable-state-over-agent-memory", "event-over-polling", "explicit-authority-over-unrestricted-autonomy", "persist-before-dispatch"],
+  "allow": ["observe.public_sources", "analyze.opportunities", "verify.authorization", "verify.payout_evidence", "write.project_branch", "run.project_tests", "open.pull_request", "checkpoint.delivery_ledger", "dispatch.explicitly_authorized_work"],
+  "deny": ["repository.merge", "main.write", "trust.modify", "identity.issue", "secret.read", "arbitrary.shell", "unauthorized.asset_access", "credential_exploitation", "safety_bypass"],
+  "uncertain_requires_reconciliation": true,
+  "execution_default": "human_review"
+}
