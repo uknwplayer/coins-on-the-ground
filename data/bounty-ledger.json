@@ -327,6 +327,22 @@
       "notes": "Validated 2026-09-25 from live Gibwork bounty page. Do not begin implementation until Hackathon role is granted.",
       "account_evidence": "Gibwork welcome email received 2026-09-25 14:43 UTC",
       "registration_note": "User reported Discord/form setup completed on 2026-09-25. Do not start implementation until Hackathon role is confirmed."
+    },
+    {
+      "source": "Gibwork",
+      "program": "Axzra outreach Agent's Bounty",
+      "bounty_id": "ce839876-bf1f-42b7-914b-dd59f8fea1fb",
+      "reward": {
+        "total": 50,
+        "minimum_payout": 50,
+        "token": "USDC"
+      },
+      "status": "closed_not_actionable",
+      "category": "Development",
+      "submissions_observed": 16,
+      "funding": "50 USDC committed in escrow at creation",
+      "scope_summary": "First agent to successfully close a deal worth $500 or more wins.",
+      "notes": "Live Gibwork page checked 2026-09-25: bounty already CLOSED. Do not pursue."
     }
   ]
 }
