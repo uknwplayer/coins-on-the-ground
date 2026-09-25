@@ -358,6 +358,36 @@
         "No hold is granted"
       ],
       "notes": "Pursekeeper explicitly said go ahead on 2026-09-25. Point 3/signing was already completed by prior claimant; remaining work is persistence, egress and unattended running."
+    },
+    {
+      "id": "stellar-wave9-ophirpay-776",
+      "source": "Drips Wave / Stellar Wave 9",
+      "target": "OphirPay/OphirPay#776 — Add request and response examples to every OpenAPI path",
+      "reward": {
+        "type": "points_share",
+        "points": 150,
+        "wave_budget_usd": 75000,
+        "fixed_usd": false,
+        "note": "Final payout = contributor's share of total Wave 9 points; not a fixed dollar bounty."
+      },
+      "status": "human_action_required_drips_apply",
+      "claimant": "uknwplayer",
+      "deadline": "2026-09-30T13:00:00Z",
+      "competition": {
+        "observed_applicants": 1,
+        "assignee": null,
+        "checked_at": "2026-09-25"
+      },
+      "requirements": [
+        "KYC in Drips Wave is mandatory before applying",
+        "Must be assigned through Drips Wave and resolved before Wave 9 ends",
+        "PR must target integration/staging",
+        "Every body-accepting path needs a request example; every path a success response example",
+        "Error responses document machine code alongside HTTP status",
+        "OpenAPI conformance test must fail when a new path ships without examples"
+      ],
+      "preflight": "Existing API_COOKBOOK.md has realistic payloads/responses; docs/openapi.yaml and openapi-conformance.test.ts are present on integration/staging. Scope appears executable without paid infrastructure.",
+      "notes": "Do not start implementation until uknwplayer applies through Drips and is accepted/assigned. Monitor for assignee/competition changes."
     }
   ]
 }
