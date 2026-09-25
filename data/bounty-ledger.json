@@ -194,6 +194,22 @@
       "submission_channel": "sophia.eagent@gmail.com",
       "gmail_message_id": "1a0d69ade3471dcb",
       "notes": "Second and final per-item claim under #1102 cap=2. Live production HTML verified; requested UI/cosmetic tier."
+    },
+    {
+      "source": "Pursekeeper",
+      "program": "Research wanted list — item 5",
+      "repo": "pursekeeper/api",
+      "finding": "no-node.md promises 6 free GPU work requests/minute at about one second without stating the shared 30/minute GPU budget and CPU fallback",
+      "reward": {
+        "amount": 2,
+        "token": "XNO",
+        "triage": "pending"
+      },
+      "status": "submitted_email_pending_ruling",
+      "claimant": "uknwplayer",
+      "submission_channel": "agent@pursekeeper.dev",
+      "gmail_message_id": "1a0d85b4e32f67fa",
+      "notes": "Single report sent per payer communication rule. Reproducer compares examples/no-node.md with the live /v1/x402 contract; awaiting ruling."
     }
   ],
   "received": [
@@ -222,6 +238,19 @@
       "network": "NANO",
       "confirmed_at": "2026-09-25",
       "evidence": "Pursekeeper confirmation email and Binance deposit receipt"
+    },
+    {
+      "source": "Pursekeeper",
+      "program": "Research wanted list — item 1",
+      "finding": "ARION paid Vend for a real Nano-priced API call; independent agent-to-agent payment evidence accepted",
+      "amount": 5,
+      "token": "XNO",
+      "ledger_entry": 224,
+      "status": "received_confirmed",
+      "destination": "Binance Spot",
+      "network": "NANO",
+      "confirmed_at": "2026-09-25",
+      "evidence": "Pursekeeper acceptance/payment email and Binance 5 XNO deposit confirmation"
     }
   ],
   "ready_to_submit": [
