@@ -518,7 +518,7 @@
       "source": "Solana Mobile",
       "program": "CLOCK IN — Solana Mobile Hackathon",
       "organizer": "Solana Mobile + RadiantsDAO",
-      "status": "registered_solo_building_mvp",
+      "status": "registered_solo_standalone_apk_ready_human_smoke_test",
       "registration_url": "https://solanamobile.com/hackathon",
       "opens": "2026-09-08",
       "deadline": "2026-10-08",
@@ -569,7 +569,7 @@
       },
       "bootstrap_branch": "clock-in/ground-relay-bootstrap",
       "bootstrap_path": "projects/ground-relay",
-      "next_human_gate": "Install the latest debug APK on Android with an MWA-compatible wallet and perform wallet/claim/camera/delivery smoke test once the current evidence-capable APK artifact is green.",
+      "next_human_gate": "Install standalone APK on Android. Expected first screen is Ground Relay app itself, not Expo Development Build. Then tap Connect with an MWA-compatible wallet and report/screenshots.",
       "submission_repo": "https://github.com/uknwplayer/ground-relay",
       "mobile_bootstrap": {
         "typecheck_ci": "green",
@@ -578,7 +578,11 @@
         "devnet_claim_receipt": true,
         "camera_evidence_capture": true,
         "evidence_sha256": true,
-        "devnet_delivery_receipt": true
+        "devnet_delivery_receipt": true,
+        "standalone_release_apk": "green",
+        "standalone_release_run": 36167426244,
+        "standalone_release_artifact_id": 10878862886,
+        "standalone_release_sha256": "2f83219b70b72cd4f2746a8d0b232ecfbc0e3ea518494a738f8b452bd7d8638d"
       },
       "next_gate": "Get CI green, then run Android custom development build on an emulator/device with an MWA-compatible wallet.",
       "agent_gateway": {
