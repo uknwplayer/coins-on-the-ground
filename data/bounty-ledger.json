@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-24",
+  "updated_at": "2026-09-25",
   "submitted": [
     {
       "source": "GitHub",
@@ -152,6 +152,40 @@
       "evidence": "docs/submissions/2026-09-24-stellarlend-migrationhub-stranded-funds.md",
       "payout_address": "pending_private_submission",
       "notes": "Repository unit test itself confirms migrated tokens remain in MigrationHub while status is Completed. No public payout confirmation assumed."
+    },
+    {
+      "source": "GitHub",
+      "program": "BoTTube Bug Bounty #1102",
+      "repo": "Scottcjn/rustchain-bounties",
+      "issue": 1102,
+      "finding": "BoTTube /forum emits plain-HTTP image URLs inside the live HTTPS page",
+      "reward": {
+        "amount": 3,
+        "token": "RTC",
+        "triage": "pending"
+      },
+      "status": "submitted_email_pending_triage",
+      "claimant": "uknwplayer",
+      "submission_channel": "scott@elyanlabs.ai",
+      "gmail_message_id": "1a0d6902c6fdff33",
+      "notes": "First of max 2 claims under #1102. Live HTML verified; requested UI tier only."
+    },
+    {
+      "source": "GitHub",
+      "program": "BoTTube Bug Bounty #1102",
+      "repo": "Scottcjn/rustchain-bounties",
+      "issue": 1102,
+      "finding": "BoTTube homepage hero copy renders the incomplete phrase 'generate your own .'",
+      "reward": {
+        "amount": 3,
+        "token": "RTC",
+        "triage": "pending"
+      },
+      "status": "submitted_email_pending_triage",
+      "claimant": "uknwplayer",
+      "submission_channel": "sophia.eagent@gmail.com",
+      "gmail_message_id": "1a0d69ade3471dcb",
+      "notes": "Second and final per-item claim under #1102 cap=2. Live production HTML verified; requested UI/cosmetic tier."
     }
   ],
   "received": [],
