@@ -26,6 +26,7 @@ wallet = [
 
 [project.scripts]
 cog = "coins_on_the_ground.cli:main"
+cog-steward = "coins_on_the_ground.steward.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/coins_on_the_ground"]
