@@ -315,7 +315,7 @@
       "deadline": "approximately one month from 2026-09-25",
       "submissions_observed": 4,
       "funding": "on-chain escrow reported/verified by public platform data",
-      "status": "human_gate_registration_required",
+      "status": "registration_completed_waiting_hackathon_role",
       "requirements": [
         "Build a new non-web-app use case using Gibwork SDK, CLI, or MCP",
         "Public GitHub repository with source and README",
@@ -324,7 +324,9 @@
         "Join Gibwork Discord and receive Hackathon role before starting",
         "Attend at least 2 hackathon sessions"
       ],
-      "notes": "Validated 2026-09-25 from live Gibwork bounty page. Do not begin implementation until Hackathon role is granted."
+      "notes": "Validated 2026-09-25 from live Gibwork bounty page. Do not begin implementation until Hackathon role is granted.",
+      "account_evidence": "Gibwork welcome email received 2026-09-25 14:43 UTC",
+      "registration_note": "User reported Discord/form setup completed on 2026-09-25. Do not start implementation until Hackathon role is confirmed."
     }
   ]
 }
