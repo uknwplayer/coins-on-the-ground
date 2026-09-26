@@ -24,4 +24,10 @@ Suggested tasks stay on watch only until converted into externally open bounties
 
 - **0.74 ZEC alt-text CI** — `NOT ACTIONABLE / suggested task / no applications`.
 - The visible **0.18 ZEC link-health checker** and other board cards must be inspected individually; do not infer claimability from Todo status or an Easy tag alone.
-- Continue using ZEC Bounties as a discovery rail because payouts are in liquid ZEC and the Hunter workflow itself has no documented worker deposit/stake, but enforce the live application-gate check before any work.
+- The 0.5 ZEC writing bounty was externally open, but required registering a shielded Zcash Unified Address and introduced wallet/onboarding friction outside the operator's preferred payout workflow.
+
+## Operator decision — excluded
+
+On 2026-09-26 the operator explicitly removed **ZecHub / ZEC Bounties** from the active opportunity list. Do not surface, apply to, or allocate work to this platform in the current Coins on the Ground strategy unless the operator explicitly reverses that decision later.
+
+Reason: excessive wallet/onboarding friction relative to the project's preferred pattern of direct, low-friction payout rails such as pursekeeper → XNO → Binance.
