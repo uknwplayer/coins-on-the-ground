@@ -127,6 +127,43 @@ The main RustChain repo separately documents a Solana wRTC bridge / Raydium pool
 
 Do not spend bill-paying hours on RustChain RTC bounties until there is independently verifiable, usable liquidity/off-ramp. Continue to watch for a change in wRTC liquidity or a bounty that explicitly pays a liquid asset instead of RTC.
 
+## High nominal value, low current EV: warpSpeed OPEN
+
+A secondary lead advertising $660–960 work was validated against the canonical repository `warpspeedopen-source/warpspeed-bounties` and the official `warpspeedopen.org` terms. The programme itself is real and the canonical issues currently advertise several large fixed USD bounties, including:
+
+- **#1 Attachment Summarizer Service — $960**;
+- **#4 Email Threads API — $750**;
+- **#7 Note Locking — $660**;
+- **#9 Audio Note Recording — $750**;
+- **#6 Enhanced Image Preview — $660**;
+- **#5 Inline Image Editing — $660**;
+- **#3 Group Chat Poll UI — $440**;
+- **#2 Classic Inbox UI — $330**.
+
+The official terms materially reduce their expected value for immediate cash:
+
+- contributors compete; only the first approved submission gets paid;
+- review is stated as 5–10 business days;
+- no partial payment; payment requires 100% completion;
+- up to three total attempts are allowed, with 90% specification match only being a threshold for consideration;
+- KYC may require government ID, proof of address, tax ID, selfie and a bank account in the contributor's name / approved country; the terms state KYC must be completed for bounty participation/payment;
+- bounty IP transfers to warpSpeed upon payment;
+- AI-generated code is not automatically forbidden, but code generated entirely by AI without significant human modification/review is prohibited.
+
+### Current competition / availability evidence
+
+The headline issues are not clean greenfield opportunities despite remaining open on GitHub:
+
+- **#1 $960 Attachment Summarizer:** many public claim comments; at least two contributors already report submitted/private Attempt 1 implementations/PRs and green local checks. **Crowded / already implemented.**
+- **#4 $750 Email Threads API:** at least one submitted PR is directly linked, and a later reviewer-style comment compares two current implementation surfaces/PRs. **Already in active implementation/review competition.**
+- **#7 $660 Note Locking:** multiple claimants; an implementation PR is linked; a later contributor reported the official bounty page at **100% capacity with a past deadline** even though the GitHub issue remained open. **Not actionable unless official platform explicitly reopens capacity.**
+
+A public issue **#173** asks the maintainers for proof that contributors have actually been paid (transaction or paid bounty evidence) and currently has no maintainer response/comments. This does not prove non-payment, but it means Coins on the Ground currently lacks the payout-history evidence required to allocate large blocks of work.
+
+**Status:** `real_program / high_headline_reward / low_current_expected_value`.
+
+Do not start a warpSpeed bounty just because the GitHub issue is open. Require all of these before work: official platform capacity open now, claim/assignment confirmed, deadline feasible from claim time, KYC/payment path feasible for the operator, competition understood, and at least one credible prior payout reference or direct maintainer confirmation. Given existing implementations and unanswered payout-proof inquiry, current inventory stays outside the immediate-cash queue.
+
 ## Medium-priority watch: Agent Souk
 
 Agent-native USDC marketplace with wallet-to-wallet settlement on Base and support for research, code, translation, data and image work. Registration and wallet binding are designed for agents. Payment is not as strongly escrowed as BasedAgents, and prior evidence indicated limited outsider-to-outsider completed volume, so every buyer must be evaluated separately.
@@ -184,4 +221,5 @@ Before Coins on the Ground spends meaningful time, require as many of the follow
 - Agent Souk bounties with independently credible buyers;
 - direct GitHub research / verification bounties paying USDC/XNO/BTC/Lightning;
 - maintainers purchasing reproducible QA, docs verification, API tests, translations, CI fixes or AI-agent integration evidence;
-- monitor RustChain/wRTC only for independently verifiable liquidity/off-ramp improvements, not for current work allocation.
+- monitor RustChain/wRTC only for independently verifiable liquidity/off-ramp improvements, not for current work allocation;
+- monitor warpSpeed only for a genuinely new bounty before saturation plus verifiable payout history / feasible KYC path.
