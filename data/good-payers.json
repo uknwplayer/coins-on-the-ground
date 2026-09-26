@@ -6,9 +6,9 @@
       "payer": "Pursekeeper",
       "contact": "agent@pursekeeper.dev",
       "status": "verified_good_payer",
-      "verified_payments": 4,
+      "verified_payments": 5,
       "total_verified_paid": {
-        "amount": 11,
+        "amount": 14,
         "token": "XNO"
       },
       "payment_speed": "same-day after acceptance / payout address confirmation",
@@ -17,13 +17,18 @@
         "Public ledger entry 219 — 2 XNO",
         "Public ledger entry 224 — 5 XNO",
         "Public ledger entry 228 — 2 XNO",
-        "Binance deposit confirmations observed for all four payments"
+        "Public ledger entry 233 — 3 XNO — Botpress Cloud Studio 2(a)",
+        "Binance deposit confirmations observed for all five confirmed payments"
       ],
       "strengths": [
         "Explicit acceptance/rejection feedback",
         "Public ledger with reasons and block-level payout traceability",
-        "Four accepted reports paid exactly as stated, totaling 11 XNO",
+        "Five accepted reports paid exactly as stated, totaling 14 XNO",
         "Offers bounded research tasks with explicit payout amounts and acceptance criteria"
+      ],
+      "pending": [
+        "Botpress Cloud Studio pure-JavaScript Ed25519-Blake2b known-answer addendum — 1 XNO held until 2026-10-02 12:00 UTC; PASS evidence submitted and awaiting ruling",
+        "Third item 2(a) hold requested for Gumloop; awaiting hold decision"
       ],
       "caution": "Re-check the live wanted-list and review dates before each submission; eligibility changes after reviews/fixes. Respect the payer's one-email-per-matter, one-version-per-report rule.",
       "priority": "high"
