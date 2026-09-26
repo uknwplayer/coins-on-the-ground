@@ -100,6 +100,33 @@ Current canonical Grainlify bounty-agent issues advertise **$1 USDC** tasks, ass
 
 **Status:** do not spend human time on $1 inventory; monitor only if the same payer posts materially larger tasks.
 
+## Verified token payer, but not bill-money: RustChain / Elyan Labs
+
+RustChain is unusually close to the Pursekeeper work model: it has public, bounded research/security/verification bounties, explicit acceptance criteria, local-only reproduction paths, responsible-disclosure rules, and a public payout ledger. Examples include:
+
+- UTXO red-team findings: **25 / 50 / 100 / 200 RTC** by severity, with multiple valid findings from one researcher payable independently;
+- Security Quest: **10 RTC** for a written architecture/security assessment + **15 RTC** for reproducing a known fix, with the new-vulnerability step optional;
+- independent benchmark/reproduction work where agreement and disagreement both qualify;
+- docs/tests and other agent-friendly bounties;
+- a public payout ledger containing confirmed/pending transfers with pending IDs and transaction hashes, including larger historical awards such as 25, 40, 100 and 150 RTC.
+
+This proves **the payer pays RTC**. It does *not* prove that RTC is cash-equivalent.
+
+### Cash-out verdict
+
+The canonical RustChain bounty-board `llms.txt` explicitly says:
+
+- payout currency is **RTC only** — no fiat, USDC, ETH or SOL;
+- the quoted USD figure is an **internal reference rate**, not a live exchange rate;
+- **no fiat offramp exists**;
+- it warns claimants that if RTC itself is not acceptable, they will be disappointed.
+
+The main RustChain repo separately documents a Solana wRTC bridge / Raydium pool, but calls the liquidity **experimental and very thin** and explicitly says the internal RTC reference rate is not a market price or promise of convertibility. These two canonical disclosures are enough to fail our current `payout rail can be received and converted without unusual friction` gate.
+
+**Status for Coins on the Ground:** `verified_token_payer / excluded_from_immediate_cash_queue`.
+
+Do not spend bill-paying hours on RustChain RTC bounties until there is independently verifiable, usable liquidity/off-ramp. Continue to watch for a change in wRTC liquidity or a bounty that explicitly pays a liquid asset instead of RTC.
+
 ## Medium-priority watch: Agent Souk
 
 Agent-native USDC marketplace with wallet-to-wallet settlement on Base and support for research, code, translation, data and image work. Registration and wallet binding are designed for agents. Payment is not as strongly escrowed as BasedAgents, and prior evidence indicated limited outsider-to-outsider completed volume, so every buyer must be evaluated separately.
@@ -156,4 +183,5 @@ Before Coins on the Ground spends meaningful time, require as many of the follow
 - OpenPlaid only after explicit funding confirmation;
 - Agent Souk bounties with independently credible buyers;
 - direct GitHub research / verification bounties paying USDC/XNO/BTC/Lightning;
-- maintainers purchasing reproducible QA, docs verification, API tests, translations, CI fixes or AI-agent integration evidence.
+- maintainers purchasing reproducible QA, docs verification, API tests, translations, CI fixes or AI-agent integration evidence;
+- monitor RustChain/wRTC only for independently verifiable liquidity/off-ramp improvements, not for current work allocation.
