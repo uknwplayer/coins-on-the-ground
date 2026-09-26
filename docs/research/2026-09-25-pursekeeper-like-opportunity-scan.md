@@ -164,6 +164,60 @@ A public issue **#173** asks the maintainers for proof that contributors have ac
 
 Do not start a warpSpeed bounty just because the GitHub issue is open. Require all of these before work: official platform capacity open now, claim/assignment confirmed, deadline feasible from claim time, KYC/payment path feasible for the operator, competition understood, and at least one credible prior payout reference or direct maintainer confirmation. Given existing implementations and unanswered payout-proof inquiry, current inventory stays outside the immediate-cash queue.
 
+## Verified liquid payer but zero-capital blocker: ArcBounty
+
+ArcBounty is a real Arc-mainnet bounty rail paying USDC through escrow. The canonical `Sofiia7/ARC` repository and public site show an outside ERC-8004 worker taking, submitting and receiving **7.92 USDC** in under an hour, with transaction links. An independent rail audit also observed roughly 16 USDC paid to agents during the launch period.
+
+The economic blocker is on the worker side:
+
+- Arc uses USDC as its native gas token, so the SDK tells workers to fund their wallet with a small amount of USDC before any write action;
+- the independent audit estimated about 0.0034 USDC of gas for a worker path;
+- some V4 bounties may additionally require a **worker bond**, which the SDK detects and approves in USDC; the design includes a floor around $0.50 and refunds the bond on valid submit;
+- no sponsored-gas/paymaster path was found in the canonical repository during this scan.
+
+**Status:** `verified_liquid_payer / blocked_by_zero-capital rule`.
+
+This is a strong future rail if sponsored gas appears or if a specific bounty explicitly removes every worker-funded requirement. Under the present operator rule, do not fund a wallet just to enter.
+
+## Verified good rail, currently no clean live task: Frantic
+
+Frantic remains one of the strongest direct-task rails because Coins on the Ground is already onboarded (`agent-45f770`, operator `@uknwplayer`, SWORN #401, 3/3 seals, x402 payout registered), the platform has public settled work, and enlistment itself does not require a wallet fee.
+
+Recent public snapshots showed bounties such as #128 (8 USD), #129 (16 USD private), #130 (3 USD private) and #135 (1.05 USD), but the live state changed. The current #135 surface is filled/closed with **0 of 10 slots available, 8 paid and 2 delivered**; that task also required a 0.05 USD paid Ausca run, so it would fail our zero-spend gate anyway. A current render of the board showed no open work at that minute.
+
+**Status:** `verified good payer / watch-only until a live zero-spend bounty appears`.
+
+Do not act on cached board snapshots. A new ≤10 USD zero-spend bounty is strategically valuable because one successful paid Frantic bounty improves access to larger work. Validate the live claim gate every time.
+
+## High-priority new rail: ZecHub / ZEC Bounties
+
+ZEC Bounties is a mainnet bounty platform run by ZecHub with GitHub authentication and native **shielded ZEC payouts**. The canonical `ZecHub/zec-bounties` documentation states the Hunter flow clearly: sign in with GitHub, register a Unified Address containing a shielded receiver, choose Hunter, apply, wait for assignment, submit only after assignment, then receive shielded ZEC after approval. No worker deposit, stake or required purchase is documented in the Hunter flow.
+
+Program evidence is substantially stronger than a new bounty farm: ZecHub reports the platform moved from testnet to mainnet in June 2026, is approaching 60 contributors, and its broader 2026 contribution program has hundreds of recorded payments/contributions. ZecHub also publicly states that accepted contributions are tipped in ZEC and requires contributor payout details through a declaration/profile process.
+
+### Current board state
+
+The live board currently shows **10 total bounties, 9 Todo, 0 In Progress, 1 In Review**. “Todo” means not yet assigned in the platform workflow; assignment is a separate explicit step before work submission.
+
+Top candidates:
+
+- **0.74 ZEC — Add a report-only CI check for image alt text across the wiki content — EASY — deadline Oct 10.** One focused PR: add a script under `scripts/`, detect missing/empty/placeholder alt text across Markdown and inline `<img>`, reproduce the stated 60 missing/empty + 129 placeholder out of 758 images, report per page sorted by count, wire to CI as **report-only / non-failing**, and document local use/configuration. No content files may change. This is highly AI-accelerable and matches existing repository patterns (`scripts/check-menu-labels.mjs`, workflow-only detection checks). Search found **no open PR already implementing this exact alt-text task**. **Current #1 target.**
+- **0.18 ZEC — Fix link-health checker silently accepting nonexistent nested routes — EASY — deadline Oct 1.** Focused logic + regression tests; no open PR for the exact `routeExists` defect was found in this scan. Good backup after onboarding.
+- **3 ZEC — Orchard→Ironwood turnstile edge-case regression tests in Zebra — EASY label but high technical risk — deadline Oct 2.** Headline reward is excellent, but a current Zebra issue (#11492) from a ZCG-funded fuzzing effort explicitly includes a ninth target for the Orchard→Ironwood turnstile. Because the bounty's acceptance requires additive/non-duplicative coverage acknowledged by Zebra maintainers, this creates a meaningful duplicate/acceptance risk. **Do not prioritize until the bounty creator or Zebra maintainer confirms a distinct test scope.**
+- Smaller items (0.03–0.17 ZEC research/wiki/visualizer tasks) exist but have lower EV than the 0.74 ZEC CI task.
+
+### Human gate
+
+To apply, the operator must use the ZEC Bounties web app: GitHub sign-in, one-time **Hunter** role selection, and a Zcash Unified Address containing a shielded receiver. Transparent-only exchange deposit addresses are rejected by platform rules. After onboarding, application is a short note; the creator/admin chooses assignee(s). **Do not begin bounty code until assigned.**
+
+**Status:** `high-priority / actionable after one-time wallet+login onboarding`.
+
+## Stale lead: KushBitx $50 USDC bounty
+
+Several bounty-radar snapshots referenced `$50 USDC bounty: integrate @kushbitx/sdk with an AI agent` at the old `kushBitxHQ/kushbitx-sdk#1` location. The canonical issue now returns 404 and the original owner/repository is no longer available under that path; only other owners/forks with the repo name are discoverable.
+
+**Status:** `stale_or_moved / reject until canonical payer and reward source reappear`.
+
 ## Medium-priority watch: Agent Souk
 
 Agent-native USDC marketplace with wallet-to-wallet settlement on Base and support for research, code, translation, data and image work. Registration and wallet binding are designed for agents. Payment is not as strongly escrowed as BasedAgents, and prior evidence indicated limited outsider-to-outsider completed volume, so every buyer must be evaluated separately.
@@ -214,12 +268,16 @@ Before Coins on the Ground spends meaningful time, require as many of the follow
 
 ## Next search targets
 
+- **ZecHub 0.74 ZEC alt-text CI bounty: complete Hunter onboarding + apply, then wait for assignment before coding**;
+- ZecHub 0.18 ZEC link-health bounty as backup after onboarding;
 - newly created OpenWitness listings before researcher saturation;
 - new BasedAgents escrowed tasks;
+- new zero-spend Frantic tasks, validated against the live claim gate rather than cached snapshots;
 - **new Omi issues with the official `Paid Bounty 💰` label**, especially pure software/docs before competitors arrive;
 - OpenPlaid only after explicit funding confirmation;
 - Agent Souk bounties with independently credible buyers;
-- direct GitHub research / verification bounties paying USDC/XNO/BTC/Lightning;
+- direct GitHub research / verification bounties paying USDC/XNO/BTC/Lightning/ZEC;
 - maintainers purchasing reproducible QA, docs verification, API tests, translations, CI fixes or AI-agent integration evidence;
+- monitor ArcBounty for sponsored gas / zero-bond worker paths;
 - monitor RustChain/wRTC only for independently verifiable liquidity/off-ramp improvements, not for current work allocation;
 - monitor warpSpeed only for a genuinely new bounty before saturation plus verifiable payout history / feasible KYC path.
